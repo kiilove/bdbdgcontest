@@ -22,40 +22,48 @@ const Login = () => {
             <div className="h-full flex flex-col p-10" style={{ width: "60%" }}>
               <div className="flex w-full justify-start items-start h-full flex-col gap-y-1">
                 <div className="flex flex-col items-start my-10">
-                  <h1 className="text-2xl font-san font-semibold text-gray-200">
+                  <h1 className="text-4xl font-san font-semibold text-gray-200">
                     BDBDg
                   </h1>
-                  <h1 className="text-2xl font-san font-semibold text-gray-200">
+                  <h1 className="text-3xl font-san font-semibold text-gray-200">
                     협회 시스템
                   </h1>
                 </div>
 
-                <h2 className="text-gray-300">협회업무와 심사를 위한 </h2>
-                <h2 className="text-gray-300">시스템입니다.</h2>
+                <h2 className="text-gray-300 text-lg">
+                  협회업무와 심사를 위한{" "}
+                </h2>
+                <h2 className="text-gray-300 text-lg">시스템입니다.</h2>
               </div>
             </div>
             <div
               className="flex w-auto h-full flex-col px-5 py-10"
-              style={{ minWidth: "40%" }}
+              style={{ minWidth: "35%" }}
             >
-              <div className="flex w-full justify-start items-center h-full flex-col gap-y-1">
+              <div className="flex w-full justify-start items-center h-full flex-col gap-y-3">
                 <div className="flex flex-col items-center my-5">
                   <h1 className="text-2xl font-san font-semibold text-gray-800">
                     사용자 로그인
                   </h1>
                 </div>
-                <div className="flex flex-col items-center w-full px-5 ml-5 gap-y-2">
+                <div className="flex flex-col items-center w-full px-5 ml-5 gap-y-5">
                   <div className="flex w-full bg-gray-200 h-10 rounded-lg">
                     <div className="flex w-10 h-10 justify-center items-center">
                       <FaUser className="text-gray-600 text-lg" />
                     </div>
-                    <input type="text" className=" bg-transparent" />
+                    <input
+                      type="text"
+                      className=" bg-transparent outline-none"
+                    />
                   </div>
                   <div className="flex w-full bg-gray-200 h-10 rounded-lg">
                     <div className="flex w-10 h-10 justify-center items-center">
                       <FaKey className="text-gray-600 text-lg" />
                     </div>
-                    <input type="text" className=" bg-transparent" />
+                    <input
+                      type="text"
+                      className=" bg-transparent  outline-none"
+                    />
                   </div>
                   <div className="flex w-full h-20">
                     <button

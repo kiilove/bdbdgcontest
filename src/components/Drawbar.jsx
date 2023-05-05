@@ -18,8 +18,14 @@ const Drawbar = ({ setOpen }) => {
         isHidden: !prevState.isHidden || prevState.menuIndex !== idx,
       }));
     } else {
+      setOpen(); // subMenus를 클릭해서 페이지 이동 시 창 닫기
       navigate(MenuArray[idx].link);
     }
+  };
+
+  const handleSubMenuClick = (parentIdx, subIdx) => {
+    setOpen();
+    navigate(MenuArray[parentIdx].subMenus[subIdx].link);
   };
 
   useEffect(() => {
@@ -62,10 +68,10 @@ const Drawbar = ({ setOpen }) => {
               <div className="flex flex-col text-gray-200 text-base bg-sky-700 w-full">
                 {menu.subMenus.map((subMenus, sIdx) => (
                   <div className="flex w-full">
-                    <div className="flex w-full h-12" key={subMenus.index}>
+                    <div className="flex w-full h-12" key={subMenus.id}>
                       <button
                         className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
-                        onClick={() => navigate(subMenus.link)}
+                        onClick={() => handleSubMenuClick(idx, sIdx)}
                       >
                         <div className="flex justify-start items-center">
                           <span className="text-base text-white mr-2">
