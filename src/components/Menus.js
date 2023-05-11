@@ -4,8 +4,6 @@ import {
   BsFillHandIndexThumbFill,
   BsCpuFill,
   BsCheckAll,
-  BsInfoSquareFill,
-  BsInfo,
   BsInfoLg,
   BsListOl,
   BsCardChecklist,
@@ -25,14 +23,20 @@ import {
   MdOutlineScale,
   MdOutlineTouchApp,
 } from "react-icons/md";
+import { BiAddToQueue } from "react-icons/bi";
 
-import { GrCertificate } from "react-icons/gr";
 export const MenuArray = [
   {
     id: 0,
     title: "대회관리",
     icon: <BsTrophyFill />,
     subMenus: [
+      {
+        id: 1,
+        title: "새로운대회개설",
+        icon: <BiAddToQueue />,
+        link: "/newcontest",
+      },
       {
         id: 1,
         title: "대회정보관리",

@@ -13,7 +13,6 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import deepEqual from "deep-equal";
 
 export function useFirestoreQuery() {
   const [data, setData] = useState([]);
