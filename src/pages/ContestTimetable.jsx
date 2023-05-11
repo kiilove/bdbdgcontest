@@ -2,12 +2,21 @@ import React, { useState } from "react";
 import TopBar from "../components/TopBar";
 import Sidebar from "../components/SideBar";
 
-import { MdTimeline } from "react-icons/md";
+import { MdTimeline, MdOutlineSearch } from "react-icons/md";
+import { Modal } from "@mui/material";
+import CategoryInfoModal from "../modals/CategoryInfoModal";
+import { useEffect } from "react";
+import GradeInfoModal from "../modals/GradeInfoModal.jsx";
 
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
   const [currentTab, setCurrentTab] = useState(0);
   const [currentSection, setSection] = useState([{ id: 0, title: "전체" }]);
+  const [isOpen, setIsOpen] = useState({
+    category: false,
+    grade: false,
+    player: false,
+  });
   const tabArray = [
     {
       id: 0,
@@ -29,34 +38,57 @@ const ContestTimetable = () => {
     },
   ];
   const handleContestInfo = () => {};
+
+  const handleCategoryClose = () => {
+    setIsOpen((prevState) => ({ ...prevState, category: false }));
+  };
+  const handleGradeClose = () => {
+    setIsOpen((prevState) => ({ ...prevState, grade: false }));
+  };
   const ContestOrdersRender = (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
-      <div className="w-full lg:w-1/3 bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
+      <Modal open={isOpen.category} onClose={handleCategoryClose}>
+        <div
+          className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <CategoryInfoModal setClose={handleCategoryClose} />
+        </div>
+      </Modal>
+      <Modal open={isOpen.grade} onClose={handleGradeClose}>
+        <div
+          className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <GradeInfoModal setClose={handleGradeClose} />
+        </div>
+      </Modal>
+      <div className="w-full lg:w-1/2 bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
         <div className="flex bg-gray-100 h-auto rounded-lg justify-start items-start lg:items-center gay-y-2 flex-col p-2 gap-y-2">
-          <div className="flex w-full justify-start items-center gap-x-3">
-            <input
-              type="number"
-              name="categoryIndex"
-              className="h-12 w-full rounded-lg px-3"
-              placeholder="진행순서"
-            />
-            <input
-              type="text"
-              name="categorySection"
-              className="h-12 w-full rounded-lg px-3"
-              placeholder="진행그룹(ex:1부, 2부)"
-            />
+          <div className="flex w-full justify-start items-center ">
+            <div className="h-12 w-full rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <h1 className="text-2xl text-gray-600 mr-3">
+                  <MdOutlineSearch />
+                </h1>
+                <input
+                  type="text"
+                  name="contestCategoryTitle"
+                  className="h-12 outline-none"
+                  placeholder="종목검색"
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex w-full justify-start items-center gap-x-3">
-            <input
-              type="text"
-              name="contestCategoryTitle"
-              className="h-12 w-full rounded-lg px-3"
-              placeholder="종목명"
-            />
-          </div>
-          <div className="flex w-full justify-start items-center gap-x-3">
-            <button className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg">
+          <div className="flex w-full justify-start items-center">
+            <button
+              className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
+              onClick={() => setIsOpen({ ...isOpen, category: true })}
+            >
               종목추가
             </button>
           </div>
@@ -95,8 +127,58 @@ const ContestTimetable = () => {
           </table>
         </div>
       </div>
-      <div className="w-1/3 bg-blue-200 flex rounded-lg">2</div>
-      <div className="w-1/3 bg-blue-300 flex rounded-lg">3</div>
+      <div className="w-full lg:w-1/2 bg-blue-200 flex rounded-lg flex-col p-2 h-full gap-y-2">
+        <div className="flex bg-gray-100 h-auto rounded-lg justify-start items-start lg:items-center gay-y-2 flex-col p-2 gap-y-2">
+          <div className="flex w-full justify-start items-center ">
+            <div className="h-12 w-full rounded-lg px-3">
+              <div className="flex w-full justify-start items-center h-full">
+                <h3>선택된 종목</h3>
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center">
+            <button
+              className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-300 rounded-lg"
+              onClick={() => setIsOpen({ ...isOpen, grade: true })}
+            >
+              체급추가
+            </button>
+          </div>
+        </div>
+        <div className="flex bg-blue-300 w-full h-auto rounded-lg px-4">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-sky-400 h-10">
+                <th className="w-1/4 h-10 text-left font-normal">개최순서</th>
+                <th className="w-2/4 h-10 text-left font-normal">체급명</th>
+                <th className="w-1/4 h-10"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="h-10">
+                <td className="w-1/4 h-10">1</td>
+                <td className="w-2/4 h-10">학생부</td>
+                <td className="w-1/4 h-10"></td>
+              </tr>
+              <tr className="h-10">
+                <td className="w-1/4 h-10">1</td>
+                <td className="w-2/4 h-10">학생부</td>
+                <td className="w-1/4 h-10"></td>
+              </tr>
+              <tr className="h-10">
+                <td className="w-1/4 h-10">1</td>
+                <td className="w-2/4 h-10">학생부</td>
+                <td className="w-1/4 h-10"></td>
+              </tr>
+              <tr className="h-10">
+                <td className="w-1/4 h-10">1</td>
+                <td className="w-2/4 h-10">학생부</td>
+                <td className="w-1/4 h-10"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
   return (
