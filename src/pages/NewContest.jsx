@@ -152,41 +152,56 @@ const NewContest = () => {
   };
 
   return (
-    <div className="flex w-full h-full bg-transparent flex-col justify-center items-center">
+    <div
+      className="flex w-full bg-transparent flex-col justify-center items-center"
+      style={{ minHeight: "850px" }}
+    >
       <div
-        className="flex w-2/3 h-2/3 flex-col p-10 bg-white rounded-lg shadow-lg"
+        className="flex w-full h-full p-10 bg-white rounded-lg shadow-lg"
         style={{
           backgroundImage: `url(${Body})`,
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
-          backgroundPosition: "center",
+          backgroundPosition: "left",
+          minHeight: "100%",
         }}
       >
-        <div className="flex w-full h-full justify-center items-center flex-col gap-y-5 "></div>
-        <div className="flex w-full justify-center items-end mt-5">
-          {isLoading ? (
-            <button className=" w-40 h-10 md:h-14 bg-gray-900 border text-white text-lg font-bold">
-              <span className="flex w-full h-full text-white text-base justify-center items-center">
-                <ThreeDots
-                  height="40"
-                  width="40"
-                  radius="9"
-                  color="#fff"
-                  ariaLabel="three-dots-loading"
-                  wrapperStyle={{}}
-                  wrapperClassName=""
-                  visible={true}
-                />
-              </span>
-            </button>
-          ) : (
-            <button
-              className=" w-40 h-10 md:h-14 bg-gray-900 border text-white text-lg font-bold"
-              onClick={() => handleStart()}
-            >
-              <span>대회개설</span>
-            </button>
-          )}
+        <div
+          className="flex w-full justify-center items-end mt-5 flex-col p-10 rounded-lg shadow-lg"
+          style={{ backgroundColor: "rgba(7,11,41,0.7)" }}
+        >
+          <div className="flex w-full h-full justify-center items-center lg:items-end flex-col">
+            <div className="flex w-full h-full justify-center items-center lg:justify-end">
+              <h1 className="text-2xl lg:text-3xl text-gray-200">
+                새로운 대회를 개설합니다.
+              </h1>
+            </div>
+            <div className="flex h-full">
+              {isLoading ? (
+                <button className=" w-40 h-10 md:h-14 bg-gray-900 border text-white text-lg font-bold">
+                  <span className="flex w-full h-full text-white text-base justify-center items-center">
+                    <ThreeDots
+                      height="40"
+                      width="40"
+                      radius="9"
+                      color="#fff"
+                      ariaLabel="three-dots-loading"
+                      wrapperStyle={{}}
+                      wrapperClassName=""
+                      visible={true}
+                    />
+                  </span>
+                </button>
+              ) : (
+                <button
+                  className=" w-40 h-10 md:h-14 bg-gray-900 border text-white text-lg font-bold"
+                  onClick={() => handleStart()}
+                >
+                  <span>대회개설</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

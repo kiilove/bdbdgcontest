@@ -36,7 +36,7 @@ const Sidebar = () => {
   }, []);
 
   return (
-    <div className="flex flex-col w-full bg-transparent">
+    <div className="flex flex-col w-full bg-transparent min-h-screen">
       {MenuArray.map((menu, idx) => (
         <div key={menu.index} className="flex flex-col ">
           <div

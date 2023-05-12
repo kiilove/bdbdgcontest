@@ -29,9 +29,10 @@ const TopBar = () => {
 
   const handleCurrentContest = (e) => {};
 
-  const fetchContest = async () => {
+  const fetchContestNotice = async () => {
     if (contestNoticeId) {
       const returnData = await fetchDocument.getDocument(contestNoticeId);
+      console.log("first");
 
       if (returnData.id) {
         setCurrentContest({
@@ -50,6 +51,22 @@ const TopBar = () => {
     setContestList([...returnData]);
     if (returnData?.length === 1) {
       setContestNoticeId(returnData[0].id);
+    }
+  };
+
+  const fetchContest = async () => {
+    if (contestNoticeId) {
+      const condtion = [where("contestNoticeId", "==", contestNoticeId)];
+      const returnContest = await fetchQuery.getDocuments("contests", condtion);
+      const returnNotice = await fetchDocument.getDocument(contestNoticeId);
+
+      if (returnContest[0].id && returnNotice.id) {
+        setCurrentContest({
+          ...currentContest,
+          contestInfo: { ...returnNotice },
+          contests: { ...returnContest[0] },
+        });
+      }
     }
   };
 

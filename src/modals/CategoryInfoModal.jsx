@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useContext } from "react";
 import { BiCategory } from "react-icons/bi";
+import { CurrentContestContext } from "../contexts/CurrentContestContext";
 
 const CategoryInfoModal = ({ setClose }) => {
+  const { currentContest, setCurrentContest } = useContext(
+    CurrentContestContext
+  );
+
+  console.log(currentContest);
   return (
     <div className="flex w-full flex-col gap-y-2 h-auto">
       <div className="flex w-full h-14">
