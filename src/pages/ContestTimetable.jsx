@@ -1,22 +1,47 @@
-import React, { useState } from "react";
-import TopBar from "../components/TopBar";
-import Sidebar from "../components/SideBar";
+import React, { useContext, useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
-import { MdTimeline, MdOutlineSearch } from "react-icons/md";
+import {
+  MdTimeline,
+  MdOutlineSearch,
+  MdEditNote,
+  MdOutlineScale,
+} from "react-icons/md";
 import { Modal } from "@mui/material";
 import CategoryInfoModal from "../modals/CategoryInfoModal";
 import { useEffect } from "react";
 import GradeInfoModal from "../modals/GradeInfoModal.jsx";
+import { HiOutlineTrash } from "react-icons/hi";
+import { TbEdit } from "react-icons/tb";
+import {
+  useFirestoreGetDocument,
+  useFirestoreQuery,
+} from "../hooks/useFirestores";
+import { where } from "firebase/firestore";
+import { CurrentContestContext } from "../contexts/CurrentContestContext";
 
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
   const [currentTab, setCurrentTab] = useState(0);
+  const [categorysList, setCategorysList] = useState([]);
+  const [gradesList, setGradesList] = useState([]);
   const [currentSection, setSection] = useState([{ id: 0, title: "전체" }]);
+  const { currentContest, setCurrentContest } = useContext(
+    CurrentContestContext
+  );
   const [isOpen, setIsOpen] = useState({
     category: false,
     grade: false,
     player: false,
+    categoryId: "",
+    gradeId: "",
   });
+
+  const fetchCategoryDocument = useFirestoreGetDocument(
+    "contest_categorys_list"
+  );
+  const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
+
   const tabArray = [
     {
       id: 0,
@@ -37,14 +62,74 @@ const ContestTimetable = () => {
       children: "",
     },
   ];
-  const handleContestInfo = () => {};
+
+  const onDragEnd = (result) => {
+    const { source, destination, draggableId } = result;
+
+    if (!destination) {
+      return;
+    }
+
+    // Determine whether we're dealing with categories or grades
+    const isGrade = draggableId.startsWith("grade");
+
+    if (isGrade) {
+      const items = Array.from(gradesList);
+      const [reorderedItem] = items.splice(source.index, 1);
+      items.splice(destination.index, 0, reorderedItem);
+
+      setGradesList(items);
+    } else {
+      const items = Array.from(categorysList);
+      const [reorderedItem] = items.splice(source.index, 1);
+      items.splice(destination.index, 0, reorderedItem);
+
+      setCategorysList(items);
+    }
+  };
 
   const handleCategoryClose = () => {
-    setIsOpen((prevState) => ({ ...prevState, category: false }));
+    setIsOpen(() => ({
+      category: false,
+      title: "",
+      info: {},
+      categoryId: "",
+      gradeId: "",
+    }));
   };
   const handleGradeClose = () => {
-    setIsOpen((prevState) => ({ ...prevState, grade: false }));
+    setIsOpen((prevState) => ({
+      ...prevState,
+      grade: false,
+      title: "",
+      categoryId: "",
+      gradeId: "",
+    }));
   };
+
+  const fetchPool = async () => {
+    if (currentContest.contests.contestCategorysListId) {
+      const returnCategorys = await fetchCategoryDocument.getDocument(
+        currentContest.contests.contestCategorysListId
+      );
+      console.log(returnCategorys);
+      setCategorysList([
+        ...returnCategorys?.categorys.sort(
+          (a, b) => a.contestCategoryIndex - b.contestCategoryIndex
+        ),
+      ]);
+      const returnGrades = await fetchGradeDocument.getDocument(
+        currentContest.contests.contestGradesListId
+      );
+      setGradesList([...returnGrades?.grades]);
+    }
+  };
+
+  useEffect(() => {
+    console.log(currentContest);
+    fetchPool();
+  }, [currentContest]);
+
   const ContestOrdersRender = (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
       <Modal open={isOpen.category} onClose={handleCategoryClose}>
@@ -54,7 +139,11 @@ const ContestTimetable = () => {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <CategoryInfoModal setClose={handleCategoryClose} />
+          <CategoryInfoModal
+            setClose={handleCategoryClose}
+            propState={isOpen}
+            setState={setCategorysList}
+          />
         </div>
       </Modal>
       <Modal open={isOpen.grade} onClose={handleGradeClose}>
@@ -64,10 +153,14 @@ const ContestTimetable = () => {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <GradeInfoModal setClose={handleGradeClose} />
+          <GradeInfoModal
+            setClose={handleGradeClose}
+            propState={isOpen}
+            setState={setGradesList}
+          />
         </div>
       </Modal>
-      <div className="w-full lg:w-1/2 bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
+      <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
         <div className="flex bg-gray-100 h-auto rounded-lg justify-start items-start lg:items-center gay-y-2 flex-col p-2 gap-y-2">
           <div className="flex w-full justify-start items-center ">
             <div className="h-12 w-full rounded-lg px-3 bg-white">
@@ -87,7 +180,13 @@ const ContestTimetable = () => {
           <div className="flex w-full justify-start items-center">
             <button
               className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
-              onClick={() => setIsOpen({ ...isOpen, category: true })}
+              onClick={() =>
+                setIsOpen({
+                  ...isOpen,
+                  category: true,
+                  title: "종목추가",
+                })
+              }
             >
               종목추가
             </button>
@@ -103,78 +202,93 @@ const ContestTimetable = () => {
               </tr>
             </thead>
             <tbody>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className="w-full lg:w-1/2 bg-blue-200 flex rounded-lg flex-col p-2 h-full gap-y-2">
-        <div className="flex bg-gray-100 h-auto rounded-lg justify-start items-start lg:items-center gay-y-2 flex-col p-2 gap-y-2">
-          <div className="flex w-full justify-start items-center ">
-            <div className="h-12 w-full rounded-lg px-3">
-              <div className="flex w-full justify-start items-center h-full">
-                <h3>선택된 종목</h3>
-              </div>
-            </div>
-          </div>
-          <div className="flex w-full justify-start items-center">
-            <button
-              className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-300 rounded-lg"
-              onClick={() => setIsOpen({ ...isOpen, grade: true })}
-            >
-              체급추가
-            </button>
-          </div>
-        </div>
-        <div className="flex bg-blue-300 w-full h-auto rounded-lg px-4">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-sky-400 h-10">
-                <th className="w-1/4 h-10 text-left font-normal">개최순서</th>
-                <th className="w-2/4 h-10 text-left font-normal">체급명</th>
-                <th className="w-1/4 h-10"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
-              <tr className="h-10">
-                <td className="w-1/4 h-10">1</td>
-                <td className="w-2/4 h-10">학생부</td>
-                <td className="w-1/4 h-10"></td>
-              </tr>
+              {categorysList?.length <= 0 ? (
+                <>
+                  <tr className="h-auto">
+                    <td colSpan={3} className="w-full text-center">
+                      종목데이터 내용이 없습니다. 다시 불러오기를 누르거나
+                      종목을 추가하세요
+                    </td>
+                  </tr>
+                </>
+              ) : (
+                categorysList.map((category, cIdx) => {
+                  const {
+                    contestCategoryId: categoryId,
+                    contestCategoryIndex: categoryIndex,
+                    contestCategoryTitle: categoryTitle,
+                  } = category;
+
+                  const matchedGrades = gradesList
+                    .filter((grade) => grade.refCategoryId === categoryId)
+                    .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex);
+                  return (
+                    <>
+                      <tr className="h-auto">
+                        <td className="w-1/4 h-14">{categoryIndex}</td>
+                        <td className="w-2/4 h-14">{categoryTitle}</td>
+                        <td className="w-1/4 h-14">
+                          <div className="flex w-full justify-start items-center h-14 gap-x-2">
+                            <button
+                              onClick={() =>
+                                setIsOpen({
+                                  ...isOpen,
+                                  grade: true,
+                                  title: "체급추가",
+                                  info: { ...category },
+                                })
+                              }
+                            >
+                              <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                체급추가
+                              </span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                setIsOpen({
+                                  ...isOpen,
+                                  category: true,
+                                  title: "종목수정",
+                                  categoryId,
+                                  info: { ...category },
+                                })
+                              }
+                            >
+                              <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                <TbEdit className=" text-xl text-gray-100" />
+                              </span>
+                            </button>
+                            <button>
+                              <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                <HiOutlineTrash className=" text-xl text-gray-100" />
+                              </span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {matchedGrades?.length > 0 && (
+                        <tr className="h-auto">
+                          <td colSpan={3} className=" w-full h-10">
+                            {matchedGrades.map((match, mIdx) => (
+                              <div className="flex w-full bg-blue-100 rounded-lg justify-start items-center p-2 gap-3">
+                                <div className="flex items-center justify-start bg-white px-2 py-1 rounded-lg gap-2 h-auto">
+                                  <span className="mr-5"></span>
+                                  <button className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center">
+                                    <TbEdit className=" text-xl text-gray-500" />
+                                  </button>
+                                  <buton className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center">
+                                    <HiOutlineTrash className=" text-xl text-gray-500" />
+                                  </buton>
+                                </div>
+                              </div>
+                            ))}
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

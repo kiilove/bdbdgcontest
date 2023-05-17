@@ -1,7 +1,7 @@
 import React from "react";
 import { TbWeight } from "react-icons/tb";
 
-const GradeInfoModal = ({ setClose }) => {
+const GradeInfoModal = ({ setClose, propState, setState }) => {
   return (
     <div className="flex w-full flex-col gap-y-2 h-auto">
       <div className="flex w-full h-14">
@@ -13,7 +13,7 @@ const GradeInfoModal = ({ setClose }) => {
             className="font-sans text-lg font-semibold"
             style={{ letterSpacing: "2px" }}
           >
-            체급관리
+            {propState.title}
           </h1>
         </div>
       </div>
@@ -29,7 +29,9 @@ const GradeInfoModal = ({ setClose }) => {
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
-              <div className="flex w-full justify-start items-center"></div>
+              <div className="flex w-full h-full justify-start items-center text-gray-400">
+                {propState?.info.contestCategoryTitle}
+              </div>
             </div>
           </div>
           <div className="flex w-full justify-start items-center ">
@@ -68,6 +70,25 @@ const GradeInfoModal = ({ setClose }) => {
                   name="contestCategoryTitle"
                   className="h-12 outline-none"
                 />
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                성별구분
+              </h3>
+            </div>
+            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center h-full">
+                <select name="contestGradeGender" className="w-full h-full">
+                  <option>남</option>
+                  <option>여</option>
+                  <option>무관</option>
+                </select>
               </div>
             </div>
           </div>

@@ -1,13 +1,152 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { BiCategory } from "react-icons/bi";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
+import { v4 as uuidv4 } from "uuid";
+import {
+  useFirestoreGetDocument,
+  useFirestoreUpdateData,
+} from "../hooks/useFirestores";
 
-const CategoryInfoModal = ({ setClose }) => {
+const initCategoryInfo = {
+  contestCategoryId: "",
+  contestCategoryIndex: "",
+  contestCategoryTitle: "",
+  contestCategorySection: "",
+  contestCategoryPriceType: "기본참가비",
+  contestCategroyIsOverall: "off",
+  contestCategoryType: "",
+};
+
+const CategoryInfoModal = ({ setClose, propState, setState }) => {
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
+  const [categoryInfo, setCategoryInfo] = useState({ ...initCategoryInfo });
+  const [categorysList, setCategorysList] = useState({});
+  const [categorysArray, setCategorysArray] = useState([]);
 
-  console.log(currentContest);
+  const categoryInfoRef = useRef({});
+
+  const contestCategoryDocument = useFirestoreGetDocument(
+    "contest_categorys_list"
+  );
+  const contestCategoryUpdate = useFirestoreUpdateData(
+    "contest_categorys_list"
+  );
+
+  const getCategorys = async () => {
+    const returnCategorys = await contestCategoryDocument.getDocument(
+      currentContest.contests.contestCategorysListId
+    );
+    setCategorysList({ ...returnCategorys });
+    setCategorysArray([...returnCategorys.categorys]);
+  };
+
+  const handleUpdateCategorys = async () => {
+    const updatedCategoryInfo = Object.keys(categoryInfoRef.current).reduce(
+      (updatedInfo, key) => {
+        const currentElement = categoryInfoRef.current[key];
+        updatedInfo[key] =
+          currentElement.type === "checkbox"
+            ? currentElement.checked
+            : currentElement.value;
+        return updatedInfo;
+      },
+      {}
+    );
+
+    setCategoryInfo((prevInfo) => ({
+      ...prevInfo,
+      ...updatedCategoryInfo,
+    }));
+
+    const dummy = [...categorysArray];
+
+    switch (propState.title) {
+      case "종목추가":
+        dummy.push({
+          ...updatedCategoryInfo,
+          contestCategoryId: uuidv4(),
+          contestCategoryIndex: parseInt(
+            updatedCategoryInfo.contestCategoryIndex
+          ),
+        });
+
+        handleSaveCategorys(dummy);
+        setCategorysArray(dummy);
+        setState(dummy);
+        setCategoryInfo({ ...initCategoryInfo });
+        break;
+
+      case "종목수정":
+        const findCategoryIndex = dummy.findIndex(
+          (category) => category.contestCategoryId === propState.categoryId
+        );
+
+        if (findCategoryIndex !== -1) {
+          dummy.splice(findCategoryIndex, 1, {
+            ...dummy[findCategoryIndex],
+            ...updatedCategoryInfo,
+            contestCategoryIndex: parseInt(
+              updatedCategoryInfo.contestCategoryIndex
+            ),
+          });
+          handleSaveCategorys(dummy);
+          setCategorysArray(dummy);
+          setState(dummy);
+        }
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  const handleSaveCategorys = async (data) => {
+    try {
+      await contestCategoryUpdate.updateData(
+        currentContest.contests.contestCategorysListId,
+        { ...categorysList, categorys: [...data] }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleInputValues = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "contestCategoryIsOverall") {
+      setCategoryInfo({
+        ...categoryInfo,
+        contestCategoryIsOverall: e.target.checked,
+      });
+    } else if (name === "contestCategoryIndex") {
+      setCategoryInfo({
+        ...categoryInfo,
+        contestCategoryIndex: parseInt(value),
+      });
+    } else {
+      setCategoryInfo({
+        ...categoryInfo,
+        [name]: value,
+      });
+    }
+
+    console.log(categoryInfo);
+  };
+
+  useEffect(() => {
+    getCategorys();
+    if (propState.title === "종목수정") {
+      setCategoryInfo({ ...propState.info });
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log(propState);
+  }, [propState]);
+
   return (
     <div className="flex w-full flex-col gap-y-2 h-auto">
       <div className="flex w-full h-14">
@@ -19,7 +158,7 @@ const CategoryInfoModal = ({ setClose }) => {
             className="font-sans text-lg font-semibold"
             style={{ letterSpacing: "2px" }}
           >
-            종목관리
+            {propState?.title || ""}
           </h1>
         </div>
       </div>
@@ -38,6 +177,11 @@ const CategoryInfoModal = ({ setClose }) => {
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
+                  value={categoryInfo.contestCategoryIndex}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryIndex = ref)
+                  }
                   name="contestCategoryIndex"
                   className="h-12 outline-none"
                   placeholder="개최순서(숫자)"
@@ -59,8 +203,37 @@ const CategoryInfoModal = ({ setClose }) => {
                 <input
                   type="text"
                   name="contestCategorySection"
+                  value={categoryInfo.contestCategorySection}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategorySection = ref)
+                  }
                   className="h-12 outline-none"
                   placeholder="예)1부, 2부"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                종목분류
+              </h3>
+            </div>
+            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <input
+                  type="text"
+                  name="contestCategoryType"
+                  value={categoryInfo.contestCategoryType}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryType = ref)
+                  }
+                  className="h-12 outline-none"
                 />
               </div>
             </div>
@@ -79,6 +252,11 @@ const CategoryInfoModal = ({ setClose }) => {
                 <input
                   type="text"
                   name="contestCategoryTitle"
+                  value={categoryInfo.contestCategoryTitle}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryTitle = ref)
+                  }
                   className="h-12 outline-none"
                 />
               </div>
@@ -95,7 +273,16 @@ const CategoryInfoModal = ({ setClose }) => {
             </div>
             <div className="h-12 w-3/4 rounded-lg ">
               <div className="flex w-full justify-start items-center h-12">
-                <input type="checkbox" className="w-6" />
+                <input
+                  type="checkbox"
+                  name="contestCategoryIsOverall"
+                  checked={categoryInfo.contestCategoryIsOverall}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryIsOverall = ref)
+                  }
+                  onChange={(e) => handleInputValues(e)}
+                  className="w-6"
+                />
               </div>
             </div>
           </div>
@@ -110,7 +297,15 @@ const CategoryInfoModal = ({ setClose }) => {
             </div>
             <div className="h-12 w-3/4 rounded-lg ">
               <div className="flex w-full justify-start items-center h-12">
-                <select className="w-full h-full">
+                <select
+                  name="contestCategoryPriceType"
+                  onChange={(e) => handleInputValues(e)}
+                  value={categoryInfo.contestCategoryPriceType}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryPriceType = ref)
+                  }
+                  className="w-full h-full"
+                >
                   <option>기본참가비</option>
                   <option>타입1</option>
                   <option>타입2</option>
@@ -121,7 +316,10 @@ const CategoryInfoModal = ({ setClose }) => {
         </div>
       </div>
       <div className="flex w-full gap-x-2 h-auto">
-        <button className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg">
+        <button
+          className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
+          onClick={() => handleUpdateCategorys()}
+        >
           저장
         </button>
         <button
