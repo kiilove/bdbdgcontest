@@ -1,7 +1,144 @@
-import React from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { TbWeight } from "react-icons/tb";
+import {
+  useFirestoreGetDocument,
+  useFirestoreUpdateData,
+} from "../hooks/useFirestores";
+import { CurrentContestContext } from "../contexts/CurrentContestContext";
+
+const initGradeInfo = {
+  contestGradeId: "",
+  contestGradeIndex: "",
+  contestGradeTitle: "",
+};
 
 const GradeInfoModal = ({ setClose, propState, setState }) => {
+  const { currentContest, setCurrentContest } = useContext(
+    CurrentContestContext
+  );
+  const [gradesList, setGradesList] = useState({});
+  const [gradesArray, setGradesArray] = useState([]);
+  const [gradeInfo, setGradeInfo] = useState({
+    ...initGradeInfo,
+    contestGradeIndex:
+      propState.count === undefined ? 1 : parseInt(propState.count) + 1,
+  });
+
+  const gradeInfoRef = useRef({});
+
+  const contestGradeDocument = useFirestoreGetDocument("contest_grades_list");
+  const contestGradeUpdate = useFirestoreUpdateData("contest_grades_list");
+
+  const getGrades = async () => {
+    const returnGrades = await contestGradeDocument.getDocument(
+      currentContest.contests.contestGradesListId
+    );
+    setGradesList({ ...returnGrades });
+    setGradesArray([...returnGrades.grades]);
+  };
+
+  const handleUpdateGrades = async () => {
+    if (
+      gradeInfoRef.current.contestGradeIndex.value === "" ||
+      gradeInfoRef.current.contestGradeTitle.value === ""
+    ) {
+      return;
+    }
+
+    const updatedGradeInfo = Object.keys(gradeInfoRef.current).reduce(
+      (updatedInfo, key) => {
+        const currentElement = gradeInfoRef.current[key];
+        updatedInfo[key] =
+          currentElement.type === "checkbox"
+            ? currentElement.checked
+            : currentElement.value;
+        return updatedInfo;
+      },
+      {}
+    );
+
+    setGradeInfo((prevInfo) => ({
+      ...prevInfo,
+      ...updatedGradeInfo,
+    }));
+
+    const dummy = [...gradesArray];
+
+    switch (propState.title) {
+      case "체급추가":
+        dummy.push({
+          ...updatedGradeInfo,
+          contestGradeId: uuidv4(),
+          contestGradeIndex: parseInt(updatedGradeInfo.contestGradeIndex),
+          refCategoryId: propState.categoryId,
+        });
+
+        await handleSaveGrades(dummy);
+        setGradesArray(dummy);
+        setState(dummy);
+        setGradeInfo({
+          ...initGradeInfo,
+          contestGradeIndex: parseInt(updatedGradeInfo.contestGradeIndex) + 1,
+        });
+        gradeInfoRef.current.contestGradeTitle.focus();
+        break;
+      case "체급수정":
+        console.log(propState.gradeId);
+        const findGradeIndex = dummy.findIndex(
+          (grade) => grade.contestGradeId === propState.gradeId
+        );
+
+        if (findGradeIndex !== -1) {
+          dummy.splice(findGradeIndex, 1, {
+            ...dummy[findGradeIndex],
+            ...updatedGradeInfo,
+            contestGradeIndex: parseInt(updatedGradeInfo.contestGradeIndex),
+          });
+          await handleSaveGrades(dummy);
+          setGradesArray(dummy);
+          setState(dummy);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleSaveGrades = async (data) => {
+    try {
+      await contestGradeUpdate.updateData(
+        currentContest.contests.contestGradesListId,
+        { ...gradesList, grades: [...data] }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const handleInputValues = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "contestGradeIndex") {
+      setGradeInfo({
+        ...gradeInfo,
+        contestGradeIndex: parseInt(value),
+      });
+    } else {
+      setGradeInfo({
+        ...gradeInfo,
+        [name]: value,
+      });
+    }
+  };
+
+  useEffect(() => {
+    getGrades();
+    if (propState.title === "체급수정") {
+      setGradeInfo({ ...propState.info });
+    }
+    gradeInfoRef.current.contestGradeTitle.focus();
+    console.log(propState);
+  }, []);
   return (
     <div className="flex w-full flex-col gap-y-2 h-auto">
       <div className="flex w-full h-14">
@@ -49,6 +186,9 @@ const GradeInfoModal = ({ setClose, propState, setState }) => {
                   type="text"
                   name="contestGradeIndex"
                   className="h-12 outline-none"
+                  value={gradeInfo.contestGradeIndex}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) => (gradeInfoRef.current.contestGradeIndex = ref)}
                   placeholder="개최순서(숫자)"
                 />
               </div>
@@ -67,35 +207,22 @@ const GradeInfoModal = ({ setClose, propState, setState }) => {
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  name="contestCategoryTitle"
+                  name="contestGradeTitle"
+                  onChange={(e) => handleInputValues(e)}
+                  value={gradeInfo.contestGradeTitle}
+                  ref={(ref) => (gradeInfoRef.current.contestGradeTitle = ref)}
                   className="h-12 outline-none"
                 />
-              </div>
-            </div>
-          </div>
-          <div className="flex w-full justify-start items-center ">
-            <div className="flex w-1/4 justify-end mr-2">
-              <h3
-                className="font-sans font-semibold"
-                style={{ letterSpacing: "2px" }}
-              >
-                성별구분
-              </h3>
-            </div>
-            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
-              <div className="flex w-full justify-start items-center h-full">
-                <select name="contestGradeGender" className="w-full h-full">
-                  <option>남</option>
-                  <option>여</option>
-                  <option>무관</option>
-                </select>
               </div>
             </div>
           </div>
         </div>
       </div>
       <div className="flex w-full gap-x-2 h-auto">
-        <button className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg">
+        <button
+          className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
+          onClick={() => handleUpdateGrades()}
+        >
           저장
         </button>
         <button

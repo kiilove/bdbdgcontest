@@ -16,7 +16,6 @@ import { TbEdit } from "react-icons/tb";
 import {
   useFirestoreGetDocument,
   useFirestoreQuery,
-  useFirestoreUpdateData,
 } from "../hooks/useFirestores";
 import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
@@ -24,15 +23,13 @@ import { CurrentContestContext } from "../contexts/CurrentContestContext";
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
   const [currentTab, setCurrentTab] = useState(0);
-  const [categorysArray, setCategorysArray] = useState([]);
-  const [categorysList, setCategorysList] = useState({});
-  const [gradesArray, setGradesArray] = useState([]);
+  const [categorysList, setCategorysList] = useState([]);
+  const [gradesList, setGradesList] = useState([]);
   const [currentCategoryId, setCurrentCategoryId] = useState("");
   const [currentSection, setSection] = useState([{ id: 0, title: "전체" }]);
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
-
   const [isOpen, setIsOpen] = useState({
     category: false,
     grade: false,
@@ -42,10 +39,6 @@ const ContestTimetable = () => {
   });
 
   const fetchCategoryDocument = useFirestoreGetDocument(
-    "contest_categorys_list"
-  );
-
-  const contestCategoryUpdate = useFirestoreUpdateData(
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
@@ -79,11 +72,10 @@ const ContestTimetable = () => {
     }
     console.log(result);
 
-    const dummy = [...categorysArray];
+    const dummy = [...categorysList];
     const [reorderCategory] = dummy.splice(source.index, 1);
     dummy.splice(destination.index, 0, reorderCategory);
-    handleSaveCategorys(handleReOrderCategory(dummy));
-    setCategorysArray(handleReOrderCategory(dummy));
+    setCategorysList(handleReOrderCategory(dummy));
   };
 
   const onDragGradeEnd = (result) => {
@@ -93,13 +85,15 @@ const ContestTimetable = () => {
       return;
     }
 
-    const dummy = gradesArray.filter(
+    const dummy = gradesList.filter(
       (grade) => grade.refCategoryId === currentCategoryId
     );
     const [reorderGrade] = dummy.splice(source.index, 1);
     dummy.splice(destination.index, 0, reorderGrade);
-
-    setGradesArray(handleReOrderGrade(dummy));
+    console.log(dummy);
+    handleReOrderGrade(dummy);
+    // console.log(handleReOrderGrade(dummy));
+    setGradesList(handleReOrderGrade(dummy));
   };
 
   const handleReOrderCategory = (data) => {
@@ -112,20 +106,9 @@ const ContestTimetable = () => {
     return newOrder;
   };
 
-  const handleSaveCategorys = async (data) => {
-    try {
-      await contestCategoryUpdate.updateData(
-        currentContest.contests.contestCategorysListId,
-        { ...categorysList, categorys: [...data] }
-      );
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const handleReOrderGrade = (data) => {
     const prevOrder = [...data];
-    const dummy = [...gradesArray];
+    const dummy = [...gradesList];
     let newOrder = [];
     prevOrder.map((item, idx) =>
       newOrder.push({ ...item, contestGradeIndex: idx + 1 })
@@ -165,18 +148,17 @@ const ContestTimetable = () => {
       const returnCategorys = await fetchCategoryDocument.getDocument(
         currentContest.contests.contestCategorysListId
       );
-      setCategorysList({ ...returnCategorys });
-      setCategorysArray([
+      console.log(returnCategorys);
+      setCategorysList([
         ...returnCategorys?.categorys.sort(
           (a, b) => a.contestCategoryIndex - b.contestCategoryIndex
         ),
       ]);
-
       const returnGrades = await fetchGradeDocument.getDocument(
         currentContest.contests.contestGradesListId
       );
-
-      setGradesArray([...returnGrades?.grades]);
+      console.log("grades", returnGrades);
+      setGradesList([...returnGrades?.grades]);
     }
   };
 
@@ -197,7 +179,7 @@ const ContestTimetable = () => {
           <CategoryInfoModal
             setClose={handleCategoryClose}
             propState={isOpen}
-            setState={setCategorysArray}
+            setState={setCategorysList}
           />
         </div>
       </Modal>
@@ -211,15 +193,15 @@ const ContestTimetable = () => {
           <GradeInfoModal
             setClose={handleGradeClose}
             propState={isOpen}
-            setState={setGradesArray}
+            setState={setGradesList}
           />
         </div>
       </Modal>
       <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
-        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-2 gap-y-2">
-          <div className="flex w-full justify-start items-center ">
+        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:categoryIdnter gay-y-2 flex-col p-2 gap-y-2">
+          <div className="flex w-full justify-start categoryIdnter ">
             <div className="h-12 w-full rounded-lg px-3 bg-white">
-              <div className="flex w-full justify-start items-center">
+              <div className="flex w-full justify-start categoryIdnter">
                 <h1 className="text-2xl text-gray-600 mr-3">
                   <MdOutlineSearch />
                 </h1>
@@ -232,7 +214,7 @@ const ContestTimetable = () => {
               </div>
             </div>
           </div>
-          <div className="flex w-full justify-start items-center">
+          <div className="flex w-full justify-start categoryIdnter">
             <button
               className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
               onClick={() =>
@@ -240,7 +222,7 @@ const ContestTimetable = () => {
                   ...isOpen,
                   category: true,
                   title: "종목추가",
-                  count: categorysArray.length,
+                  count: categorysList.length,
                 })
               }
             >
@@ -249,9 +231,18 @@ const ContestTimetable = () => {
           </div>
         </div>
         <div className="flex bg-gray-100 w-full h-auto rounded-lg p-2">
-          <div className="w-full rounded-lg flex flex-col gap-y-2">
+          <div className="w-full bg-blue-100 rounded-lg flex flex-col p-2 gap-y-2">
+            <div className="w-full bg-blue-300 rounded-lg flex justify-start categoryIdnter px-2">
+              <div className="w-1/4 h-10 text-left font-normal flex justify-start categoryIdnter">
+                개최순서
+              </div>
+              <div className="w-2/4 h-10 text-left font-normal flex justify-start categoryIdnter">
+                종목명
+              </div>
+              <div className="w-1/4 h-10"></div>
+            </div>
             <div className="flex flex-col gap-y-2 w-full">
-              {categorysArray?.length <= 0 ? (
+              {categorysList?.length <= 0 ? (
                 <div className="h-auto">
                   <div colSpan={3} className="w-full text-center">
                     종목데이터 내용이 없습니다. 다시 불러오기를 누르거나 종목을
@@ -264,10 +255,10 @@ const ContestTimetable = () => {
                     <Droppable droppableId="dropCategory">
                       {(p, s) => (
                         <div
-                          className="flex w-full flex-col bg-blue-100 rounded-lg gap-y-2"
+                          className="flex w-full flex-col bg-blue-200 rounded-lg"
                           ref={p.innerRef}
                         >
-                          {categorysArray
+                          {categorysList
                             .sort(
                               (a, b) =>
                                 a.contestCategoryIndex - b.contestCategoryIndex
@@ -279,7 +270,7 @@ const ContestTimetable = () => {
                                 contestCategoryTitle: categoryTitle,
                               } = category;
 
-                              const matchedGrades = gradesArray
+                              const matchedGrades = gradesList
                                 .filter(
                                   (grade) => grade.refCategoryId === categoryId
                                 )
@@ -296,11 +287,7 @@ const ContestTimetable = () => {
                                 >
                                   {(provided, snapshot) => (
                                     <div
-                                      className={`${
-                                        snapshot.isDragging
-                                          ? "flex w-full flex-col bg-blue-600 rounded-lg"
-                                          : "flex w-full flex-col bg-blue-300 rounded-lg"
-                                      }`}
+                                      className="flex w-full flex-col"
                                       key={categoryId + cIdx}
                                       id={categoryId + "div"}
                                       ref={provided.innerRef}
@@ -327,7 +314,7 @@ const ContestTimetable = () => {
                                                     title: "종목수정",
                                                     categoryId,
                                                     info: { ...category },
-                                                    count: gradesArray.length,
+                                                    count: gradesList.length,
                                                   })
                                                 }
                                               >
@@ -381,42 +368,64 @@ const ContestTimetable = () => {
                                                           gradeIndex,
                                                       } = match;
                                                       return (
-                                                        <div
-                                                          className="flex items-center justify-start bg-white px-2 py-1 rounded-lg gap-2 h-auto w-full lg:w-auto"
-                                                          key={gradeId + mIdx}
-                                                          id={gradeId + "grade"}
+                                                        <Draggable
+                                                          key={gradeId}
+                                                          draggableId={gradeId}
+                                                          id={gradeId}
+                                                          index={mIdx}
                                                         >
-                                                          <div className="flex w-full">
-                                                            <span className="mr-5">
-                                                              {gradeTitle}
-                                                            </span>
-                                                          </div>
-                                                          <div className="flex w-full justify-end gap-x-2">
-                                                            <button
-                                                              className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center"
+                                                          {(dp, ds) => (
+                                                            <div
+                                                              className="flex items-center justify-start bg-white px-2 py-1 rounded-lg gap-2 h-auto w-full lg:w-auto"
+                                                              key={
+                                                                gradeId + mIdx
+                                                              }
+                                                              id={
+                                                                gradeId +
+                                                                "grade"
+                                                              }
+                                                              ref={dp.innerRef}
+                                                              {...dp.dragHandleProps}
+                                                              {...dp.draggableProps}
                                                               onClick={() =>
-                                                                setIsOpen({
-                                                                  ...isOpen,
-                                                                  grade: true,
-                                                                  title:
-                                                                    "체급수정",
-                                                                  gradeId:
-                                                                    gradeId,
-                                                                  info: {
-                                                                    ...match,
-                                                                  },
-                                                                  count:
-                                                                    gradesArray.length,
-                                                                })
+                                                                setCurrentCategoryId(
+                                                                  categoryId
+                                                                )
                                                               }
                                                             >
-                                                              <TbEdit className=" text-xl text-gray-500" />
-                                                            </button>
-                                                            <buton className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center">
-                                                              <HiOutlineTrash className=" text-xl text-gray-500" />
-                                                            </buton>
-                                                          </div>
-                                                        </div>
+                                                              <div className="flex w-full">
+                                                                <span className="mr-5">
+                                                                  {gradeTitle}
+                                                                </span>
+                                                              </div>
+                                                              <div className="flex w-full justify-end gap-x-2">
+                                                                <button
+                                                                  className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center"
+                                                                  onClick={() =>
+                                                                    setIsOpen({
+                                                                      ...isOpen,
+                                                                      grade: true,
+                                                                      title:
+                                                                        "체급수정",
+                                                                      gradeId:
+                                                                        gradeId,
+                                                                      info: {
+                                                                        ...match,
+                                                                      },
+                                                                      count:
+                                                                        gradesList.length,
+                                                                    })
+                                                                  }
+                                                                >
+                                                                  <TbEdit className=" text-xl text-gray-500" />
+                                                                </button>
+                                                                <buton className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center">
+                                                                  <HiOutlineTrash className=" text-xl text-gray-500" />
+                                                                </buton>
+                                                              </div>
+                                                            </div>
+                                                          )}
+                                                        </Draggable>
                                                       );
                                                     }
                                                   )}
@@ -447,8 +456,8 @@ const ContestTimetable = () => {
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2">
       <div className="flex w-full h-14">
-        <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
-          <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
+        <div className="flex w-full bg-gray-100 justify-start categoryIdnter rounded-lg px-3">
+          <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center categoryIdnter rounded-2xl bg-blue-400 text-white mr-3">
             <MdTimeline />
           </span>
           <h1
@@ -460,7 +469,7 @@ const ContestTimetable = () => {
         </div>
       </div>
       <div className="flex w-full h-full ">
-        <div className="flex w-full justify-start items-center">
+        <div className="flex w-full justify-start categoryIdnter">
           <div className="flex w-full h-full justify-start categoryIdart px-3 pt-3 flex-col bg-gray-100 rounded-lg">
             <div className="flex w-full">
               {tabArray.map((tab, tIdx) => (
@@ -470,7 +479,7 @@ const ContestTimetable = () => {
                       currentTab === tab.id
                         ? " flex w-auto h-10 bg-white px-4"
                         : " flex w-auto h-10 bg-gray-100 px-4"
-                    }  h-14 rounded-t-lg justify-center items-center`}
+                    }  h-14 rounded-t-lg justify-center categoryIdnter`}
                     onClick={() => setCurrentTab(tIdx)}
                   >
                     <span>{tab.title}</span>

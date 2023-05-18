@@ -12,6 +12,7 @@ const initCategoryInfo = {
   contestCategoryIndex: "",
   contestCategoryTitle: "",
   contestCategorySection: "",
+  contestCategroyGender: "남",
   contestCategoryPriceType: "기본참가비",
   contestCategroyIsOverall: "off",
   contestCategoryType: "",
@@ -21,7 +22,10 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
-  const [categoryInfo, setCategoryInfo] = useState({ ...initCategoryInfo });
+  const [categoryInfo, setCategoryInfo] = useState({
+    ...initCategoryInfo,
+    contestCategoryIndex: parseInt(propState.count) + 1,
+  });
   const [categorysList, setCategorysList] = useState({});
   const [categorysArray, setCategorysArray] = useState([]);
 
@@ -43,6 +47,12 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
   };
 
   const handleUpdateCategorys = async () => {
+    if (
+      categoryInfoRef.current.contestCategoryIndex.value === "" ||
+      categoryInfoRef.current.contestCategoryTitle.value === ""
+    ) {
+      return;
+    }
     const updatedCategoryInfo = Object.keys(categoryInfoRef.current).reduce(
       (updatedInfo, key) => {
         const currentElement = categoryInfoRef.current[key];
@@ -72,10 +82,17 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
           ),
         });
 
-        handleSaveCategorys(dummy);
+        await handleSaveCategorys(dummy);
         setCategorysArray(dummy);
         setState(dummy);
-        setCategoryInfo({ ...initCategoryInfo });
+        setCategoryInfo({
+          ...initCategoryInfo,
+          contestCategoryIndex:
+            parseInt(updatedCategoryInfo.contestCategoryIndex) + 1,
+        });
+
+        categoryInfoRef.current.contestCategorySection.focus();
+
         break;
 
       case "종목수정":
@@ -91,7 +108,7 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
               updatedCategoryInfo.contestCategoryIndex
             ),
           });
-          handleSaveCategorys(dummy);
+          await handleSaveCategorys(dummy);
           setCategorysArray(dummy);
           setState(dummy);
         }
@@ -132,8 +149,6 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
         [name]: value,
       });
     }
-
-    console.log(categoryInfo);
   };
 
   useEffect(() => {
@@ -141,6 +156,7 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
     if (propState.title === "종목수정") {
       setCategoryInfo({ ...propState.info });
     }
+    categoryInfoRef.current.contestCategorySection.focus();
   }, []);
 
   useEffect(() => {
@@ -220,7 +236,7 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                종목분류
+                종목대분류
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
@@ -228,6 +244,7 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 <input
                   type="text"
                   name="contestCategoryType"
+                  placeholder="예)피지크, 보디빌딩"
                   value={categoryInfo.contestCategoryType}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) =>
@@ -268,21 +285,24 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                오버롤종목
+                참가가능성별
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg ">
               <div className="flex w-full justify-start items-center h-12">
-                <input
-                  type="checkbox"
-                  name="contestCategoryIsOverall"
-                  checked={categoryInfo.contestCategoryIsOverall}
-                  ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryIsOverall = ref)
-                  }
+                <select
+                  name="contestCategoryGender"
                   onChange={(e) => handleInputValues(e)}
-                  className="w-6"
-                />
+                  value={categoryInfo.contestCategoryGender}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryGender = ref)
+                  }
+                  className="w-full h-full"
+                >
+                  <option>남</option>
+                  <option>여</option>
+                  <option>무관</option>
+                </select>
               </div>
             </div>
           </div>
@@ -310,6 +330,30 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                   <option>타입1</option>
                   <option>타입2</option>
                 </select>
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                오버롤종목
+              </h3>
+            </div>
+            <div className="h-12 w-3/4 rounded-lg ">
+              <div className="flex w-full justify-start items-center h-12">
+                <input
+                  type="checkbox"
+                  name="contestCategoryIsOverall"
+                  checked={categoryInfo.contestCategoryIsOverall}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryIsOverall = ref)
+                  }
+                  onChange={(e) => handleInputValues(e)}
+                  className="w-6"
+                />
               </div>
             </div>
           </div>
