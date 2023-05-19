@@ -167,7 +167,7 @@ const GradeInfoModal = ({ setClose, propState, setState }) => {
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full h-full justify-start items-center text-gray-400">
-                {propState?.info.contestCategoryTitle}
+                {propState.categoryTitle}
               </div>
             </div>
           </div>

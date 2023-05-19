@@ -20,6 +20,7 @@ import {
 } from "../hooks/useFirestores";
 import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
+import PlayerInfoModal from "../modals/CategoryInfoModal";
 
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
@@ -147,6 +148,7 @@ const ContestTimetable = () => {
       title: "",
       info: {},
       categoryId: "",
+      categoryTitle: "",
       gradeId: "",
     }));
   };
@@ -155,7 +157,20 @@ const ContestTimetable = () => {
       ...prevState,
       grade: false,
       title: "",
+      info: {},
       categoryId: "",
+      categoryTitle: "",
+      gradeId: "",
+    }));
+  };
+  const handlePlayerClose = () => {
+    setIsOpen((prevState) => ({
+      ...prevState,
+      player: false,
+      title: "",
+      info: {},
+      categoryId: "",
+      categoryTitle: "",
       gradeId: "",
     }));
   };
@@ -348,6 +363,7 @@ const ContestTimetable = () => {
                                                     grade: true,
                                                     title: "체급추가",
                                                     categoryId,
+                                                    categoryTitle,
                                                     info: { ...category },
                                                   })
                                                 }
@@ -405,6 +421,7 @@ const ContestTimetable = () => {
                                                                   info: {
                                                                     ...match,
                                                                   },
+                                                                  categoryTitle,
                                                                   count:
                                                                     gradesArray.length,
                                                                 })
@@ -439,6 +456,58 @@ const ContestTimetable = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ContestPlayersReder = (
+    <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-t-lg rounded-b-lg p-2 gap-x-4">
+      <Modal open={isOpen.player} onClose={handlePlayerClose}>
+        <div
+          className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <PlayerInfoModal
+            setClose={handleCategoryClose}
+            propState={isOpen}
+            setState={setCategorysArray}
+          />
+        </div>
+      </Modal>
+      <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
+        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-2 gap-y-2">
+          <div className="flex w-full justify-start items-center ">
+            <div className="h-12 w-full rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <h1 className="text-2xl text-gray-600 mr-3">
+                  <MdOutlineSearch />
+                </h1>
+                <input
+                  type="text"
+                  name="contestCategoryTitle"
+                  className="h-12 outline-none"
+                  placeholder="선수검색"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center">
+            <button
+              className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
+              onClick={() =>
+                setIsOpen({
+                  ...isOpen,
+                  player: true,
+                  title: "선수추가",
+                })
+              }
+            >
+              선수추가
+            </button>
           </div>
         </div>
       </div>
@@ -479,6 +548,7 @@ const ContestTimetable = () => {
               ))}
             </div>
             {currentTab === 0 && ContestOrdersRender}
+            {currentTab === 1 && ContestPlayersReder}
           </div>
         </div>
       </div>
