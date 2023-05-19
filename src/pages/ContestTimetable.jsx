@@ -6,13 +6,14 @@ import {
   MdOutlineSearch,
   MdEditNote,
   MdOutlineScale,
+  MdOutlineBalance,
 } from "react-icons/md";
 import { Modal } from "@mui/material";
 import CategoryInfoModal from "../modals/CategoryInfoModal";
 import { useEffect } from "react";
 import GradeInfoModal from "../modals/GradeInfoModal.jsx";
 import { HiOutlineTrash } from "react-icons/hi";
-import { TbEdit } from "react-icons/tb";
+import { TbEdit, TbUsers } from "react-icons/tb";
 import {
   useFirestoreGetDocument,
   useFirestoreQuery,
@@ -429,9 +430,53 @@ const ContestTimetable = () => {
                                                             >
                                                               <TbEdit className=" text-xl text-gray-500" />
                                                             </button>
-                                                            <buton className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center">
+                                                            <button className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-pointer">
                                                               <HiOutlineTrash className=" text-xl text-gray-500" />
-                                                            </buton>
+                                                            </button>
+                                                            <div className="relative">
+                                                              <button
+                                                                className="bg-blue-300 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-zoom-in"
+                                                                onMouseEnter={(
+                                                                  e
+                                                                ) => {
+                                                                  const buttonElement =
+                                                                    e.currentTarget;
+                                                                  const buttonRect =
+                                                                    buttonElement.getBoundingClientRect();
+                                                                  const divElement =
+                                                                    buttonElement.nextElementSibling;
+                                                                  divElement.style.left = `${
+                                                                    buttonRect.left +
+                                                                    1
+                                                                  }px`;
+                                                                  divElement.classList.remove(
+                                                                    "hidden"
+                                                                  );
+                                                                }}
+                                                                onMouseLeave={(
+                                                                  e
+                                                                ) => {
+                                                                  const divElement =
+                                                                    e
+                                                                      .currentTarget
+                                                                      .nextElementSibling;
+                                                                  divElement.classList.add(
+                                                                    "hidden"
+                                                                  );
+                                                                }}
+                                                              >
+                                                                <TbUsers className="text-xl text-gray-100" />
+                                                              </button>
+                                                              <div className="flex-col rounded-lg hidden absolute top-0 bg-white shadow w-52 h-52 z-10">
+                                                                <h1>
+                                                                  선수명단
+                                                                </h1>
+                                                              </div>
+                                                            </div>
+
+                                                            <button className="bg-green-400 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-zoom-in">
+                                                              <MdOutlineBalance className=" text-xl text-gray-100" />
+                                                            </button>
                                                           </div>
                                                         </div>
                                                       );
