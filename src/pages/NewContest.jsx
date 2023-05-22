@@ -22,7 +22,7 @@ const NewContest = () => {
   );
   const contestGradesListHook = useFirestoreAddData("contest_grades_list");
   const contestEntrysListHook = useFirestoreAddData("contest_entrys_list");
-  const contestInvoicesListHook = useFirestoreAddData("contest_invoices_list");
+  const invoicesPoolHook = useFirestoreAddData("invoices_pool");
   const { setCurrentContest } = useContext(CurrentContestContext);
   const navigate = useNavigate();
 
@@ -38,7 +38,7 @@ const NewContest = () => {
         contestCategorysListData,
         contestGradesListData,
         contestEntrysListData,
-        contestInvoicesListData,
+        invoicesPoolData,
       ] = await Promise.all([
         contestNoticeHook
           .addData({
@@ -86,7 +86,7 @@ const NewContest = () => {
             console.error("Error adding contest invoices list:", error);
             return null;
           }),
-        contestInvoicesListHook
+        invoicesPoolHook
           .addData({
             refContestId: addedContest.id,
             invoices: [],
@@ -104,7 +104,7 @@ const NewContest = () => {
         contestCategorysListData &&
         contestGradesListData &&
         contestEntrysListData &&
-        contestInvoicesListData
+        invoicesPoolData
       ) {
         await updateContest.updateData(addedContest.id, {
           contestNoticeId: contestNoticeData.id,
@@ -112,7 +112,7 @@ const NewContest = () => {
           contestCategorysListId: contestCategorysListData.id,
           contestGradesListId: contestGradesListData.id,
           contestEntrysListId: contestEntrysListData.id,
-          contestInvoicesListId: contestInvoicesListData.id,
+          invoicesPoolId: invoicesPoolData.id,
         });
 
         setCurrentContest({
@@ -122,7 +122,7 @@ const NewContest = () => {
           contestCategorysListId: contestCategorysListData.id,
           contestGradesListId: contestGradesListData.id,
           contestEntrysListId: contestEntrysListData.id,
-          contestInvociesListId: contestInvoicesListData.id,
+          invoicesPoolId: invoicesPoolData.id,
         });
 
         // Save the contest data to local storage
@@ -135,7 +135,7 @@ const NewContest = () => {
             contestCategorysListId: contestCategorysListData.id,
             contestGradesListId: contestGradesListData.id,
             contestEntrysListId: contestEntrysListData.id,
-            contestInvociesListId: contestInvoicesListData.id,
+            invoicesPoolId: invoicesPoolData.id,
           })
         );
       } else {
