@@ -314,8 +314,8 @@ const ContestTimetable = () => {
                                     <div
                                       className={`${
                                         snapshot.isDragging
-                                          ? "flex w-full flex-col bg-blue-600 rounded-lg"
-                                          : "flex w-full flex-col bg-blue-300 rounded-lg"
+                                          ? "flex w-full flex-col bg-blue-400 rounded-lg"
+                                          : "flex w-full flex-col bg-blue-200 rounded-lg"
                                       }`}
                                       key={categoryId + cIdx}
                                       id={categoryId + "div"}
@@ -433,39 +433,9 @@ const ContestTimetable = () => {
                                                             <button className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-pointer">
                                                               <HiOutlineTrash className=" text-xl text-gray-500" />
                                                             </button>
-                                                            <div className="relative">
-                                                              <button
-                                                                className="bg-blue-300 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-zoom-in"
-                                                                onMouseEnter={(
-                                                                  e
-                                                                ) => {
-                                                                  const buttonElement =
-                                                                    e.currentTarget;
-                                                                  const buttonRect =
-                                                                    buttonElement.getBoundingClientRect();
-                                                                  const divElement =
-                                                                    buttonElement.nextElementSibling;
-                                                                  divElement.style.left = `${
-                                                                    buttonRect.left +
-                                                                    1
-                                                                  }px`;
-                                                                  divElement.classList.remove(
-                                                                    "hidden"
-                                                                  );
-                                                                }}
-                                                                onMouseLeave={(
-                                                                  e
-                                                                ) => {
-                                                                  const divElement =
-                                                                    e
-                                                                      .currentTarget
-                                                                      .nextElementSibling;
-                                                                  divElement.classList.add(
-                                                                    "hidden"
-                                                                  );
-                                                                }}
-                                                              >
-                                                                <TbUsers className="text-xl text-gray-100" />
+                                                            <div className="flex">
+                                                              <button className="bg-blue-200 w-10 h-10 rounded-lg flex justify-center items-center ">
+                                                                <TbUsers className="text-xl text-gray-500" />
                                                               </button>
                                                               <div className="flex-col rounded-lg hidden absolute top-0 bg-white shadow w-52 h-52 z-10">
                                                                 <h1>
@@ -474,8 +444,8 @@ const ContestTimetable = () => {
                                                               </div>
                                                             </div>
 
-                                                            <button className="bg-green-400 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-zoom-in">
-                                                              <MdOutlineBalance className=" text-xl text-gray-100" />
+                                                            <button className="bg-green-100 w-10 h-10 rounded-lg flex justify-center items-center">
+                                                              <MdOutlineBalance className=" text-xl text-gray-500" />
                                                             </button>
                                                           </div>
                                                         </div>
@@ -487,6 +457,30 @@ const ContestTimetable = () => {
                                             )}
                                           </Droppable>
                                         </DragDropContext>
+                                      </div>
+                                      <div className="flex w-full px-2 pb-2 h-auto flex-wrap flex-col gap-y-1">
+                                        <div className="flex bg-gray-100 w-full gap-2 px-4 py-2 rounded-lg h-auto justify-start items-center ">
+                                          <span className="font-sans font-semibold w-4 h-4 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-1">
+                                            <TbUsers className="text-sm" />
+                                          </span>
+                                          <h1>참가신청명단</h1>
+                                        </div>
+                                        <div className="flex bg-gray-100 w-full gap-2 p-2 rounded-lg h-auto justify-start items-center ">
+                                          <div className="flex w-full bg-white rounded-lg p-2">
+                                            <div className="flex w-1/6">
+                                              순번
+                                            </div>
+                                            <div className="flex w-2/6">
+                                              이름
+                                            </div>
+                                            <div className="flex w-3/6">
+                                              연락처
+                                            </div>
+                                            <div className="hidden lg:flex lg:w-3/6">
+                                              소속
+                                            </div>
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   )}
