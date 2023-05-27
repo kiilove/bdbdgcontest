@@ -201,6 +201,14 @@ const ContestInfo = () => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
+                계좌정보
+              </h3>
+            </div>
+            <div className="flex w-full h-12 justify-end items-center">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
                 참가비
               </h3>
             </div>
@@ -242,7 +250,7 @@ const ContestInfo = () => {
             <div className="flex lg:hidden px-3">
               <h3 className="font-sans font-semibold">대회포스터</h3>
             </div>
-            <div className="flex w-full h-auto justify-start items-center rounded-lg mb-3 lg:mb-0 gap-x-2">
+            <div className="flex w-full h-auto lg:h-32 justify-start items-center rounded-lg mb-3 lg:mb-0 gap-x-2">
               <div className="flex justify-start items-center">
                 {currentContestInfo?.contestPoster && (
                   <img
@@ -346,6 +354,38 @@ const ContestInfo = () => {
               />
             </div>
             <div className="flex lg:hidden px-3">
+              <h3 className="font-sans font-semibold">계좌정보</h3>
+            </div>
+            <div className="flex flex-col w-full h-36 lg:h-12 lg:flex-row justify-start items-center border-b-gray-300 border border-b-2 border-r-2 rounded-lg px-3 mb-3 lg:mb-0">
+              <input
+                type="text"
+                name="contestBankName"
+                id="contestBankName"
+                value={currentContestInfo?.contestBankName}
+                onChange={(e) => handleContestInfo(e)}
+                className="h-10 w-full outline-none mb-1"
+                placeholder="은행명"
+              />
+              <input
+                type="text"
+                name="contestAccountNumber"
+                id="contestAccountNumber"
+                value={currentContestInfo?.contestAccountNumber}
+                onChange={(e) => handleContestInfo(e)}
+                className="h-10 w-full outline-none mb-1"
+                placeholder="계좌번호"
+              />
+              <input
+                type="text"
+                name="contestAccountOwner"
+                id="contestAccountOwner"
+                value={currentContestInfo?.contestAccountOwner}
+                onChange={(e) => handleContestInfo(e)}
+                className="h-10 w-full outline-none mb-1"
+                placeholder="예금주"
+              />
+            </div>
+            <div className="flex lg:hidden px-3">
               <h3 className="font-sans font-semibold">기본참가비</h3>
             </div>
             <div className="flex w-full h-12 justify-start items-center border-b-gray-300 border border-b-2 border-r-2 rounded-lg px-3 mb-3 lg:mb-0">
@@ -353,7 +393,7 @@ const ContestInfo = () => {
                 type="text"
                 name="contestPriceBasic"
                 id="contestPriceBasic"
-                value={currentContestInfo?.contestPriceBasic.toLocaleString()}
+                value={currentContestInfo.contestPriceBasic?.toLocaleString()}
                 onChange={(e) => handleContestInfo(e)}
                 onBlur={(e) => handelContestInfoPrice(e)}
                 className="h-10 w-full outline-none mb-1"
@@ -403,7 +443,7 @@ const ContestInfo = () => {
                   type="text"
                   name="contestPriceExtra"
                   id="contestPriceExtra"
-                  value={currentContestInfo?.contestPriceExtra.toLocaleString()}
+                  value={currentContestInfo.contestPriceExtra?.toLocaleString()}
                   onChange={(e) => handleContestInfo(e)}
                   onBlur={(e) => handelContestInfoPrice(e)}
                   className="h-10 w-full outline-none mb-1"
@@ -420,7 +460,7 @@ const ContestInfo = () => {
                 type="text"
                 name="contestPriceType1"
                 id="contestPriceType1"
-                value={currentContestInfo?.contestPriceType1.toLocaleString()}
+                value={currentContestInfo.contestPriceType1?.toLocaleString()}
                 onChange={(e) => handleContestInfo(e)}
                 onBlur={(e) => handelContestInfoPrice(e)}
                 className="h-10 w-full outline-none mb-1"
@@ -436,7 +476,7 @@ const ContestInfo = () => {
                 type="text"
                 name="contestPriceType2"
                 id="contestPriceType2"
-                value={currentContestInfo?.contestPriceType2.toLocaleString()}
+                value={currentContestInfo.contestPriceType2?.toLocaleString()}
                 onChange={(e) => handleContestInfo(e)}
                 onBlur={(e) => handelContestInfoPrice(e)}
                 className="h-10 w-full outline-none mb-1"

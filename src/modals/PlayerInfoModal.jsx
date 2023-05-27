@@ -6,57 +6,54 @@ import {
   useFirestoreGetDocument,
   useFirestoreUpdateData,
 } from "../hooks/useFirestores";
+import { TbUsers } from "react-icons/tb";
 
-const initCategoryInfo = {
-  contestCategoryId: "",
-  contestCategoryIndex: "",
-  contestCategoryTitle: "",
-  contestCategorySection: "",
-  contestCategroyGender: "남",
-  contestCategoryPriceType: "기본참가비",
-  contestCategroyIsOverall: "off",
-  contestCategoryType: "",
-  contestCategoryJudgeType: "랭킹형(짜찝표)",
+const initPlayerInfo = {
+  contestPlayerIndex: "",
+  contestPlayerId: "",
+  contestPlayerName: "",
+  contestPlayerPromoter: "",
+  contestPlayerText: "",
+  contestPlayerGender: "남",
+  contestPlayerPhoneNumber: "",
+  contestPlayerEmail: "",
 };
 
-const CategoryInfoModal = ({ setClose, propState, setState }) => {
+const PlayerInfoModal = ({ setClose, propState, setState }) => {
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
-  const [categoryInfo, setCategoryInfo] = useState({
-    ...initCategoryInfo,
-    contestCategoryIndex: parseInt(propState.count) + 1,
+  const [playerInfo, setPlayerInfo] = useState({
+    ...initPlayerInfo,
   });
-  const [categorysList, setCategorysList] = useState({});
-  const [categorysArray, setCategorysArray] = useState([]);
+  const [playerList, setPlayerList] = useState({});
+  const [playerArray, setPlayerArray] = useState([]);
 
-  const categoryInfoRef = useRef({});
+  const playerInfoRef = useRef({});
 
-  const contestCategoryDocument = useFirestoreGetDocument(
-    "contest_categorys_list"
+  const contestInvoiceDocument = useFirestoreGetDocument(
+    "contest_invoices_list"
   );
-  const contestCategoryUpdate = useFirestoreUpdateData(
-    "contest_categorys_list"
-  );
+  const contestCategoryUpdate = useFirestoreUpdateData("contest_invoices_list");
 
-  const getCategorys = async () => {
-    const returnCategorys = await contestCategoryDocument.getDocument(
-      currentContest.contests.contestCategorysListId
+  const getInvoice = async () => {
+    const returnInvoices = await contestInvoiceDocument.getDocument(
+      currentContest.contests.contestInvoicesListId
     );
-    setCategorysList({ ...returnCategorys });
-    setCategorysArray([...returnCategorys.categorys]);
+    setPlayerList({ ...returnInvoices });
+    setPlayerArray([...returnInvoices.players]);
   };
 
-  const handleUpdateCategorys = async () => {
+  const handleUpdatePlayers = async () => {
     if (
-      categoryInfoRef.current.contestCategoryIndex.value === "" ||
-      categoryInfoRef.current.contestCategoryTitle.value === ""
+      playerInfoRef.current.contestPlayerName.value === "" ||
+      playerInfoRef.current.contestPlayerPromoter.value === ""
     ) {
       return;
     }
-    const updatedCategoryInfo = Object.keys(categoryInfoRef.current).reduce(
+    const updatedPlayerInfo = Object.keys(playerInfoRef.current).reduce(
       (updatedInfo, key) => {
-        const currentElement = categoryInfoRef.current[key];
+        const currentElement = playerInfoRef.current[key];
         updatedInfo[key] =
           currentElement.type === "checkbox"
             ? currentElement.checked
@@ -66,51 +63,46 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
       {}
     );
 
-    setCategoryInfo((prevInfo) => ({
+    setPlayerInfo((prevInfo) => ({
       ...prevInfo,
-      ...updatedCategoryInfo,
+      ...updatedPlayerInfo,
+      contestPlayerIndex: parseInt(updatedPlayerInfo.contestPlayerIndex),
     }));
 
-    const dummy = [...categorysArray];
+    const dummy = [...playerArray];
 
     switch (propState.title) {
-      case "종목추가":
+      case "선수추가":
         dummy.push({
-          ...updatedCategoryInfo,
-          contestCategoryId: uuidv4(),
-          contestCategoryIndex: parseInt(
-            updatedCategoryInfo.contestCategoryIndex
-          ),
+          ...updatedPlayerInfo,
+          contestPlayerId: uuidv4(),
+          contestPlayerIndex: parseInt(updatedPlayerInfo.contestPlayerIndex),
         });
 
         await handleSaveCategorys(dummy);
-        setCategorysArray(dummy);
+        setPlayerArray(dummy);
         setState(dummy);
-        setCategoryInfo({
-          ...initCategoryInfo,
-          contestCategoryIndex:
-            parseInt(updatedCategoryInfo.contestCategoryIndex) + 1,
+        setPlayerInfo({
+          ...initPlayerInfo,
         });
 
-        categoryInfoRef.current.contestCategorySection.focus();
+        playerInfoRef.current.contestPlayerName.focus();
 
         break;
 
-      case "종목수정":
-        const findCategoryIndex = dummy.findIndex(
-          (category) => category.contestCategoryId === propState.categoryId
+      case "신청서수정":
+        const findPlayerIndex = dummy.findIndex(
+          (player) => player.contestPlayerId === propState.playerId
         );
 
-        if (findCategoryIndex !== -1) {
-          dummy.splice(findCategoryIndex, 1, {
-            ...dummy[findCategoryIndex],
-            ...updatedCategoryInfo,
-            contestCategoryIndex: parseInt(
-              updatedCategoryInfo.contestCategoryIndex
-            ),
+        if (findPlayerIndex !== -1) {
+          dummy.splice(findPlayerIndex, 1, {
+            ...dummy[findPlayerIndex],
+            ...updatedPlayerInfo,
+            contestPlayerIndex: parseInt(updatedPlayerInfo.contestPlayerIndex),
           });
           await handleSaveCategorys(dummy);
-          setCategorysArray(dummy);
+          setPlayerArray(dummy);
           setState(dummy);
         }
         break;
@@ -123,8 +115,8 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
   const handleSaveCategorys = async (data) => {
     try {
       await contestCategoryUpdate.updateData(
-        currentContest.contests.contestCategorysListId,
-        { ...categorysList, categorys: [...data] }
+        currentContest.contests.contestInvoicesListId,
+        { ...playerList, categorys: [...data] }
       );
     } catch (error) {
       console.log(error);
@@ -134,30 +126,18 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
   const handleInputValues = (e) => {
     const { name, value } = e.target;
 
-    if (name === "contestCategoryIsOverall") {
-      setCategoryInfo({
-        ...categoryInfo,
-        contestCategoryIsOverall: e.target.checked,
-      });
-    } else if (name === "contestCategoryIndex") {
-      setCategoryInfo({
-        ...categoryInfo,
-        contestCategoryIndex: parseInt(value),
-      });
-    } else {
-      setCategoryInfo({
-        ...categoryInfo,
-        [name]: value,
-      });
-    }
+    setPlayerInfo({
+      ...playerInfo,
+      [name]: value,
+    });
   };
 
   useEffect(() => {
-    getCategorys();
-    if (propState.title === "종목수정") {
-      setCategoryInfo({ ...propState.info });
+    getInvoice();
+    if (propState.title === "신청서수정") {
+      setPlayerInfo({ ...propState.info });
     }
-    categoryInfoRef.current.contestCategorySection.focus();
+    playerInfoRef.current.contestPlayerName.focus();
   }, []);
 
   useEffect(() => {
@@ -169,7 +149,7 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
       <div className="flex w-full h-14">
         <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
           <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-            <BiCategory />
+            <TbUsers />
           </span>
           <h1
             className="font-sans text-lg font-semibold"
@@ -187,21 +167,21 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                개최순서
+                출전순서
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  value={categoryInfo.contestCategoryIndex}
+                  value={playerInfo.contestPlayerIndex}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryIndex = ref)
+                    (playerInfoRef.current.contestPlayerIndex = ref)
                   }
-                  name="contestCategoryIndex"
+                  name="contestPlayerName"
                   className="h-12 outline-none"
-                  placeholder="개최순서(숫자)"
+                  placeholder="출전순서(숫자)"
                 />
               </div>
             </div>
@@ -212,21 +192,18 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                구분
+                이름
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  name="contestCategorySection"
-                  value={categoryInfo.contestCategorySection}
+                  value={playerInfo.contestPlayerName}
                   onChange={(e) => handleInputValues(e)}
-                  ref={(ref) =>
-                    (categoryInfoRef.current.contestCategorySection = ref)
-                  }
+                  ref={(ref) => (playerInfoRef.current.contestPlayerName = ref)}
+                  name="contestPlayerName"
                   className="h-12 outline-none"
-                  placeholder="예)1부, 2부"
                 />
               </div>
             </div>
@@ -237,19 +214,18 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                종목대분류
+                소속
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  name="contestCategoryType"
-                  placeholder="예)피지크, 보디빌딩"
-                  value={categoryInfo.contestCategoryType}
+                  name="contestPlayerPromoter"
+                  value={playerInfo.contestPlayerPromoter}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryType = ref)
+                    (playerInfoRef.current.contestPlayerPromoter = ref)
                   }
                   className="h-12 outline-none"
                 />
@@ -262,18 +238,18 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                종목명
+                연락처
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  name="contestCategoryTitle"
-                  value={categoryInfo.contestCategoryTitle}
+                  name="contestPlayerPhoneNumber"
+                  value={playerInfo.contestPlayerPhoneNumber}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryTitle = ref)
+                    (playerInfoRef.current.contestPlayerPhoneNumber = ref)
                   }
                   className="h-12 outline-none"
                 />
@@ -286,100 +262,68 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                참가가능성별
+                이메일
+              </h3>
+            </div>
+            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <input
+                  type="email"
+                  name="contestPlayerEmail"
+                  value={playerInfo.contestPlayerEmail}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) =>
+                    (playerInfoRef.current.contestPlayerEmail = ref)
+                  }
+                  className="h-12 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                성별
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg ">
               <div className="flex w-full justify-start items-center h-12">
                 <select
-                  name="contestCategoryGender"
+                  name="contestPlayerGender"
                   onChange={(e) => handleInputValues(e)}
-                  value={categoryInfo.contestCategoryGender}
+                  value={playerInfo.contestPlayerGender}
                   ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryGender = ref)
+                    (playerInfoRef.current.contestPlayerGender = ref)
                   }
                   className="w-full h-full pl-2"
                 >
                   <option>남</option>
                   <option>여</option>
-                  <option>무관</option>
                 </select>
               </div>
             </div>
           </div>
-          <div className="flex w-full justify-start items-center ">
-            <div className="flex w-1/4 justify-end mr-2">
+          <div className="flex w-full justify-start items-center h-auto ">
+            <div className="flex w-1/4 justify-end mr-2 h-28 items-start">
               <h3
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                참가비종류
+                출전동기
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg ">
-              <div className="flex w-full justify-start items-center h-12">
-                <select
-                  name="contestCategoryPriceType"
+            <div className="h-28 w-3/4 rounded-lg px-3 bg-white pt-1">
+              <div className="flex w-full justify-start items-center">
+                <textarea
+                  name="contestPlayerText"
+                  value={playerInfo.contestPlayerText}
                   onChange={(e) => handleInputValues(e)}
-                  value={categoryInfo.contestCategoryPriceType}
-                  ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryPriceType = ref)
-                  }
-                  className="w-full h-full pl-2"
-                >
-                  <option>기본참가비</option>
-                  <option>타입1</option>
-                  <option>타입2</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="flex w-full justify-start items-center ">
-            <div className="flex w-1/4 justify-end mr-2">
-              <h3
-                className="font-sans font-semibold"
-                style={{ letterSpacing: "2px" }}
-              >
-                심사종류
-              </h3>
-            </div>
-            <div className="h-12 w-3/4 rounded-lg ">
-              <div className="flex w-full justify-start items-center h-12">
-                <select
-                  name="contestCategoryJudgeType"
-                  onChange={(e) => handleInputValues(e)}
-                  value={categoryInfo.contestCategoryJudgeType}
-                  ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryJudgeType = ref)
-                  }
-                  className="w-full h-full pl-2"
-                >
-                  <option>랭킹형(짜찝표)</option>
-                  <option>점수형</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="flex w-full justify-start items-center ">
-            <div className="flex w-1/4 justify-end mr-2">
-              <h3
-                className="font-sans font-semibold"
-                style={{ letterSpacing: "2px" }}
-              >
-                오버롤종목
-              </h3>
-            </div>
-            <div className="h-12 w-3/4 rounded-lg ">
-              <div className="flex w-full justify-start items-center h-12">
-                <input
-                  type="checkbox"
-                  name="contestCategoryIsOverall"
-                  checked={categoryInfo.contestCategoryIsOverall}
-                  ref={(ref) =>
-                    (categoryInfoRef.current.contestCategoryIsOverall = ref)
-                  }
-                  onChange={(e) => handleInputValues(e)}
-                  className="w-6"
+                  ref={(ref) => (playerInfoRef.current.contestPlayerText = ref)}
+                  className="h-24 outline-none w-full"
                 />
               </div>
             </div>
@@ -389,7 +333,7 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
       <div className="flex w-full gap-x-2 h-auto">
         <button
           className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
-          onClick={() => handleUpdateCategorys()}
+          onClick={() => handleUpdatePlayers()}
         >
           저장
         </button>
@@ -404,4 +348,4 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
   );
 };
 
-export default CategoryInfoModal;
+export default PlayerInfoModal;
