@@ -3,30 +3,58 @@ import { useState } from "react";
 import { BsCheckAll } from "react-icons/bs";
 import { MdOutlineSearch } from "react-icons/md";
 import ReactVirtualizedTable from "../components/VirtualizedTable";
-import { useFirestoreQuery } from "../hooks/useFirestores";
+import {
+  useFirestoreQuery,
+  useFirestoreUpdateData,
+  useFirestoreAddData,
+  useFirestoreDeleteData,
+} from "../hooks/useFirestores";
 import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { useEffect } from "react";
 import { useMemo } from "react";
+import LoadingPage from "./LoadingPage";
 
 const ContestInvoiceTable = () => {
   const [currentTab, setCurrentTab] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [invoiceList, setInvoiceList] = useState([]);
+  const [entryList, setEntryList] = useState([]);
   const [searchInfo, setSearchInfo] = useState();
   const [searchKeyword, setSearchKeyword] = useState("");
   //const [filteredInvoiceList, setFilteredInvoiceList] = useState([]);
   const { currentContest } = useContext(CurrentContestContext);
   const getQuery = useFirestoreQuery();
+  const updateInvoice = useFirestoreUpdateData("invoices_pool");
+  const deleteEntry = useFirestoreDeleteData("contest_entrys_list");
+  const addEntry = useFirestoreAddData("contest_entrys_list");
+  const fetchQuery = async () => {
+    setIsLoading(true);
+    const invoiceCondition = [
+      where("contestId", "==", currentContest.contests.id),
+    ];
 
-  const fetQuery = async () => {
-    const condition = [where("contestId", "==", currentContest.contests.id)];
-    const data = await getQuery.getDocuments("invoices_pool", condition);
-    if (data?.length > 0) {
-      setInvoiceList([...data]);
+    const invoiceData = await getQuery.getDocuments(
+      "invoices_pool",
+      invoiceCondition
+    );
+
+    const entryData = await getQuery.getDocuments(
+      "contest_entrys_list",
+      invoiceCondition
+    );
+    if (invoiceData?.length > 0) {
+      setInvoiceList([...invoiceData]);
     }
+    if (entryData?.length > 0) {
+      setEntryList([...entryData]);
+    }
+
+    setIsLoading(false);
   };
 
   const filteredData = useMemo(() => {
+    setIsLoading(true);
     let newData = [];
     if (invoiceList?.length > 0) {
       switch (currentTab) {
@@ -52,6 +80,7 @@ const ContestInvoiceTable = () => {
           break;
       }
     }
+    setIsLoading(false);
     return newData;
   }, [currentTab, invoiceList, searchKeyword]);
 
@@ -86,8 +115,70 @@ const ContestInvoiceTable = () => {
     setSearchKeyword(searchInfo);
   };
 
+  const handleIsPriceCheckUpdate = async (invoiceId, playerUid, e) => {
+    const findIndex = invoiceList.findIndex(
+      (invoice) => invoice.id === invoiceId
+    );
+    const newInvoiceList = [...invoiceList];
+    const filteredEntryByPlayerUid = entryList.filter(
+      (entry) => entry.playerUid === playerUid
+    );
+
+    console.log(entryList);
+    console.log(filteredEntryByPlayerUid);
+
+    // entryList를 불러오는 시점에서 데이터가 일치하지 않아서
+    // delete할때 entryId가 불일치해서 데이터 삭제가 안되고 있음
+    if (filteredEntryByPlayerUid) {
+      filteredEntryByPlayerUid.map(async (filter, fIdx) => {
+        await deleteEntry.deleteData(filter.id);
+      });
+    }
+
+    const newInvoice = {
+      ...newInvoiceList[findIndex],
+      isPriceCheck: e.target.checked,
+    };
+
+    newInvoiceList.splice(findIndex, 1, {
+      ...newInvoice,
+    });
+
+    if (e.target.checked) {
+      if (newInvoiceList[findIndex].joins.length > 0) {
+        const { contestId, playerUid, playerName, playerGym } =
+          newInvoiceList[findIndex];
+        newInvoiceList[findIndex].joins.map(async (join, jIdx) => {
+          const {
+            contestCategoryTitle,
+            contestCategoryId,
+            contestGradeTitle,
+            contestGradeId,
+          } = join;
+          const entryInfo = {
+            contestId,
+            invoiceId,
+            playerUid,
+            playerName,
+            playerGym,
+            contestCategoryTitle,
+            contestCategoryId,
+            contestGradeTitle,
+            contestGradeId,
+          };
+          await addEntry.addData({ ...entryInfo });
+        });
+      }
+    }
+
+    await updateInvoice
+      .updateData(invoiceId, { ...newInvoice })
+      .then(() => setInvoiceList([...newInvoiceList]))
+      .catch((error) => console.log(error));
+  };
+
   useEffect(() => {
-    fetQuery();
+    fetchQuery();
   }, [currentContest?.contests?.id]);
 
   useEffect(() => {
@@ -146,6 +237,7 @@ const ContestInvoiceTable = () => {
                     const {
                       id,
                       joins,
+                      playerUid,
                       playerName,
                       playerTel,
                       playerGym,
@@ -156,7 +248,13 @@ const ContestInvoiceTable = () => {
                     return (
                       <tr className="border border-t-0 border-x-0" key={id}>
                         <td className="text-center w-1/12 h-10">
-                          <input type="checkbox" checked={isPriceCheck} />
+                          <input
+                            type="checkbox"
+                            checked={isPriceCheck}
+                            onClick={(e) =>
+                              handleIsPriceCheckUpdate(id, playerUid, e)
+                            }
+                          />
                         </td>
                         <td className="text-left w-1/12">{playerName}</td>
                         <td className="text-left w-2/12">{playerTel}</td>
@@ -197,43 +295,52 @@ const ContestInvoiceTable = () => {
   );
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2">
-      <div className="flex w-full h-14">
-        <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
-          <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-            <BsCheckAll />
-          </span>
-          <h1
-            className="font-sans text-lg font-semibold"
-            style={{ letterSpacing: "2px" }}
-          >
-            참가신청서
-          </h1>
+      {isLoading ? (
+        <div className="flex w-full h-screen justify-center items-center">
+          <LoadingPage />
         </div>
-      </div>
-      <div className="flex w-full h-full ">
-        <div className="flex w-full justify-start items-center">
-          <div className="flex w-full h-full justify-start categoryIdart px-3 pt-3 flex-col bg-gray-100 rounded-lg">
-            <div className="flex w-full">
-              {tabArray.map((tab, tIdx) => (
-                <>
-                  <button
-                    className={`${
-                      currentTab === tab.id
-                        ? " flex w-auto h-10 bg-white px-4"
-                        : " flex w-auto h-10 bg-gray-100 px-4"
-                    }  h-14 rounded-t-lg justify-center items-center`}
-                    onClick={() => setCurrentTab(tIdx)}
-                  >
-                    <span>{tab.title}</span>
-                  </button>
-                </>
-              ))}
+      ) : (
+        <>
+          <div className="flex w-full h-14">
+            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
+              <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
+                <BsCheckAll />
+              </span>
+              <h1
+                className="font-sans text-lg font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                참가신청서
+              </h1>
             </div>
-            {currentTab === 0 && ContestInvoiceUncompleteRender}
-            {currentTab === 1 && ContestInvoiceUncompleteRender}
           </div>
-        </div>
-      </div>
+          <div className="flex w-full h-full ">
+            <div className="flex w-full justify-start items-center">
+              <div className="flex w-full h-full justify-start categoryIdart px-3 pt-3 flex-col bg-gray-100 rounded-lg">
+                <div className="flex w-full">
+                  {tabArray.map((tab, tIdx) => (
+                    <>
+                      <button
+                        className={`${
+                          currentTab === tab.id
+                            ? " flex w-auto h-10 bg-white px-4"
+                            : " flex w-auto h-10 bg-gray-100 px-4"
+                        }  h-14 rounded-t-lg justify-center items-center`}
+                        onClick={() => setCurrentTab(tIdx)}
+                      >
+                        <span>{tab.title}</span>
+                      </button>
+                    </>
+                  ))}
+                </div>
+
+                {currentTab === 0 && ContestInvoiceUncompleteRender}
+                {currentTab === 1 && ContestInvoiceUncompleteRender}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
