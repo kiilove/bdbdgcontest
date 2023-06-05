@@ -59,21 +59,29 @@ const ContestInvoiceTable = () => {
     if (invoiceList?.length > 0) {
       switch (currentTab) {
         case 0:
-          newData = invoiceList.filter((invoice) =>
-            invoice.playerName.includes(searchKeyword)
+          newData = invoiceList.filter(
+            (invoice) =>
+              invoice.playerName.includes(searchKeyword) ||
+              invoice.playerTel.includes(searchKeyword) ||
+              invoice.playerGym.includes(searchKeyword)
           );
           break;
         case 1:
           newData = invoiceList.filter(
             (invoice) =>
               !invoice.isPriceCheck &&
-              invoice.playerName.includes(searchKeyword)
+              (invoice.playerName.includes(searchKeyword) ||
+                invoice.playerTel.includes(searchKeyword) ||
+                invoice.playerGym.includes(searchKeyword))
           );
           break;
         case 2:
           newData = invoiceList.filter(
             (invoice) =>
-              invoice.isPriceCheck && invoice.playerName.includes(searchKeyword)
+              invoice.isPriceCheck &&
+              (invoice.playerName.includes(searchKeyword) ||
+                invoice.playerTel.includes(searchKeyword) ||
+                invoice.playerGym.includes(searchKeyword))
           );
           break;
         default:
@@ -116,24 +124,11 @@ const ContestInvoiceTable = () => {
   };
 
   const handleIsPriceCheckUpdate = async (invoiceId, playerUid, e) => {
+    setIsLoading(true);
     const findIndex = invoiceList.findIndex(
       (invoice) => invoice.id === invoiceId
     );
     const newInvoiceList = [...invoiceList];
-    const filteredEntryByPlayerUid = entryList.filter(
-      (entry) => entry.playerUid === playerUid
-    );
-
-    console.log(entryList);
-    console.log(filteredEntryByPlayerUid);
-
-    // entryList를 불러오는 시점에서 데이터가 일치하지 않아서
-    // delete할때 entryId가 불일치해서 데이터 삭제가 안되고 있음
-    if (filteredEntryByPlayerUid) {
-      filteredEntryByPlayerUid.map(async (filter, fIdx) => {
-        await deleteEntry.deleteData(filter.id);
-      });
-    }
 
     const newInvoice = {
       ...newInvoiceList[findIndex],
@@ -171,9 +166,39 @@ const ContestInvoiceTable = () => {
       }
     }
 
+    if (!e.target.checked) {
+      const invoiceCondition = [
+        where("contestId", "==", currentContest.contests.id),
+      ];
+
+      const returnEntry = await getQuery.getDocuments(
+        "contest_entrys_list",
+        invoiceCondition
+      );
+      const filteredEntryByPlayerUid = returnEntry.filter(
+        (entry) => entry.playerUid === playerUid
+      );
+
+      console.log(entryList);
+      console.log(filteredEntryByPlayerUid);
+
+      // entryList를 불러오는 시점에서 데이터가 일치하지 않아서
+      // delete할때 entryId가 불일치해서 데이터 삭제가 안되고 있음
+
+      if (filteredEntryByPlayerUid <= 0) {
+        window.alert("일치하는 선수명단이 없습니다.");
+      }
+      if (filteredEntryByPlayerUid) {
+        filteredEntryByPlayerUid.map(async (filter, fIdx) => {
+          await deleteEntry.deleteData(filter.id);
+        });
+      }
+    }
+
     await updateInvoice
       .updateData(invoiceId, { ...newInvoice })
       .then(() => setInvoiceList([...newInvoiceList]))
+      .then(() => setIsLoading(false))
       .catch((error) => console.log(error));
   };
 
@@ -204,7 +229,7 @@ const ContestInvoiceTable = () => {
                     e.key === "Enter" && handleSearchKeyword();
                   }}
                   className="h-12 outline-none w-full"
-                  placeholder="선수검색(이름, 전화번호, 소속을 지원합니다.)"
+                  placeholder="검색(이름, 전화번호, 소속)"
                 />
                 <button
                   className="w-20 bg-blue-200 h-full"
@@ -216,21 +241,29 @@ const ContestInvoiceTable = () => {
             </div>
           </div>
         </div>
-        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-2 gap-y-2">
+        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-0 lg:p-2 gap-y-2">
           <div className="flex w-full justify-start items-center ">
-            <div className="w-full rounded-lg px-3  h-auto py-2">
+            <div className="w-full rounded-lg px-0 lg:px-3 h-auto py-0 lg:py-2">
               <table className="w-full bg-white">
                 <tr className="bg-gray-200 h-10">
-                  <th className="w-1/12 text-center">입금확인</th>
-                  <th className="text-left w-1/12">이름</th>
-                  <th className="text-left w-2/12">연락처</th>
+                  <th className="w-1/12 text-center text-sm font-normal lg:font-semibold lg:text-base">
+                    입금확인
+                  </th>
+                  <th className="text-left w-1/12 text-sm font-normal lg:font-semibold lg:text-base">
+                    이름
+                  </th>
+                  <th className="text-left w-2/12 text-sm font-normal lg:font-semibold lg:text-base">
+                    연락처
+                  </th>
                   <th className="text-left w-2/12 hidden lg:table-cell">
                     소속
                   </th>
                   <th className="text-left w-2/12 hidden lg:table-cell">
                     신청종목
                   </th>
-                  <th className="text-left w-1/12">참가비용</th>
+                  <th className="text-left w-1/12 text-sm font-normal lg:font-semibold lg:text-base">
+                    참가비용
+                  </th>
                 </tr>
                 {filteredData?.length > 0 &&
                   filteredData.map((filtered, fIdx) => {
@@ -256,8 +289,12 @@ const ContestInvoiceTable = () => {
                             }
                           />
                         </td>
-                        <td className="text-left w-1/12">{playerName}</td>
-                        <td className="text-left w-2/12">{playerTel}</td>
+                        <td className="text-left w-1/12 text-sm  lg:text-base">
+                          {playerName}
+                        </td>
+                        <td className="text-left w-2/12 text-sm  lg:text-base">
+                          {playerTel}
+                        </td>
                         <td className="text-left w-2/12 hidden lg:table-cell">
                           {playerGym}
                         </td>
@@ -279,7 +316,7 @@ const ContestInvoiceTable = () => {
                               );
                             })}
                         </td>
-                        <td className="text-left w-1/12">
+                        <td className="text-left w-1/12  text-sm  lg:text-base">
                           {contestPriceSum &&
                             parseInt(contestPriceSum).toLocaleString()}
                         </td>
@@ -336,6 +373,7 @@ const ContestInvoiceTable = () => {
 
                 {currentTab === 0 && ContestInvoiceUncompleteRender}
                 {currentTab === 1 && ContestInvoiceUncompleteRender}
+                {currentTab === 2 && ContestInvoiceUncompleteRender}
               </div>
             </div>
           </div>
