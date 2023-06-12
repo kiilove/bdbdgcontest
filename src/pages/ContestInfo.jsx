@@ -241,6 +241,14 @@ const ContestInfo = () => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
+                공고문링크
+              </h3>
+            </div>
+            <div className="flex w-full h-12 justify-end items-center">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
                 컬렉션이름(임의수정금지)
               </h3>
             </div>
@@ -479,6 +487,19 @@ const ContestInfo = () => {
                 value={currentContestInfo.contestPriceType2?.toLocaleString()}
                 onChange={(e) => handleContestInfo(e)}
                 onBlur={(e) => handelContestInfoPrice(e)}
+                className="h-10 w-full outline-none mb-1"
+              />
+            </div>
+            <div className="flex lg:hidden px-3">
+              <h3 className="font-sans font-semibold">공고문링크</h3>
+            </div>
+            <div className="flex w-full h-12 justify-start items-center border-b-gray-300 border border-b-2 border-r-2 rounded-lg px-3 mb-3 lg:mb-0">
+              <input
+                type="text"
+                name="contestCollectionFileLink"
+                id="contestCollectionFileLink"
+                value={currentContestInfo?.contestCollectionFileLink}
+                onChange={(e) => handleContestInfo(e)}
                 className="h-10 w-full outline-none mb-1"
               />
             </div>
