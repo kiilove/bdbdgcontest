@@ -1,13 +1,7 @@
 import React, { useContext, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
-import {
-  MdTimeline,
-  MdOutlineSearch,
-  MdEditNote,
-  MdOutlineScale,
-  MdOutlineBalance,
-} from "react-icons/md";
+import { MdTimeline, MdOutlineSearch, MdOutlineBalance } from "react-icons/md";
 import { Modal } from "@mui/material";
 import CategoryInfoModal from "../modals/CategoryInfoModal";
 import { useEffect } from "react";
@@ -29,8 +23,15 @@ const ContestTimetable = () => {
   const [categorysArray, setCategorysArray] = useState([]);
   const [categorysList, setCategorysList] = useState({});
   const [gradesArray, setGradesArray] = useState([]);
+  const [entrysArray, setEntrysArray] = useState([]);
   const [currentCategoryId, setCurrentCategoryId] = useState("");
   const [currentSection, setSection] = useState([{ id: 0, title: "전체" }]);
+  const [currentSubMenu, setCurrentSubMenu] = useState({
+    categoryId: "",
+    gradeId: "",
+    player: false,
+    judge: false,
+  });
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
@@ -51,6 +52,7 @@ const ContestTimetable = () => {
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
+  const fetchEntry = useFirestoreQuery();
 
   const tabArray = [
     {
@@ -194,6 +196,13 @@ const ContestTimetable = () => {
 
       setGradesArray([...returnGrades?.grades]);
     }
+
+    const condition = [where("contestId", "==", currentContest.contests.id)];
+    const returnEntrys = await fetchEntry.getDocuments(
+      "contest_entrys_list",
+      condition
+    );
+    setEntrysArray([...returnEntrys]);
   };
 
   useEffect(() => {
@@ -434,14 +443,23 @@ const ContestTimetable = () => {
                                                               <HiOutlineTrash className=" text-xl text-gray-500" />
                                                             </button>
                                                             <div className="flex">
-                                                              <button className="bg-blue-200 w-10 h-10 rounded-lg flex justify-center items-center ">
+                                                              <button
+                                                                className="bg-blue-200 w-10 h-10 rounded-lg flex justify-center items-center "
+                                                                onClick={() =>
+                                                                  setCurrentSubMenu(
+                                                                    {
+                                                                      categoryId,
+                                                                      gradeId,
+                                                                      categoryTitle,
+                                                                      gradeTitle,
+                                                                      player: true,
+                                                                      judge: false,
+                                                                    }
+                                                                  )
+                                                                }
+                                                              >
                                                                 <TbUsers className="text-xl text-gray-500" />
                                                               </button>
-                                                              <div className="flex-col rounded-lg hidden absolute top-0 bg-white shadow w-52 h-52 z-10">
-                                                                <h1>
-                                                                  선수명단
-                                                                </h1>
-                                                              </div>
                                                             </div>
 
                                                             <button className="bg-green-100 w-10 h-10 rounded-lg flex justify-center items-center">
@@ -458,30 +476,76 @@ const ContestTimetable = () => {
                                           </Droppable>
                                         </DragDropContext>
                                       </div>
-                                      <div className="flex w-full px-2 pb-2 h-auto flex-wrap flex-col gap-y-1">
-                                        <div className="flex bg-gray-100 w-full gap-2 px-4 py-2 rounded-lg h-auto justify-start items-center ">
-                                          <span className="font-sans font-semibold w-4 h-4 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-1">
-                                            <TbUsers className="text-sm" />
-                                          </span>
-                                          <h1>참가신청명단</h1>
-                                        </div>
-                                        <div className="flex bg-gray-100 w-full gap-2 p-2 rounded-lg h-auto justify-start items-center ">
-                                          <div className="flex w-full bg-white rounded-lg p-2">
-                                            <div className="flex w-1/6">
-                                              순번
+                                      {currentSubMenu.player &&
+                                        currentSubMenu.categoryId ===
+                                          categoryId &&
+                                        (() => {
+                                          if (entrysArray?.length <= 0) {
+                                            return;
+                                          }
+                                          const filtered = entrysArray.filter(
+                                            (e) =>
+                                              e.contestGradeId ===
+                                              currentSubMenu.gradeId
+                                          );
+
+                                          return (
+                                            <div className="flex w-full px-2 pb-2 h-auto flex-wrap flex-col gap-y-1">
+                                              <div className="flex bg-gray-100 w-full gap-2 px-4 py-2 rounded-lg h-auto justify-start items-center ">
+                                                <span className="font-sans font-semibold w-4 h-4 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-1">
+                                                  <TbUsers className="text-sm" />
+                                                </span>
+                                                <h1>
+                                                  참가신청명단(
+                                                  {currentSubMenu.gradeTitle})
+                                                </h1>
+                                              </div>
+                                              <div className="flex bg-gray-100 w-full gap-2 p-2 rounded-lg h-auto justify-start items-center flex-col">
+                                                <div className="flex w-full bg-white rounded-lg p-2">
+                                                  <div className="flex w-1/6">
+                                                    순번
+                                                  </div>
+                                                  <div className="flex w-2/6">
+                                                    이름
+                                                  </div>
+                                                  <div className="flex w-3/6">
+                                                    연락처
+                                                  </div>
+                                                  <div className="hidden lg:flex lg:w-3/6">
+                                                    소속
+                                                  </div>
+                                                </div>
+                                                {filtered?.length > 0 &&
+                                                  filtered.map(
+                                                    (entry, eIdx) => {
+                                                      const {
+                                                        playerName,
+                                                        playerTel,
+                                                        playerGym,
+                                                      } = entry;
+
+                                                      return (
+                                                        <div className="flex bg-gray-100 w-full px-4 rounded-lg h-auto justify-start items-center ">
+                                                          <div className="flex w-1/6">
+                                                            {eIdx + 1}
+                                                          </div>
+                                                          <div className="flex w-2/6">
+                                                            {playerName}
+                                                          </div>
+                                                          <div className="flex w-3/6">
+                                                            {playerTel}
+                                                          </div>
+                                                          <div className="hidden lg:flex lg:w-3/6">
+                                                            {playerGym}
+                                                          </div>
+                                                        </div>
+                                                      );
+                                                    }
+                                                  )}
+                                              </div>
                                             </div>
-                                            <div className="flex w-2/6">
-                                              이름
-                                            </div>
-                                            <div className="flex w-3/6">
-                                              연락처
-                                            </div>
-                                            <div className="hidden lg:flex lg:w-3/6">
-                                              소속
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
+                                          );
+                                        })()}
                                     </div>
                                   )}
                                 </Draggable>
