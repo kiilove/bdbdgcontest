@@ -141,7 +141,7 @@ const ContestInvoiceTable = () => {
 
     if (e.target.checked) {
       if (newInvoiceList[findIndex].joins.length > 0) {
-        const { contestId, playerUid, playerName, playerGym } =
+        const { contestId, playerUid, playerName, playerGym, playerTel } =
           newInvoiceList[findIndex];
         newInvoiceList[findIndex].joins.map(async (join, jIdx) => {
           const {
@@ -150,17 +150,20 @@ const ContestInvoiceTable = () => {
             contestGradeTitle,
             contestGradeId,
           } = join;
+
           const entryInfo = {
             contestId,
             invoiceId,
             playerUid,
             playerName,
             playerGym,
+            playerTel,
             contestCategoryTitle,
             contestCategoryId,
             contestGradeTitle,
             contestGradeId,
           };
+
           await addEntry.addData({ ...entryInfo });
         });
       }
