@@ -7,6 +7,7 @@ import {
   useFirestoreUpdateData,
 } from "../hooks/useFirestores";
 import { TbUsers } from "react-icons/tb";
+import { BsCheckAll } from "react-icons/bs";
 
 const initPlayerInfo = {
   contestPlayerIndex: "",
@@ -23,125 +24,43 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
-  const [playerInfo, setPlayerInfo] = useState({
+  const [invoiceInfo, setInvoiceInfo] = useState({
     ...initPlayerInfo,
   });
   const [playerList, setPlayerList] = useState({});
   const [playerArray, setPlayerArray] = useState([]);
 
-  const playerInfoRef = useRef({});
+  const invoiceInfoRef = useRef({});
 
-  const contestInvoiceDocument = useFirestoreGetDocument(
-    "contest_invoices_list"
-  );
-  const contestCategoryUpdate = useFirestoreUpdateData("contest_invoices_list");
+  const contestInvoiceDocument = useFirestoreGetDocument("invoices_pool");
 
   const getInvoice = async () => {
+    console.log(propState.info.id);
     const returnInvoices = await contestInvoiceDocument.getDocument(
-      currentContest.contests.contestInvoicesListId
+      propState.info.id
     );
-    setPlayerList({ ...returnInvoices });
-    setPlayerArray([...returnInvoices.players]);
-  };
-
-  const handleUpdatePlayers = async () => {
-    if (
-      playerInfoRef.current.contestPlayerName.value === "" ||
-      playerInfoRef.current.contestPlayerPromoter.value === ""
-    ) {
-      return;
-    }
-    const updatedPlayerInfo = Object.keys(playerInfoRef.current).reduce(
-      (updatedInfo, key) => {
-        const currentElement = playerInfoRef.current[key];
-        updatedInfo[key] =
-          currentElement.type === "checkbox"
-            ? currentElement.checked
-            : currentElement.value;
-        return updatedInfo;
-      },
-      {}
-    );
-
-    setPlayerInfo((prevInfo) => ({
-      ...prevInfo,
-      ...updatedPlayerInfo,
-      contestPlayerIndex: parseInt(updatedPlayerInfo.contestPlayerIndex),
-    }));
-
-    const dummy = [...playerArray];
-
-    switch (propState.title) {
-      case "선수추가":
-        dummy.push({
-          ...updatedPlayerInfo,
-          contestPlayerId: uuidv4(),
-          contestPlayerIndex: parseInt(updatedPlayerInfo.contestPlayerIndex),
-        });
-
-        await handleSaveCategorys(dummy);
-        setPlayerArray(dummy);
-        setState(dummy);
-        setPlayerInfo({
-          ...initPlayerInfo,
-        });
-
-        playerInfoRef.current.contestPlayerName.focus();
-
-        break;
-
-      case "신청서수정":
-        const findPlayerIndex = dummy.findIndex(
-          (player) => player.contestPlayerId === propState.playerId
-        );
-
-        if (findPlayerIndex !== -1) {
-          dummy.splice(findPlayerIndex, 1, {
-            ...dummy[findPlayerIndex],
-            ...updatedPlayerInfo,
-            contestPlayerIndex: parseInt(updatedPlayerInfo.contestPlayerIndex),
-          });
-          await handleSaveCategorys(dummy);
-          setPlayerArray(dummy);
-          setState(dummy);
-        }
-        break;
-
-      default:
-        break;
-    }
-  };
-
-  const handleSaveCategorys = async (data) => {
-    try {
-      await contestCategoryUpdate.updateData(
-        currentContest.contests.contestInvoicesListId,
-        { ...playerList, categorys: [...data] }
-      );
-    } catch (error) {
-      console.log(error);
-    }
+    console.log(returnInvoices);
+    //setInvoiceInfo({ ...returnInvoices[0] });
   };
 
   const handleInputValues = (e) => {
     const { name, value } = e.target;
 
-    setPlayerInfo({
-      ...playerInfo,
+    setInvoiceInfo({
+      ...invoiceInfo,
       [name]: value,
     });
   };
 
   useEffect(() => {
-    getInvoice();
-    if (propState.title === "신청서수정") {
-      setPlayerInfo({ ...propState.info });
-    }
-    playerInfoRef.current.contestPlayerName.focus();
+    //getInvoice();
+
+    invoiceInfoRef.current.playerName.focus();
   }, []);
 
   useEffect(() => {
     console.log(propState);
+    setInvoiceInfo({ ...propState.info });
   }, [propState]);
 
   return (
@@ -149,7 +68,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
       <div className="flex w-full h-14">
         <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
           <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-            <TbUsers />
+            <BsCheckAll />
           </span>
           <h1
             className="font-sans text-lg font-semibold"
@@ -174,34 +93,10 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  value={playerInfo.contestPlayerName}
+                  value={invoiceInfo.playerName}
                   onChange={(e) => handleInputValues(e)}
-                  ref={(ref) => (playerInfoRef.current.contestPlayerName = ref)}
-                  name="contestPlayerName"
-                  className="h-12 outline-none"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex w-full justify-start items-center ">
-            <div className="flex w-1/4 justify-end mr-2">
-              <h3
-                className="font-sans font-semibold"
-                style={{ letterSpacing: "2px" }}
-              >
-                소속
-              </h3>
-            </div>
-            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
-              <div className="flex w-full justify-start items-center">
-                <input
-                  type="text"
-                  name="contestPlayerPromoter"
-                  value={playerInfo.contestPlayerPromoter}
-                  onChange={(e) => handleInputValues(e)}
-                  ref={(ref) =>
-                    (playerInfoRef.current.contestPlayerPromoter = ref)
-                  }
+                  ref={(ref) => (invoiceInfoRef.current.playerName = ref)}
+                  name="playerName"
                   className="h-12 outline-none"
                 />
               </div>
@@ -220,12 +115,10 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  name="contestPlayerPhoneNumber"
-                  value={playerInfo.contestPlayerPhoneNumber}
+                  name="playerTel"
+                  value={invoiceInfo.playerTel}
                   onChange={(e) => handleInputValues(e)}
-                  ref={(ref) =>
-                    (playerInfoRef.current.contestPlayerPhoneNumber = ref)
-                  }
+                  ref={(ref) => (invoiceInfoRef.current.playerTel = ref)}
                   className="h-12 outline-none"
                 />
               </div>
@@ -237,19 +130,17 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                이메일
+                소속
               </h3>
             </div>
             <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
-                  type="email"
-                  name="contestPlayerEmail"
-                  value={playerInfo.contestPlayerEmail}
+                  type="text"
+                  name="playerGym"
+                  value={invoiceInfo.playerGym}
                   onChange={(e) => handleInputValues(e)}
-                  ref={(ref) =>
-                    (playerInfoRef.current.contestPlayerEmail = ref)
-                  }
+                  ref={(ref) => (invoiceInfoRef.current.playerGym = ref)}
                   className="h-12 outline-none"
                 />
               </div>
@@ -268,22 +159,48 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
             <div className="h-12 w-3/4 rounded-lg ">
               <div className="flex w-full justify-start items-center h-12">
                 <select
-                  name="contestPlayerGender"
+                  name="playerGender"
                   onChange={(e) => handleInputValues(e)}
-                  value={playerInfo.contestPlayerGender}
-                  ref={(ref) =>
-                    (playerInfoRef.current.contestPlayerGender = ref)
-                  }
+                  //value={invoiceInfo.playerGender}
+
+                  ref={(ref) => (invoiceInfoRef.current.playerGender = ref)}
                   className="w-full h-full pl-2"
                 >
-                  <option>남</option>
-                  <option>여</option>
+                  <option selected={invoiceInfo.playerGender === "m"} value="m">
+                    남
+                  </option>
+                  <option selected={invoiceInfo.playerGender === "f"} value="f">
+                    여
+                  </option>
                 </select>
               </div>
             </div>
           </div>
+          <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                이메일
+              </h3>
+            </div>
+            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <input
+                  type="email"
+                  name="playerEmail"
+                  value={invoiceInfo.playerEmail}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) => (invoiceInfoRef.current.playerEmail = ref)}
+                  className="h-12 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="flex w-full justify-start items-center h-auto ">
-            <div className="flex w-1/4 justify-end mr-2 h-28 items-start">
+            <div className="flex w-1/4 justify-end mr-2 h-14 items-start">
               <h3
                 className="font-sans font-semibold"
                 style={{ letterSpacing: "2px" }}
@@ -291,16 +208,29 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                 출전동기
               </h3>
             </div>
-            <div className="h-28 w-3/4 rounded-lg px-3 bg-white pt-1">
+            <div className="h-14 w-3/4 rounded-lg px-3 bg-white pt-1">
               <div className="flex w-full justify-start items-center">
                 <textarea
-                  name="contestPlayerText"
-                  value={playerInfo.contestPlayerText}
+                  name="playerText"
+                  value={invoiceInfo.playerText}
                   onChange={(e) => handleInputValues(e)}
-                  ref={(ref) => (playerInfoRef.current.contestPlayerText = ref)}
-                  className="h-24 outline-none w-full"
+                  ref={(ref) => (invoiceInfoRef.current.playerText = ref)}
+                  className="h-14 outline-none w-full"
                 />
               </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center h-auto ">
+            <div className="flex w-1/4 justify-end mr-2 h-auto items-start">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                참가신청종목
+              </h3>
+            </div>
+            <div className="h-auto w-3/4 rounded-lg px-3 bg-white pt-1">
+              <div className="flex w-full justify-start items-center"></div>
             </div>
           </div>
         </div>
@@ -308,7 +238,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
       <div className="flex w-full gap-x-2 h-auto">
         <button
           className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
-          onClick={() => handleUpdatePlayers()}
+          // onClick={() => handleUpdatePlayers()}
         >
           저장
         </button>

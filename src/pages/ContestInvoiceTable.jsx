@@ -14,6 +14,9 @@ import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { useEffect } from "react";
 import { useMemo } from "react";
 import LoadingPage from "./LoadingPage";
+import { Link } from "react-router-dom";
+import { Modal } from "@mui/material";
+import InvoiceInfoModal from "../modals/InvoiceInfoModal";
 
 const ContestInvoiceTable = () => {
   const [currentTab, setCurrentTab] = useState(1);
@@ -22,6 +25,14 @@ const ContestInvoiceTable = () => {
   const [entryList, setEntryList] = useState([]);
   const [searchInfo, setSearchInfo] = useState();
   const [searchKeyword, setSearchKeyword] = useState("");
+
+  const [isOpen, setIsOpen] = useState({
+    category: false,
+    grade: false,
+    player: false,
+    categoryId: "",
+    gradeId: "",
+  });
   //const [filteredInvoiceList, setFilteredInvoiceList] = useState([]);
   const { currentContest } = useContext(CurrentContestContext);
   const getQuery = useFirestoreQuery();
@@ -118,7 +129,22 @@ const ContestInvoiceTable = () => {
       children: "",
     },
   ];
-
+  const handleInoviceClose = () => {
+    setIsOpen(() => ({
+      invoice: false,
+      title: "",
+      info: {},
+    }));
+  };
+  const handleInvoiceModal = (invoiceId, invoiceInfo) => {
+    if (invoiceId) {
+      setIsOpen(() => ({
+        invoice: true,
+        title: "신청서확인",
+        info: invoiceInfo,
+      }));
+    }
+  };
   const handleSearchKeyword = () => {
     setSearchKeyword(searchInfo);
   };
@@ -215,6 +241,20 @@ const ContestInvoiceTable = () => {
 
   const ContestInvoiceUncompleteRender = (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
+      <Modal open={isOpen.invoice} onClose={handleInoviceClose}>
+        <div
+          className="flex w-full lg:w-1/2 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <InvoiceInfoModal
+            setClose={handleInoviceClose}
+            propState={isOpen}
+            setState={setInvoiceList}
+          />
+        </div>
+      </Modal>
       <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
         <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-2 gap-y-2">
           <div className="flex w-full justify-start items-center ">
@@ -293,7 +333,12 @@ const ContestInvoiceTable = () => {
                           />
                         </td>
                         <td className="text-left w-1/12 text-sm  lg:text-base">
-                          {playerName}
+                          <span
+                            onClick={() => handleInvoiceModal(id, filtered)}
+                            className=" cursor-pointer underline"
+                          >
+                            {playerName}
+                          </span>
                         </td>
                         <td className="text-left w-2/12 text-sm  lg:text-base">
                           {playerTel}
