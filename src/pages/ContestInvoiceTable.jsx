@@ -142,6 +142,7 @@ const ContestInvoiceTable = () => {
         invoice: true,
         title: "신청서확인",
         info: invoiceInfo,
+        list: invoiceList,
       }));
     }
   };
@@ -232,8 +233,10 @@ const ContestInvoiceTable = () => {
   };
 
   useEffect(() => {
-    fetchQuery();
-  }, [currentContest?.contests?.id]);
+    if (currentContest) {
+      fetchQuery();
+    }
+  }, [currentContest]);
 
   useEffect(() => {
     console.log(filteredData);
