@@ -62,6 +62,7 @@ const ContestInvoiceTable = () => {
     }
 
     setIsLoading(false);
+    console.log(invoiceList);
   };
 
   const filteredData = useMemo(() => {
@@ -233,9 +234,10 @@ const ContestInvoiceTable = () => {
   };
 
   useEffect(() => {
-    if (currentContest) {
+    if (currentContest?.contests?.contestNoticeId) {
       fetchQuery();
     }
+    console.log(currentContest?.contests?.contestNoticeId);
   }, [currentContest]);
 
   useEffect(() => {

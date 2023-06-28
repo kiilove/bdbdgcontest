@@ -48,10 +48,10 @@ const ContestTimetable = () => {
     "contest_categorys_list"
   );
 
+  const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
   const contestCategoryUpdate = useFirestoreUpdateData(
     "contest_categorys_list"
   );
-  const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
   const fetchEntry = useFirestoreQuery();
 
   const tabArray = [

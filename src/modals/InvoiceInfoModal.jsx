@@ -118,7 +118,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
   useEffect(() => {
     //getInvoice();
     fetchPool();
-    invoiceInfoRef.current.playerName.focus();
+    //invoiceInfoRef.current.playerName.focus();
   }, []);
 
   useEffect(() => {

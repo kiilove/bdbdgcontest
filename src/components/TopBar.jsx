@@ -43,12 +43,21 @@ const TopBar = () => {
     }
   };
   const fetchList = async () => {
-    const condition = [where("contestStatus", "==", "접수중")];
+    const condition = [
+      //where("contestStatus", "==", "접수중"),
+      //where("contestStatus", "==", "테스트"),
+      where("contestStatus", "in", ["접수중", "테스트"]),
+    ];
     const returnData = await fetchQuery.getDocuments(
       "contest_notice",
       condition
     );
-    setContestList([...returnData]);
+    setContestList([
+      ...returnData.sort((a, b) =>
+        a.contestTitle.localeCompare(b.contestTitle)
+      ),
+    ]);
+
     if (returnData?.length === 1) {
       setContestNoticeId(returnData[0].id);
     }
@@ -81,13 +90,27 @@ const TopBar = () => {
   return (
     <div className="flex w-full h-full justify-start items-center bg-white">
       <div className="flex w-full h-full lg:hidden ">
-        <div className="flex w-full h-full">
+        <div className="flex w-full h-full items-center">
           <button
             onClick={() => handleDrawer()}
             className="flex w-10 h-10 justify-center items-center"
           >
             <RxHamburgerMenu className="text-2xl" />
           </button>
+          <div className="flex justify-start items-center h-8 px-2 gap-x-1">
+            <span className="text-sm text-gray-500">
+              <BsTrophyFill />
+            </span>
+            <select
+              className=" bg-transparent"
+              onClick={(e) => setContestNoticeId(e.target.value)}
+            >
+              {contestList.length > 0 &&
+                contestList.map((list, lIdx) => (
+                  <option value={list.id}>{list.contestTitle}</option>
+                ))}
+            </select>
+          </div>
         </div>
         <Drawer
           open={isOpenDrawer}
