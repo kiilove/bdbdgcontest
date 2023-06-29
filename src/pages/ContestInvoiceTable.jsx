@@ -167,7 +167,31 @@ const ContestInvoiceTable = () => {
       ...newInvoice,
     });
 
+    const initInvoice = async () => {
+      const invoiceCondition = [
+        where("contestId", "==", currentContest.contests.id),
+      ];
+
+      const returnEntry = await getQuery.getDocuments(
+        "contest_entrys_list",
+        invoiceCondition
+      );
+      const filteredEntryByPlayerUid = returnEntry.filter(
+        (entry) => entry.playerUid === playerUid
+      );
+
+      if (filteredEntryByPlayerUid <= 0) {
+        window.alert("일치하는 선수명단이 없습니다.");
+      }
+      if (filteredEntryByPlayerUid) {
+        filteredEntryByPlayerUid.map(async (filter, fIdx) => {
+          await deleteEntry.deleteData(filter.id);
+        });
+      }
+    };
+
     if (e.target.checked) {
+      initInvoice();
       if (newInvoiceList[findIndex].joins.length > 0) {
         const {
           contestId,
@@ -210,32 +234,7 @@ const ContestInvoiceTable = () => {
     }
 
     if (!e.target.checked) {
-      const invoiceCondition = [
-        where("contestId", "==", currentContest.contests.id),
-      ];
-
-      const returnEntry = await getQuery.getDocuments(
-        "contest_entrys_list",
-        invoiceCondition
-      );
-      const filteredEntryByPlayerUid = returnEntry.filter(
-        (entry) => entry.playerUid === playerUid
-      );
-
-      console.log(entryList);
-      console.log(filteredEntryByPlayerUid);
-
-      // entryList를 불러오는 시점에서 데이터가 일치하지 않아서
-      // delete할때 entryId가 불일치해서 데이터 삭제가 안되고 있음
-
-      if (filteredEntryByPlayerUid <= 0) {
-        window.alert("일치하는 선수명단이 없습니다.");
-      }
-      if (filteredEntryByPlayerUid) {
-        filteredEntryByPlayerUid.map(async (filter, fIdx) => {
-          await deleteEntry.deleteData(filter.id);
-        });
-      }
+      initInvoice();
     }
 
     await updateInvoice
@@ -335,6 +334,7 @@ const ContestInvoiceTable = () => {
                       playerTel,
                       playerGym,
                       isPriceCheck,
+                      invoiceEdited,
                       contestPriceSum,
                     } = filtered;
 
@@ -350,12 +350,17 @@ const ContestInvoiceTable = () => {
                           />
                         </td>
                         <td className="text-left w-1/12 text-sm  lg:text-base">
-                          <span
-                            onClick={() => handleInvoiceModal(id, filtered)}
-                            className=" cursor-pointer underline"
-                          >
-                            {playerName}
-                          </span>
+                          <div className="flex flex-col">
+                            <span
+                              onClick={() => handleInvoiceModal(id, filtered)}
+                              className=" cursor-pointer underline"
+                            >
+                              {playerName}
+                            </span>
+                            {invoiceEdited && !isPriceCheck && (
+                              <span>변경신청됨</span>
+                            )}
+                          </div>
                         </td>
                         <td className="text-left w-2/12 text-sm  lg:text-base">
                           {playerTel}

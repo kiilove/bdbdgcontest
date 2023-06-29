@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { BsCheckAll } from "react-icons/bs";
 import LoadingPage from "./LoadingPage";
 import { TiInputChecked } from "react-icons/ti";
@@ -58,16 +58,18 @@ const ContestPlayerOrderTable = () => {
   const initEntryList = () => {
     setIsLoading(true);
     let dummy = [];
-
+    let playerNumber = 0;
     categorysArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
       .map((category, cIdx) => {
         const matchedGrades = gradesArray.filter(
           (grade) => grade.refCategoryId === category.contestCategoryId
         );
+        const matchedGradesLength = matchedGrades.length;
         matchedGrades
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
           .map((grade, gIdx) => {
+            const matchedPlayerWithPlayerNumber = [];
             const matchedPlayers = entrysArray
               .filter((entry) => entry.contestGradeId === grade.contestGradeId)
               .sort((a, b) => {
@@ -75,7 +77,23 @@ const ContestPlayerOrderTable = () => {
                 const dateB = new Date(b.invoiceCreateAt);
                 return dateA.getTime() - dateB.getTime();
               });
-            const matchedInfo = { ...category, ...grade, matchedPlayers };
+
+            matchedPlayers.map((player, pIdx) => {
+              playerNumber++;
+              const newPlayer = {
+                ...player,
+                playerNumber,
+                playerNoShow: false,
+              };
+              matchedPlayerWithPlayerNumber.push({ ...newPlayer });
+            });
+
+            const matchedInfo = {
+              ...category,
+              ...grade,
+              matchedPlayers: matchedPlayerWithPlayerNumber,
+              matchedGradesLength,
+            };
             dummy.push({ ...matchedInfo });
           });
       });
@@ -84,7 +102,12 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(false);
   };
 
-  const gradeChage = (e, currentCategoryId, currentGradeId) => {
+  const gradeChage = (
+    e,
+    currentCategoryId,
+    currentGradeId,
+    currentPlayerUid
+  ) => {
     //현재 종목, 체급 코드를 받아와서
     // 종목에 포함된 체급의 갯수를 계산한후에
     // 현재 체급 코드의 gradeIndex가 체급 갯수보다 작다면 다음 체급으로 변경하도록 코드를 작성한다.
@@ -93,8 +116,60 @@ const ContestPlayerOrderTable = () => {
       checked: e.target.checked,
       currentCategoryId,
       currentGradeId,
+      matchedArray,
     });
+
+    const newMatched = [...matchedArray];
+
+    const entryFindIndex = newMatched.findIndex(
+      (entry) =>
+        entry.contestCategoryId === currentCategoryId &&
+        entry.contestGradeId === currentGradeId
+    );
+
+    const currentPlayerInfo = newMatched
+      .find(
+        (entry) =>
+          entry.contestCategoryId === currentCategoryId &&
+          entry.contestGradeId === currentGradeId
+      )
+      .matchedPlayers.find((player) => player.playerUid === currentPlayerUid);
+
+    const playerFindIndex = newMatched
+      .find(
+        (entry) =>
+          entry.contestCategoryId === currentCategoryId &&
+          entry.contestGradeId === currentGradeId
+      )
+      .matchedPlayers.findIndex(
+        (player) => player.playerUid === currentPlayerUid
+      );
+
+    if (e.target.checked) {
+      const newPlayerInfo = { ...currentPlayerInfo, isGradeChanged: true };
+      //기존 선수 배열에서 삭제
+      newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
+      //다음 선수 배열에 추가
+      newMatched[entryFindIndex + 1].matchedPlayers.push({
+        ...newPlayerInfo,
+      });
+
+      setMatchedArray(() => [...newMatched]);
+    } else {
+      const newPlayerInfo = { ...currentPlayerInfo, isGradeChanged: false };
+      //기존 선수 배열에서 삭제
+      newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
+      //다음 선수 배열에 추가
+      newMatched[entryFindIndex - 1].matchedPlayers.push({
+        ...newPlayerInfo,
+      });
+      setMatchedArray(() => [...newMatched]);
+    }
   };
+
+  const filterdMatchedArray = useMemo(() => {
+    return matchedArray;
+  }, [matchedArray]);
 
   useEffect(() => {
     fetchPool();
@@ -107,7 +182,7 @@ const ContestPlayerOrderTable = () => {
   }, [categorysArray, gradesArray, entrysArray]);
 
   useEffect(() => {
-    console.log(matchedArray);
+    console.log(filterdMatchedArray);
   }, [matchedArray]);
 
   return (
@@ -139,7 +214,7 @@ const ContestPlayerOrderTable = () => {
                     .sort(
                       (a, b) => a.contestCategoryIndex - b.contestCategoryIndex
                     )
-                    .map((matched, cIdx) => {
+                    .map((matched, mIdx) => {
                       const {
                         contestCategoryId: categoryId,
                         contestCategoryIndex: categoryIndex,
@@ -148,6 +223,7 @@ const ContestPlayerOrderTable = () => {
                         contestGradeIndex: gradeIndex,
                         contestGradeTitle: gradeTitle,
                         matchedPlayers,
+                        matchedGradesLength: gradeLength,
                       } = matched;
 
                       matchedPlayers.length > 0 && categoryNumber++;
@@ -165,13 +241,20 @@ const ContestPlayerOrderTable = () => {
                                     <div className="flex w-1/6">순번</div>
                                     <div className="flex w-1/6">선수번호</div>
                                     <div className="flex w-1/6">이름</div>
-                                    <div className="flex w-2/6">소속</div>
+                                    <div className="flex w-1/6">소속</div>
                                     <div className="flex w-1/6">월체</div>
+                                    <div className="flex w-1/6">불참</div>
                                   </div>
                                   {matchedPlayers?.length > 0 &&
                                     matchedPlayers.map((player, pIdx) => {
-                                      const { playerName, playerGym } = player;
-                                      totalPlayerNumber++;
+                                      const {
+                                        playerName,
+                                        playerGym,
+                                        playerUid,
+                                        playerNumber,
+                                        playerNoShow,
+                                        isGradeChanged,
+                                      } = player;
 
                                       return (
                                         <div className="flex w-full h-10 border-b border-gray-300 items-center text-sm lg:px-2">
@@ -179,24 +262,38 @@ const ContestPlayerOrderTable = () => {
                                             {pIdx + 1}
                                           </div>
                                           <div className="flex w-1/6">
-                                            {totalPlayerNumber}
+                                            {playerNumber}
                                           </div>
                                           <div className="flex w-1/6">
                                             {playerName}
                                           </div>
-                                          <div className="flex w-2/6">
+                                          <div className="flex w-1/6">
                                             {playerGym}
+                                          </div>
+                                          <div className="flex w-1/6">
+                                            {gradeIndex <
+                                              parseInt(gradeLength) ||
+                                            isGradeChanged ? (
+                                              <input
+                                                type="checkbox"
+                                                checked={isGradeChanged}
+                                                onChange={(e) =>
+                                                  gradeChage(
+                                                    e,
+                                                    categoryId,
+                                                    gradeId,
+                                                    playerUid
+                                                  )
+                                                }
+                                              />
+                                            ) : (
+                                              <span>불가</span>
+                                            )}
                                           </div>
                                           <div className="flex w-1/6">
                                             <input
                                               type="checkbox"
-                                              onChange={(e) =>
-                                                gradeChage(
-                                                  e,
-                                                  categoryId,
-                                                  gradeId
-                                                )
-                                              }
+                                              checked={playerNoShow}
                                             />
                                           </div>
                                         </div>
