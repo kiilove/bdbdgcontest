@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  MdOutlineKeyboardArrowDown,
-  MdOutlineKeyboardArrowUp,
-} from "react-icons/md";
+
 import { MenuArray } from "./Menus";
 
 const Sidebar = () => {
@@ -55,7 +52,7 @@ const Sidebar = () => {
                 </button>
               </div>
               <div className="flex">
-                {menu?.subMenus ? (
+                {/* {menu?.subMenus ? (
                   <span className="text-3xl">
                     {menuVisible.menuIndex === idx && !menuVisible.isHidden ? (
                       <MdOutlineKeyboardArrowUp />
@@ -63,41 +60,39 @@ const Sidebar = () => {
                       <MdOutlineKeyboardArrowDown />
                     )}
                   </span>
-                ) : null}
+                ) : null} */}
               </div>
             </div>
           </div>
-          {menuVisible.menuIndex === idx && (
-            <div
-              className={`overflow-hidden transition-all duration-500 ${
-                menuVisible.isHidden ? "max-h-0" : "max-h-64"
-              }`}
-            >
-              {menu?.subMenus && (
+          {menuVisible.menuIndex === idx &&
+            menuVisible.isHidden === false &&
+            menu?.subMenus && (
+              <div className={`overflow-hidden transition-all duration-500 `}>
                 <div className="flex flex-col text-gray-200 text-base bg-sky-700 w-full">
-                  {menu.subMenus.map((subMenus, sIdx) => (
-                    <div className="flex w-full" key={subMenus.index}>
-                      <div className="flex w-full h-12">
-                        <button
-                          className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
-                          onClick={() => navigate(subMenus.link)}
-                        >
-                          <div className="flex justify-start items-center">
-                            <span className="text-base text-white mr-2">
-                              {subMenus?.icon}
-                            </span>
-                            <span className="text-sm text-white">
-                              {subMenus.title}
-                            </span>
-                          </div>
-                        </button>
+                  {menu.subMenus.map((subMenu, sIdx) => {
+                    return (
+                      <div className="flex w-full" key={subMenu.id}>
+                        <div className="flex w-full h-12">
+                          <button
+                            className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
+                            onClick={() => navigate(subMenu?.link)}
+                          >
+                            <div className="flex justify-start items-center">
+                              <span className="text-base text-white mr-2">
+                                {subMenu?.icon}
+                              </span>
+                              <span className="text-sm text-white">
+                                {subMenu.title}
+                              </span>
+                            </div>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
         </div>
       ))}
     </div>

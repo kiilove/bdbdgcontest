@@ -483,11 +483,24 @@ const ContestTimetable = () => {
                                           if (entrysArray?.length <= 0) {
                                             return;
                                           }
-                                          const filtered = entrysArray.filter(
-                                            (e) =>
-                                              e.contestGradeId ===
-                                              currentSubMenu.gradeId
-                                          );
+                                          const filtered = entrysArray
+                                            .filter(
+                                              (e) =>
+                                                e.contestGradeId ===
+                                                currentSubMenu.gradeId
+                                            )
+                                            .sort((a, b) => {
+                                              const dateA = new Date(
+                                                a.invoiceCreateAt
+                                              );
+                                              const dateB = new Date(
+                                                b.invoiceCreateAt
+                                              );
+                                              return (
+                                                dateA.getTime() -
+                                                dateB.getTime()
+                                              );
+                                            });
 
                                           return (
                                             <div className="flex w-full px-2 pb-2 h-auto flex-wrap flex-col gap-y-1">

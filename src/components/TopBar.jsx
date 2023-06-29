@@ -97,12 +97,12 @@ const TopBar = () => {
           >
             <RxHamburgerMenu className="text-2xl" />
           </button>
-          <div className="flex justify-start items-center h-8 px-2 gap-x-1">
+          <div className="flex justify-start items-center h-8 px-2 gap-x-1 overflow-hidden">
             <span className="text-sm text-gray-500">
               <BsTrophyFill />
             </span>
             <select
-              className=" bg-transparent"
+              className=" bg-transparent text-xs"
               onClick={(e) => setContestNoticeId(e.target.value)}
             >
               {contestList.length > 0 &&

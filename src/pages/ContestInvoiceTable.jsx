@@ -169,8 +169,15 @@ const ContestInvoiceTable = () => {
 
     if (e.target.checked) {
       if (newInvoiceList[findIndex].joins.length > 0) {
-        const { contestId, playerUid, playerName, playerGym, playerTel } =
-          newInvoiceList[findIndex];
+        const {
+          contestId,
+          playerUid,
+          playerName,
+          playerGym,
+          playerTel,
+          playerText,
+          invoiceCreateAt,
+        } = newInvoiceList[findIndex];
         newInvoiceList[findIndex].joins.map(async (join, jIdx) => {
           const {
             contestCategoryTitle,
@@ -186,10 +193,15 @@ const ContestInvoiceTable = () => {
             playerName,
             playerGym,
             playerTel,
+            playerText,
+            invoiceCreateAt,
             contestCategoryTitle,
             contestCategoryId,
             contestGradeTitle,
             contestGradeId,
+            originalGradeTitle: contestGradeTitle,
+            originalGradeId: contestGradeId,
+            isGradeChanged: false,
           };
 
           await addEntry.addData({ ...entryInfo });
