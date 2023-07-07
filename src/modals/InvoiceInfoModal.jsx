@@ -8,6 +8,7 @@ import {
 } from "../hooks/useFirestores";
 import { TbUsers } from "react-icons/tb";
 import { BsCheckAll } from "react-icons/bs";
+import ConfirmationModal from "../messageBox/ConfirmationModal";
 
 const initPlayerInfo = {
   contestPlayerIndex: "",
@@ -35,6 +36,8 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
   const [gradesArray, setGradesArray] = useState([]);
   const [entrysArray, setEntrysArray] = useState([]);
 
+  const [delMsgOpen, setDelMsgOpen] = useState(false);
+  const [message, setMessage] = useState("");
   const invoiceInfoRef = useRef({});
 
   const contestInvoiceDocument = useFirestoreGetDocument("invoices_pool");
@@ -115,6 +118,26 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
     setInvoiceInfo({ ...newInvoiceInfo, joins: [...dummy] });
   };
 
+  const handleOpenDelMsgBox = () => {
+    setMessage({
+      body: "참가신청을 삭제하시겠습니까?",
+      isButton: true,
+      cancelButtonText: "닫기",
+      confirmButtonText: "삭제",
+    });
+    setDelMsgOpen(true);
+  };
+
+  const hadleCancelDo = () => {
+    //invocices_pool에서 isCancelled 를 true로 변경해주고 isPriceCheck도 false로 변경하고 넘어가
+    // 필드를 만든때 isCanceled라고 오타를 냈어. 이부분 체크하고 넘어가
+    //contest_entrys_list에서 contestId와 playerUid조건에 맞는 문서를 삭제해줘야해
+    //delete쿼리를 실행한후에는 state값을 조정해줘야해
+    //propState.list항목에 대한 처리가 필요해
+    //이 함수의 인자값에 setState에 setInvociceList가 담겨서 오니 이것으로 부모참 상태값 관리해줘야해
+    setDelMsgOpen(false);
+  };
+
   useEffect(() => {
     //getInvoice();
     fetchPool();
@@ -126,24 +149,35 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
     setInvoiceInfo({ ...propState.info });
   }, [propState]);
 
-  //propState.list로 받아온 전체 invoice의 정보를 업데이트하고 부모창으로 리턴해줘야한다.
-  //setInvoiceList까지 받아와야 제대로 작동할듯
-  //DB업데이트도 진행되어야함
-  // 23.06.14
-
   return (
     <div className="flex w-full flex-col gap-y-2 h-auto py-10">
+      <ConfirmationModal
+        isOpen={delMsgOpen}
+        onCancel={() => setDelMsgOpen(false)}
+        onConfirm={hadleCancelDo}
+        message={message}
+      />
       <div className="flex w-full h-14">
         <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
-          <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-            <BsCheckAll />
-          </span>
-          <h1
-            className="font-sans text-lg font-semibold"
-            style={{ letterSpacing: "2px" }}
-          >
-            {propState?.title || ""}
-          </h1>
+          <div className="flex w-5/6">
+            <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
+              <BsCheckAll />
+            </span>
+            <h1
+              className="font-sans text-lg font-semibold"
+              style={{ letterSpacing: "2px" }}
+            >
+              {propState?.title || ""}
+            </h1>
+          </div>
+          <div className="flex w-1/6">
+            <button
+              className="w-full h-12 bg-gradient-to-r from-orange-300 to-red-300 rounded-lg text-sm"
+              onClick={() => handleOpenDelMsgBox()}
+            >
+              삭제
+            </button>
+          </div>
         </div>
       </div>
       <div className="flex bg-gradient-to-r from-blue-200 to-cyan-200 p-3 rounded-lg">
@@ -151,13 +185,13 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
           <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 이름
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+            <div className="h-8 lg:h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
@@ -165,7 +199,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) => (invoiceInfoRef.current.playerName = ref)}
                   name="playerName"
-                  className="h-12 outline-none"
+                  className="h-8 lg:h-12 outline-none text-sm lg:text-base"
                 />
               </div>
             </div>
@@ -173,13 +207,13 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
           <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 연락처
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+            <div className="h-8 lg:h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
@@ -187,7 +221,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                   value={invoiceInfo.playerTel}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) => (invoiceInfoRef.current.playerTel = ref)}
-                  className="h-12 outline-none"
+                  className="h-8 lg:h-12 outline-none  text-sm lg:text-base"
                 />
               </div>
             </div>
@@ -195,13 +229,35 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
           <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
+                style={{ letterSpacing: "2px" }}
+              >
+                생년월일
+              </h3>
+            </div>
+            <div className="h-8 lg:h-12 w-3/4 rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <input
+                  type="text"
+                  name="playerGym"
+                  value={invoiceInfo.playerBirth}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) => (invoiceInfoRef.current.playerBirth = ref)}
+                  className="h-8 lg:h-12 outline-none text-sm lg:text-base"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 소속
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+            <div className="h-8 lg:h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
@@ -209,7 +265,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                   value={invoiceInfo.playerGym}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) => (invoiceInfoRef.current.playerGym = ref)}
-                  className="h-12 outline-none"
+                  className="h-8 lg:h-12 outline-none text-sm lg:text-base"
                 />
               </div>
             </div>
@@ -218,21 +274,21 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
           <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 성별
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg ">
-              <div className="flex w-full justify-start items-center h-12">
+            <div className="h-8 lg:h-12 w-3/4 rounded-lg">
+              <div className="flex w-full justify-start items-center h-8 lg:h-12 bg-white rounded-lg">
                 <select
                   name="playerGender"
                   onChange={(e) => handleInputValues(e)}
                   //value={invoiceInfo.playerGender}
 
                   ref={(ref) => (invoiceInfoRef.current.playerGender = ref)}
-                  className="w-full h-full pl-2"
+                  className="w-full h-full pl-2 text-sm lg:text-base bg-transparent rounded-lg"
                 >
                   <option selected={invoiceInfo.playerGender === "m"} value="m">
                     남
@@ -247,13 +303,13 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
           <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 이메일
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+            <div className="h-8 lg:h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="email"
@@ -261,7 +317,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                   value={invoiceInfo.playerEmail}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) => (invoiceInfoRef.current.playerEmail = ref)}
-                  className="h-12 outline-none"
+                  className="h-8 lg:h-12 outline-none text-sm lg:text-base"
                 />
               </div>
             </div>
@@ -269,13 +325,13 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
           <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 참가비용
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+            <div className="h-8 lg:h-12 w-3/4 rounded-lg px-3 bg-white">
               <div className="flex w-full justify-start items-center">
                 <input
                   type="email"
@@ -283,7 +339,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                   value={invoiceInfo.contestPriceSum?.toLocaleString()}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) => (invoiceInfoRef.current.contestPriceSum = ref)}
-                  className="h-12 outline-none"
+                  className="h-8 lg:h-12 outline-none text-sm lg:text-base"
                 />
               </div>
             </div>
@@ -292,7 +348,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
           <div className="flex w-full justify-start items-center h-auto ">
             <div className="flex w-1/4 justify-end mr-2 h-14 items-start">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 출전동기
@@ -305,15 +361,15 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
                   value={invoiceInfo.playerText}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) => (invoiceInfoRef.current.playerText = ref)}
-                  className="h-20 outline-none w-full"
+                  className="h-16 outline-none w-full text-sm lg:text-base"
                 />
               </div>
             </div>
           </div>
           <div className="flex w-full justify-start items-center h-auto ">
-            <div className="flex w-1/4 justify-end mr-2 h-auto items-start">
+            <div className="flex w-1/4 justify-end mr-2 h-full items-start">
               <h3
-                className="font-sans font-semibold"
+                className="font-sans font-semibold text-sm lg:text-base"
                 style={{ letterSpacing: "2px" }}
               >
                 참가신청종목

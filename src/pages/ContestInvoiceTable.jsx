@@ -96,6 +96,15 @@ const ContestInvoiceTable = () => {
                 invoice.playerGym.includes(searchKeyword))
           );
           break;
+        case 3:
+          newData = invoiceList.filter(
+            (invoice) =>
+              invoice.isCanceled &&
+              (invoice.playerName.includes(searchKeyword) ||
+                invoice.playerTel.includes(searchKeyword) ||
+                invoice.playerGym.includes(searchKeyword))
+          );
+          break;
         default:
           break;
       }
@@ -125,8 +134,8 @@ const ContestInvoiceTable = () => {
     },
     {
       id: 3,
-      title: "신청서누락 목록",
-      subTitle: "입금확인되었지만 신청서가 없는 목록입니다.",
+      title: "취소목록",
+      subTitle: "참가신청후 취소된목록입니다.",
       children: "",
     },
   ];
@@ -144,6 +153,7 @@ const ContestInvoiceTable = () => {
         title: "신청서확인",
         info: invoiceInfo,
         list: invoiceList,
+        setList: setInvoiceList,
       }));
     }
   };
@@ -197,6 +207,7 @@ const ContestInvoiceTable = () => {
           contestId,
           playerUid,
           playerName,
+          playerBirth,
           playerGym,
           playerTel,
           playerText,
@@ -215,6 +226,7 @@ const ContestInvoiceTable = () => {
             invoiceId,
             playerUid,
             playerName,
+            playerBirth,
             playerGym,
             playerTel,
             playerText,
@@ -315,6 +327,9 @@ const ContestInvoiceTable = () => {
                     연락처
                   </th>
                   <th className="text-left w-2/12 hidden lg:table-cell">
+                    생년월일
+                  </th>
+                  <th className="text-left w-2/12 hidden lg:table-cell">
                     소속
                   </th>
                   <th className="text-left w-2/12 hidden lg:table-cell">
@@ -332,6 +347,7 @@ const ContestInvoiceTable = () => {
                       playerUid,
                       playerName,
                       playerTel,
+                      playerBirth,
                       playerGym,
                       isPriceCheck,
                       invoiceEdited,
@@ -364,6 +380,9 @@ const ContestInvoiceTable = () => {
                         </td>
                         <td className="text-left w-2/12 text-sm  lg:text-base">
                           {playerTel}
+                        </td>
+                        <td className="text-left w-2/12 hidden lg:table-cell text-sm  lg:text-base">
+                          {playerBirth}
                         </td>
                         <td className="text-left w-2/12 hidden lg:table-cell">
                           {playerGym}
@@ -444,6 +463,7 @@ const ContestInvoiceTable = () => {
                 {currentTab === 0 && ContestInvoiceUncompleteRender}
                 {currentTab === 1 && ContestInvoiceUncompleteRender}
                 {currentTab === 2 && ContestInvoiceUncompleteRender}
+                {currentTab === 3 && ContestInvoiceUncompleteRender}
               </div>
             </div>
           </div>
