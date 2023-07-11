@@ -161,8 +161,32 @@ const ContestInvoiceTable = () => {
     setSearchKeyword(searchInfo);
   };
 
+  const initInvoice = async (playerUid) => {
+    const invoiceCondition = [
+      where("contestId", "==", currentContest.contests.id),
+    ];
+
+    const returnEntry = await getQuery.getDocuments(
+      "contest_entrys_list",
+      invoiceCondition
+    );
+    const filteredEntryByPlayerUid = returnEntry.filter(
+      (entry) => entry.playerUid === playerUid
+    );
+
+    if (filteredEntryByPlayerUid <= 0) {
+      console.log("일치하는 선수명단이 없습니다.");
+    }
+    if (filteredEntryByPlayerUid) {
+      filteredEntryByPlayerUid.map(async (filter, fIdx) => {
+        await deleteEntry.deleteData(filter.id);
+      });
+    }
+  };
+
   const handleIsPriceCheckUpdate = async (invoiceId, playerUid, e) => {
     setIsLoading(true);
+    //initInvoice(playerUid);
     const findIndex = invoiceList.findIndex(
       (invoice) => invoice.id === invoiceId
     );
@@ -177,31 +201,8 @@ const ContestInvoiceTable = () => {
       ...newInvoice,
     });
 
-    const initInvoice = async () => {
-      const invoiceCondition = [
-        where("contestId", "==", currentContest.contests.id),
-      ];
-
-      const returnEntry = await getQuery.getDocuments(
-        "contest_entrys_list",
-        invoiceCondition
-      );
-      const filteredEntryByPlayerUid = returnEntry.filter(
-        (entry) => entry.playerUid === playerUid
-      );
-
-      if (filteredEntryByPlayerUid <= 0) {
-        window.alert("일치하는 선수명단이 없습니다.");
-      }
-      if (filteredEntryByPlayerUid) {
-        filteredEntryByPlayerUid.map(async (filter, fIdx) => {
-          await deleteEntry.deleteData(filter.id);
-        });
-      }
-    };
-
     if (e.target.checked) {
-      initInvoice();
+      //initInvoice();
       if (newInvoiceList[findIndex].joins.length > 0) {
         const {
           contestId,
@@ -246,7 +247,7 @@ const ContestInvoiceTable = () => {
     }
 
     if (!e.target.checked) {
-      initInvoice();
+      initInvoice(playerUid);
     }
 
     await updateInvoice
