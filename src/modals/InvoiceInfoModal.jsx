@@ -3,12 +3,16 @@ import { BiCategory } from "react-icons/bi";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { v4 as uuidv4 } from "uuid";
 import {
+  useFirestoreAddData,
+  useFirestoreDeleteData,
   useFirestoreGetDocument,
+  useFirestoreQuery,
   useFirestoreUpdateData,
 } from "../hooks/useFirestores";
 import { TbUsers } from "react-icons/tb";
 import { BsCheckAll } from "react-icons/bs";
 import ConfirmationModal from "../messageBox/ConfirmationModal";
+import { where } from "firebase/firestore";
 
 const initPlayerInfo = {
   contestPlayerIndex: "",
@@ -37,6 +41,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
   const [entrysArray, setEntrysArray] = useState([]);
 
   const [delMsgOpen, setDelMsgOpen] = useState(false);
+  const [unDelMsgOpen, setUnDelMsgOpen] = useState(false);
   const [message, setMessage] = useState("");
   const invoiceInfoRef = useRef({});
 
@@ -45,6 +50,11 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
+  const updateInvoice = useFirestoreUpdateData("invoices_pool");
+  const deleteEntry = useFirestoreDeleteData("contest_entrys_list");
+  const addEntry = useFirestoreAddData("contest_entrys_list");
+
+  const getQuery = useFirestoreQuery();
 
   const fetchPool = async () => {
     if (currentContest.contests.contestCategorysListId) {
@@ -128,14 +138,88 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
     setDelMsgOpen(true);
   };
 
-  const hadleCancelDo = () => {
-    //invocices_pool에서 isCancelled 를 true로 변경해주고 isPriceCheck도 false로 변경하고 넘어가
-    // 필드를 만든때 isCanceled라고 오타를 냈어. 이부분 체크하고 넘어가
-    //contest_entrys_list에서 contestId와 playerUid조건에 맞는 문서를 삭제해줘야해
-    //delete쿼리를 실행한후에는 state값을 조정해줘야해
-    //propState.list항목에 대한 처리가 필요해
-    //이 함수의 인자값에 setState에 setInvociceList가 담겨서 오니 이것으로 부모참 상태값 관리해줘야해
-    setDelMsgOpen(false);
+  const handleOpenUnDelMsgBox = () => {
+    setMessage({
+      body: "참가신청를 복원하시겠습니까?",
+      isButton: true,
+      cancelButtonText: "닫기",
+      confirmButtonText: "복원",
+    });
+    setUnDelMsgOpen(true);
+  };
+
+  const deleteInvocieJoins = async (contestId, playerUid) => {
+    const invoiceCondition = [where("contestId", "==", contestId)];
+
+    const returnEntry = await getQuery.getDocuments(
+      "contest_entrys_list",
+      invoiceCondition
+    );
+    const filteredEntryByPlayerUid = returnEntry.filter(
+      (entry) => entry.playerUid === playerUid
+    );
+
+    if (filteredEntryByPlayerUid <= 0) {
+      console.log("일치하는 선수명단이 없습니다.");
+    }
+    if (filteredEntryByPlayerUid) {
+      filteredEntryByPlayerUid.map(async (filter, fIdx) => {
+        await deleteEntry.deleteData(filter.id);
+      });
+    }
+  };
+
+  const handleCancelUndo = async () => {
+    const dummy = [...propState.list];
+    const findInvoiceIndex = dummy.findIndex(
+      (invoice) => invoice.id === invoiceInfo.id
+    );
+    const newInvoiceInfo = {
+      ...invoiceInfo,
+      isCanceled: false,
+      isPriceCheck: false,
+    };
+    dummy.splice(findInvoiceIndex, 1, newInvoiceInfo);
+
+    await updateInvoice
+      .updateData(invoiceInfo.id, { ...newInvoiceInfo })
+      .then(
+        async () =>
+          findInvoiceIndex !== -1 &&
+          (await deleteInvocieJoins(
+            invoiceInfo.contestId,
+            invoiceInfo.playerUid
+          ))
+      )
+      .then(() => setState([...dummy]))
+      .then(() => setUnDelMsgOpen(false))
+      .catch((error) => console.log(error));
+  };
+  const handleCancelDo = async () => {
+    const dummy = [...propState.list];
+    const findInvoiceIndex = dummy.findIndex(
+      (invoice) => invoice.id === invoiceInfo.id
+    );
+    const newInvoiceInfo = {
+      ...invoiceInfo,
+      isCanceled: true,
+      isPriceCheck: false,
+    };
+    dummy.splice(findInvoiceIndex, 1, newInvoiceInfo);
+
+    await updateInvoice
+      .updateData(invoiceInfo.id, { ...newInvoiceInfo })
+      .then(
+        async () =>
+          findInvoiceIndex !== -1 &&
+          (await deleteInvocieJoins(
+            invoiceInfo.contestId,
+            invoiceInfo.playerUid
+          ))
+      )
+      .then(() => setState([...dummy]))
+      .then(() => setDelMsgOpen(false))
+      .catch((error) => console.log(error));
   };
 
   useEffect(() => {
@@ -150,11 +234,17 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
   }, [propState]);
 
   return (
-    <div className="flex w-full flex-col gap-y-2 h-auto py-10">
+    <div className="flex w-full flex-col gap-y-2 h-auto pt-4 pb-10 lg:pt-0 lg:pb-0 overflow-y-auto">
       <ConfirmationModal
         isOpen={delMsgOpen}
         onCancel={() => setDelMsgOpen(false)}
-        onConfirm={hadleCancelDo}
+        onConfirm={handleCancelDo}
+        message={message}
+      />
+      <ConfirmationModal
+        isOpen={unDelMsgOpen}
+        onCancel={() => setUnDelMsgOpen(false)}
+        onConfirm={handleCancelUndo}
         message={message}
       />
       <div className="flex w-full h-14">
@@ -171,12 +261,21 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
             </h1>
           </div>
           <div className="flex w-1/6">
-            <button
-              className="w-full h-12 bg-gradient-to-r from-orange-300 to-red-300 rounded-lg text-sm"
-              onClick={() => handleOpenDelMsgBox()}
-            >
-              삭제
-            </button>
+            {invoiceInfo.isCanceled ? (
+              <button
+                className="w-full h-12 bg-gradient-to-r from-orange-300 to-red-300 rounded-lg text-sm"
+                onClick={() => handleOpenUnDelMsgBox()}
+              >
+                복원
+              </button>
+            ) : (
+              <button
+                className="w-full h-12 bg-gradient-to-r from-orange-300 to-red-300 rounded-lg text-sm"
+                onClick={() => handleOpenDelMsgBox()}
+              >
+                삭제
+              </button>
+            )}
           </div>
         </div>
       </div>

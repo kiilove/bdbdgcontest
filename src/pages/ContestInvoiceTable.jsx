@@ -82,6 +82,7 @@ const ContestInvoiceTable = () => {
           newData = invoiceList.filter(
             (invoice) =>
               !invoice.isPriceCheck &&
+              !invoice.isCanceled &&
               (invoice.playerName.includes(searchKeyword) ||
                 invoice.playerTel.includes(searchKeyword) ||
                 invoice.playerGym.includes(searchKeyword))
@@ -91,6 +92,7 @@ const ContestInvoiceTable = () => {
           newData = invoiceList.filter(
             (invoice) =>
               invoice.isPriceCheck &&
+              !invoice.isCanceled &&
               (invoice.playerName.includes(searchKeyword) ||
                 invoice.playerTel.includes(searchKeyword) ||
                 invoice.playerGym.includes(searchKeyword))
@@ -351,6 +353,7 @@ const ContestInvoiceTable = () => {
                       playerBirth,
                       playerGym,
                       isPriceCheck,
+                      isCanceled,
                       invoiceEdited,
                       contestPriceSum,
                     } = filtered;
@@ -358,23 +361,36 @@ const ContestInvoiceTable = () => {
                     return (
                       <tr className="border border-t-0 border-x-0" key={id}>
                         <td className="text-center w-1/12 h-10">
-                          <input
-                            type="checkbox"
-                            checked={isPriceCheck}
-                            onClick={(e) =>
-                              handleIsPriceCheckUpdate(id, playerUid, e)
-                            }
-                          />
+                          {isCanceled ? (
+                            <span className="text-sm">불가</span>
+                          ) : (
+                            <input
+                              type="checkbox"
+                              checked={isPriceCheck}
+                              onClick={(e) =>
+                                handleIsPriceCheckUpdate(id, playerUid, e)
+                              }
+                            />
+                          )}
                         </td>
                         <td className="text-left w-1/12 text-sm  lg:text-base">
                           <div className="flex flex-col">
                             <span
                               onClick={() => handleInvoiceModal(id, filtered)}
-                              className=" cursor-pointer underline"
+                              className={`${
+                                isCanceled
+                                  ? " cursor-pointer line-through text-gray-500"
+                                  : " cursor-pointer underline"
+                              } `}
                             >
                               {playerName}
                             </span>
-                            {invoiceEdited && !isPriceCheck && (
+                            {isCanceled && (
+                              <span className="bg-red-300 text-center">
+                                취소신청됨
+                              </span>
+                            )}
+                            {!isCanceled && invoiceEdited && !isPriceCheck && (
                               <span>변경신청됨</span>
                             )}
                           </div>

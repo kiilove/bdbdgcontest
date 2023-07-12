@@ -5,10 +5,12 @@ import { TiInputChecked } from "react-icons/ti";
 import {
   useFirestoreGetDocument,
   useFirestoreQuery,
+  useFirestoreUpdateData,
 } from "../hooks/useFirestores";
 import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { Checkbox } from "@mui/material";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 const ContestPlayerOrderTable = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +27,7 @@ const ContestPlayerOrderTable = () => {
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
+  const updateEntrys = useFirestoreUpdateData("contest_entrys_list");
   const fetchEntry = useFirestoreQuery();
   let categoryNumber = 0;
   let totalPlayerNumber = 0;
@@ -166,6 +169,35 @@ const ContestPlayerOrderTable = () => {
       setMatchedArray(() => [...newMatched]);
     }
   };
+  const handleReOrderPlayer = (data) => {
+    const prevOrder = [...data];
+    let newOrder = [];
+    prevOrder.map((item, idx) => newOrder.push({ ...item }));
+
+    return newOrder;
+  };
+
+  const handleSavePlayerOrder = async (data) => {
+    try {
+      await updateEntrys.updateData([...data]);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const onDragPlayerEnd = (result) => {
+    const { source, destination, draggableId } = result;
+
+    if (!destination) {
+      return;
+    }
+    console.log(result);
+
+    const dummy = [...categorysArray];
+    const [reorderCategory] = dummy.splice(source.index, 1);
+    dummy.splice(destination.index, 0, reorderCategory);
+    //handleSavePlayerOrder(handleReOrderPlayer(dummy));
+    //setEntrysArray(handleReOrderPlayer(dummy));
+  };
 
   const filterdMatchedArray = useMemo(() => {
     return matchedArray;
@@ -206,7 +238,7 @@ const ContestPlayerOrderTable = () => {
               </h1>
             </div>
           </div>
-          <div className="flex w-full h-full ">
+          <div className="flex w-full h-full">
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-3 lg:pt-3 flex-col bg-gray-100 rounded-lg gap-y-2">
                 {matchedArray.length > 0 &&
@@ -226,9 +258,14 @@ const ContestPlayerOrderTable = () => {
                         matchedGradesLength: gradeLength,
                       } = matched;
 
-                      matchedPlayers.length > 0 && categoryNumber++;
-                      return matchedPlayers?.length > 0 ? (
-                        <div className="flex w-full h-auto bg-blue-300 flex-col rounded-lg">
+                      if (matchedPlayers.length === 0) return null;
+
+                      let categoryNumber = 0;
+                      return (
+                        <div
+                          className="flex w-full h-auto bg-blue-300 flex-col rounded-lg"
+                          key={mIdx}
+                        >
                           <div className="flex flex-col p-1 lg:p-2 gap-y-2">
                             <div className="flex flex-col bg-blue-100 rounded-lg">
                               <div className="flex h-10 items-center px-2">
@@ -245,66 +282,103 @@ const ContestPlayerOrderTable = () => {
                                     <div className="flex w-1/6">월체</div>
                                     <div className="flex w-1/6">불참</div>
                                   </div>
-                                  {matchedPlayers?.length > 0 &&
-                                    matchedPlayers.map((player, pIdx) => {
-                                      const {
-                                        playerName,
-                                        playerGym,
-                                        playerUid,
-                                        playerNumber,
-                                        playerNoShow,
-                                        isGradeChanged,
-                                      } = player;
 
-                                      return (
-                                        <div className="flex w-full h-10 border-b border-gray-300 items-center text-sm lg:px-2">
-                                          <div className="flex w-1/6">
-                                            {pIdx + 1}
-                                          </div>
-                                          <div className="flex w-1/6">
-                                            {playerNumber}
-                                          </div>
-                                          <div className="flex w-1/6">
-                                            {playerName}
-                                          </div>
-                                          <div className="flex w-1/6">
-                                            {playerGym}
-                                          </div>
-                                          <div className="flex w-1/6">
-                                            {gradeIndex <
-                                              parseInt(gradeLength) ||
-                                            isGradeChanged ? (
-                                              <input
-                                                type="checkbox"
-                                                checked={isGradeChanged}
-                                                onChange={(e) =>
-                                                  gradeChage(
-                                                    e,
-                                                    categoryId,
-                                                    gradeId,
-                                                    playerUid
-                                                  )
-                                                }
-                                              />
-                                            ) : (
-                                              <span>불가</span>
-                                            )}
-                                          </div>
-                                          <div className="flex w-1/6">
-                                            <input
-                                              type="checkbox"
-                                              checked={playerNoShow}
-                                            />
-                                          </div>
+                                  <DragDropContext onDragEnd={onDragPlayerEnd}>
+                                    <Droppable droppableId="players">
+                                      {(provided) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.droppableProps}
+                                        >
+                                          {matchedPlayers.map(
+                                            (player, pIdx) => {
+                                              const {
+                                                playerName,
+                                                playerGym,
+                                                playerUid,
+                                                playerNumber,
+                                                playerNoShow,
+                                                isGradeChanged,
+                                              } = player;
+
+                                              return (
+                                                <Draggable
+                                                  draggableId={playerUid}
+                                                  index={pIdx}
+                                                  key={playerUid}
+                                                >
+                                                  {(provided, snapshot) => (
+                                                    <div
+                                                      className={`${
+                                                        snapshot.isDragging
+                                                          ? "flex w-full h-10 border-b border-gray-300 items-center text-sm lg:px-2 bg-blue-400 text-white"
+                                                          : "flex w-full h-10 border-b border-gray-300 items-center text-sm lg:px-2"
+                                                      }`}
+                                                      key={playerUid}
+                                                      id={playerUid}
+                                                      ref={provided.innerRef}
+                                                      {...provided.dragHandleProps}
+                                                      {...provided.draggableProps}
+                                                    >
+                                                      <div className="flex w-1/6">
+                                                        {pIdx + 1}
+                                                      </div>
+                                                      <div className="flex w-1/6">
+                                                        {playerNumber}
+                                                      </div>
+                                                      <div className="flex w-1/6">
+                                                        {playerName}
+                                                      </div>
+                                                      <div className="flex w-1/6">
+                                                        {playerGym}
+                                                      </div>
+                                                      <div className="flex w-1/6">
+                                                        {gradeIndex <
+                                                          parseInt(
+                                                            gradeLength
+                                                          ) ||
+                                                        isGradeChanged ? (
+                                                          <input
+                                                            type="checkbox"
+                                                            checked={
+                                                              isGradeChanged
+                                                            }
+                                                            onChange={(e) =>
+                                                              gradeChage(
+                                                                e,
+                                                                categoryId,
+                                                                gradeId,
+                                                                playerUid
+                                                              )
+                                                            }
+                                                          />
+                                                        ) : (
+                                                          <span>불가</span>
+                                                        )}
+                                                      </div>
+                                                      <div className="flex w-1/6">
+                                                        <input
+                                                          type="checkbox"
+                                                          checked={playerNoShow}
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </Draggable>
+                                              );
+                                            }
+                                          )}
+                                          {provided.placeholder}
                                         </div>
-                                      );
-                                    })}
+                                      )}
+                                    </Droppable>
+                                  </DragDropContext>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      ) : null;
+                      );
                     })}
               </div>
             </div>
