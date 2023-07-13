@@ -56,6 +56,12 @@ export const MenuArray = [
         link: "/contestinvoicetable",
       },
       {
+        id: 3,
+        title: "참가신청서 수동작성",
+        icon: <BsCheckAll />,
+        link: "/contestnewinvoicemanual",
+      },
+      {
         id: 4,
         title: "선수명단",
         icon: <TiInputChecked />,

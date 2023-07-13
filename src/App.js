@@ -8,6 +8,7 @@ import { CurrentContestProvider } from "./contexts/CurrentContestContext";
 import NewContest from "./pages/NewContest";
 import ContestInvoiceTable from "./pages/ContestInvoiceTable";
 import ContestPlayerOrderTable from "./pages/ContestPlayerOrderTable";
+import ContestNewInvoiceManual from "./pages/ContestNewInvoiceManual";
 
 function App() {
   return (
@@ -36,6 +37,10 @@ function App() {
           <Route
             path="/contestplayerordertable"
             element={<ManagementHome children={<ContestPlayerOrderTable />} />}
+          />
+          <Route
+            path="/contestnewinvoicemanual"
+            element={<ManagementHome children={<ContestNewInvoiceManual />} />}
           />
         </Routes>
       </BrowserRouter>
