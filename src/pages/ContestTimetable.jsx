@@ -24,6 +24,7 @@ const ContestTimetable = () => {
   const [categorysList, setCategorysList] = useState({});
   const [gradesArray, setGradesArray] = useState([]);
   const [entrysArray, setEntrysArray] = useState([]);
+  const [judgesArray, setJudgesArray] = useState([]);
   const [currentCategoryId, setCurrentCategoryId] = useState("");
   const [currentSection, setSection] = useState([{ id: 0, title: "전체" }]);
   const [currentSubMenu, setCurrentSubMenu] = useState({
@@ -53,6 +54,7 @@ const ContestTimetable = () => {
     "contest_categorys_list"
   );
   const fetchEntry = useFirestoreQuery();
+  const fetchJudge = useFirestoreQuery();
 
   const tabArray = [
     {
@@ -198,11 +200,22 @@ const ContestTimetable = () => {
     }
 
     const condition = [where("contestId", "==", currentContest.contests.id)];
+    const condition2 = [
+      where("contestId", "==", currentContest.contests.id),
+      where("isJoined", "==", true),
+    ];
     const returnEntrys = await fetchEntry.getDocuments(
       "contest_entrys_list",
       condition
     );
+
+    const returnJudges = await fetchJudge.getDocuments(
+      "contest_judges_list",
+      condition2
+    );
+    console.log(returnJudges);
     setEntrysArray([...returnEntrys]);
+    setJudgesArray([...returnJudges]);
   };
 
   useEffect(() => {
@@ -302,6 +315,7 @@ const ContestTimetable = () => {
                                 contestCategoryId: categoryId,
                                 contestCategoryIndex: categoryIndex,
                                 contestCategoryTitle: categoryTitle,
+                                contestCategoryJudgeCount: judgeCount,
                               } = category;
 
                               const matchedGrades = gradesArray
@@ -334,15 +348,17 @@ const ContestTimetable = () => {
                                     >
                                       <div className="h-auto w-full flex items-center flex-col lg:flex-row">
                                         <div className="flex w-full h-auto justify-start items-center">
-                                          <div className="w-1/4 h-14 flex justify-start items-center pl-4">
+                                          <div className="w-1/6 h-14 flex justify-start items-center pl-4">
                                             {categoryIndex}
                                           </div>
-                                          <div className="w-2/4 h-14 flex justify-start items-center">
+                                          <div className="w-4/6 h-14 flex justify-start items-center">
                                             {categoryTitle}
+                                            {judgeCount &&
+                                              `(${judgeCount}심제)`}
                                           </div>
                                         </div>
                                         <div className="flex w-full h-auto justify-end items-center">
-                                          <div className="w-1/4 h-14 flex justify-end items-center pr-2">
+                                          <div className="w-1/6 h-14 flex justify-end items-center pr-2">
                                             <div className="flex w-full justify-end items-center h-14 gap-x-2">
                                               <button
                                                 onClick={() =>
@@ -462,7 +478,21 @@ const ContestTimetable = () => {
                                                               </button>
                                                             </div>
 
-                                                            <button className="bg-green-100 w-10 h-10 rounded-lg flex justify-center items-center">
+                                                            <button
+                                                              className="bg-green-100 w-10 h-10 rounded-lg flex justify-center items-center"
+                                                              onClick={() =>
+                                                                setCurrentSubMenu(
+                                                                  {
+                                                                    categoryId,
+                                                                    gradeId,
+                                                                    categoryTitle,
+                                                                    gradeTitle,
+                                                                    player: false,
+                                                                    judge: true,
+                                                                  }
+                                                                )
+                                                              }
+                                                            >
                                                               <MdOutlineBalance className=" text-xl text-gray-500" />
                                                             </button>
                                                           </div>
@@ -555,6 +585,97 @@ const ContestTimetable = () => {
                                                       );
                                                     }
                                                   )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })()}
+                                      {/* 심판배정 */}
+                                      {currentSubMenu.judge &&
+                                        currentSubMenu.categoryId ===
+                                          categoryId &&
+                                        (() => {
+                                          console.log(judgesArray);
+                                          if (judgesArray?.length <= 0) {
+                                            return;
+                                          }
+                                          const filtered = judgesArray.filter(
+                                            (e) =>
+                                              e.contestGradeId ===
+                                              currentSubMenu.gradeId
+                                          );
+
+                                          return (
+                                            <div className="flex w-full px-2 pb-2 h-auto flex-wrap flex-col gap-y-1">
+                                              <div className="flex bg-gray-100 w-full gap-2 px-4 py-2 rounded-lg h-auto justify-start items-center ">
+                                                <span className="font-sans font-semibold w-4 h-4 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-1">
+                                                  <TbUsers className="text-sm" />
+                                                </span>
+                                                <h1>
+                                                  심판배정명단(
+                                                  {currentSubMenu.gradeTitle})
+                                                </h1>
+                                              </div>
+                                              <div className="flex bg-gray-100 w-full gap-2 p-2 rounded-lg h-auto justify-start items-center flex-col">
+                                                <div className="flex w-full bg-white rounded-lg p-2">
+                                                  <div className="flex w-1/6">
+                                                    좌석
+                                                  </div>
+                                                  <div className="flex w-2/6">
+                                                    이름
+                                                  </div>
+                                                  <div className="flex w-3/6">
+                                                    연락처
+                                                  </div>
+                                                  <div className="hidden lg:flex lg:w-3/6">
+                                                    소속
+                                                  </div>
+                                                </div>
+                                                {judgeCount > 0 &&
+                                                  Array.from(
+                                                    { length: judgeCount },
+                                                    (_, jIdx) => jIdx + 1
+                                                  ).map((number) => {
+                                                    return (
+                                                      <div className="flex bg-gray-100 w-full px-4 rounded-lg h-auto justify-start items-center ">
+                                                        <div className="flex w-1/6">
+                                                          {number}
+                                                        </div>
+                                                        <div className="flex w-2/6">
+                                                          <select className="w-3/4">
+                                                            <option>
+                                                              선택
+                                                            </option>
+                                                            {judgesArray
+                                                              .sort((a, b) =>
+                                                                a.judgeName.localeCompare(
+                                                                  b.judgeName
+                                                                )
+                                                              )
+                                                              .map(
+                                                                (
+                                                                  judge,
+                                                                  jjIdx
+                                                                ) => {
+                                                                  return (
+                                                                    <option
+                                                                      value={
+                                                                        judge.id
+                                                                      }
+                                                                    >
+                                                                      {
+                                                                        judge.judgeName
+                                                                      }
+                                                                    </option>
+                                                                  );
+                                                                }
+                                                              )}
+                                                          </select>
+                                                        </div>
+                                                        <div className="flex w-3/6"></div>
+                                                        <div className="hidden lg:flex lg:w-3/6"></div>
+                                                      </div>
+                                                    );
+                                                  })}
                                               </div>
                                             </div>
                                           );

@@ -67,8 +67,13 @@ export const MenuArray = [
         icon: <TiInputChecked />,
         link: "/contestplayerordertable",
       },
-      { id: 5, title: "전체심판명단", icon: <MdDoneAll /> },
-      { id: 6, title: "배정된 심판명단", icon: <MdBalance /> },
+
+      {
+        id: 6,
+        title: "심판명단",
+        icon: <MdBalance />,
+        link: "/contestjudgetable",
+      },
     ],
   },
   {

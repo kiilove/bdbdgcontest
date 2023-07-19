@@ -90,6 +90,9 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
           ...initCategoryInfo,
           contestCategoryIndex:
             parseInt(updatedCategoryInfo.contestCategoryIndex) + 1,
+          contestCategoryJudgeCount: parseInt(
+            updatedCategoryInfo.contestCategoryJudgeCount
+          ),
         });
 
         categoryInfoRef.current.contestCategorySection.focus();
@@ -107,6 +110,9 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
             ...updatedCategoryInfo,
             contestCategoryIndex: parseInt(
               updatedCategoryInfo.contestCategoryIndex
+            ),
+            contestCategoryJudgeCount: parseInt(
+              updatedCategoryInfo.contestCategoryJudgeCount
             ),
           });
           await handleSaveCategorys(dummy);
@@ -357,6 +363,30 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                   <option>랭킹형(짜찝표)</option>
                   <option>점수형</option>
                 </select>
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                심판수
+              </h3>
+            </div>
+            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <input
+                  type="text"
+                  name="contestCategoryJudgeCount"
+                  value={categoryInfo.contestCategoryJudgeCount}
+                  onChange={(e) => handleInputValues(e)}
+                  ref={(ref) =>
+                    (categoryInfoRef.current.contestCategoryJudgeCount = ref)
+                  }
+                  className="h-12 outline-none"
+                />
               </div>
             </div>
           </div>

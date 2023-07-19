@@ -107,6 +107,19 @@ const ContestInvoiceTable = () => {
                 invoice.playerGym.includes(searchKeyword))
           );
           break;
+
+        case 4:
+          newData = invoiceList.filter(
+            (invoice) =>
+              invoice.isPriceCheck &&
+              !invoice.isCanceled &&
+              invoice.playerService &&
+              (invoice.playerName.includes(searchKeyword) ||
+                invoice.playerTel.includes(searchKeyword) ||
+                invoice.playerGym.includes(searchKeyword))
+          );
+          break;
+
         default:
           break;
       }
@@ -138,6 +151,12 @@ const ContestInvoiceTable = () => {
       id: 3,
       title: "취소목록",
       subTitle: "참가신청후 취소된목록입니다.",
+      children: "",
+    },
+    {
+      id: 4,
+      title: "유료서비스",
+      subTitle: "유료서비스 신청된목록입니다.",
       children: "",
     },
   ];
@@ -477,10 +496,7 @@ const ContestInvoiceTable = () => {
                   ))}
                 </div>
 
-                {currentTab === 0 && ContestInvoiceUncompleteRender}
-                {currentTab === 1 && ContestInvoiceUncompleteRender}
-                {currentTab === 2 && ContestInvoiceUncompleteRender}
-                {currentTab === 3 && ContestInvoiceUncompleteRender}
+                {currentTab && ContestInvoiceUncompleteRender}
               </div>
             </div>
           </div>
