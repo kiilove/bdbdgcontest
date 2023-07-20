@@ -77,6 +77,7 @@ const ContestInvoiceTable = () => {
               invoice.playerTel.includes(searchKeyword) ||
               invoice.playerGym.includes(searchKeyword)
           );
+
           break;
         case 1:
           newData = invoiceList.filter(
@@ -282,11 +283,11 @@ const ContestInvoiceTable = () => {
     if (currentContest?.contests?.contestNoticeId) {
       fetchQuery();
     }
-    console.log(currentContest?.contests?.contestNoticeId);
+    //console.log(currentContest?.contests?.contestNoticeId);
   }, [currentContest]);
 
   useEffect(() => {
-    console.log(filteredData);
+    //console.log(filteredData);
   }, [filteredData]);
 
   const ContestInvoiceUncompleteRender = (
@@ -496,7 +497,8 @@ const ContestInvoiceTable = () => {
                   ))}
                 </div>
 
-                {currentTab && ContestInvoiceUncompleteRender}
+                {(currentTab === 0 || currentTab) &&
+                  ContestInvoiceUncompleteRender}
               </div>
             </div>
           </div>
