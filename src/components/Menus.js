@@ -43,14 +43,9 @@ export const MenuArray = [
         icon: <BsInfoLg />,
         link: "/contestinfo",
       },
+
       {
         id: 2,
-        title: "타임테이블",
-        icon: <MdTimeline />,
-        link: "/contesttimetable",
-      },
-      {
-        id: 3,
         title: "참가신청서",
         icon: <BsCheckAll />,
         link: "/contestinvoicetable",
@@ -63,16 +58,28 @@ export const MenuArray = [
       },
       {
         id: 4,
-        title: "선수명단",
+        title: "선수임시명단(계측전)",
         icon: <TiInputChecked />,
         link: "/contestplayerordertable",
+      },
+      {
+        id: 5,
+        title: "선수확정명단(계측후)",
+        icon: <TiInputChecked />,
+        link: "/contestplayerordertableafter",
       },
 
       {
         id: 6,
-        title: "심판명단",
+        title: "심판선발",
         icon: <MdBalance />,
         link: "/contestjudgetable",
+      },
+      {
+        id: 7,
+        title: "대회운영 데이터",
+        icon: <MdTimeline />,
+        link: "/contesttimetable",
       },
     ],
   },
@@ -81,10 +88,10 @@ export const MenuArray = [
     title: "출력관리",
     icon: <BsPrinterFill />,
     subMenus: [
-      { id: 1, title: "선수명단 통합", icon: <HiUserGroup /> },
-      { id: 2, title: "선수명단 종목별", icon: <HiUsers /> },
-      { id: 3, title: "계측명단 통합", icon: <MdOutlineScale /> },
-      { id: 4, title: "계측명단 종목별", icon: <MdOutlineScale /> },
+      { id: 1, title: "계측명단 통합", icon: <MdOutlineScale /> },
+      { id: 2, title: "계측명단 종목별", icon: <MdOutlineScale /> },
+      { id: 3, title: "선수명단 통합", icon: <HiUserGroup /> },
+      { id: 4, title: "선수명단 종목별", icon: <HiUsers /> },
       { id: 5, title: "순위표 통합", icon: <BsListOl /> },
       { id: 6, title: "순위표 종목별", icon: <BsListOl /> },
       { id: 7, title: "집계표 출력", icon: <BsCardChecklist /> },
@@ -102,6 +109,13 @@ export const MenuArray = [
     id: 3,
     title: "자동모드",
     icon: <BsCpuFill />,
-    subMenus: [{ id: 1, title: "모니터링 화면", icon: <TbHeartRateMonitor /> }],
+    subMenus: [
+      {
+        id: 1,
+        title: "모니터링 화면",
+        icon: <TbHeartRateMonitor />,
+        link: "/contestmonitoring",
+      },
+    ],
   },
 ];

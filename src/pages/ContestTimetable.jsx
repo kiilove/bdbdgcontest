@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import GradeInfoModal from "../modals/GradeInfoModal.jsx";
 import { HiOutlineTrash } from "react-icons/hi";
 import { TbEdit, TbUsers } from "react-icons/tb";
+import { v4 as uuidv4 } from "uuid";
 import {
   useFirestoreAddData,
   useFirestoreDeleteData,
@@ -19,6 +20,7 @@ import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import PlayerInfoModal from "../modals/PlayerInfoModal";
 import JudgeInfoModal from "../modals/JudgeInfoModal";
+import ContestPlayerOrderTableTabType from "./ContestPlayerOrderTableTabType";
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
   const [currentTab, setCurrentTab] = useState(0);
@@ -74,7 +76,7 @@ const ContestTimetable = () => {
     {
       id: 1,
       title: "선수배정",
-      subTitle: "선수의 출전 순서를 설정합니다.",
+      subTitle: "대회출전을 위한 선수 명단(계측전)입니다.",
       children: "",
     },
     {
@@ -263,8 +265,13 @@ const ContestTimetable = () => {
           const { contestGradeId: gradeId, contestGradeTitle: gradeTitle } =
             grade;
 
-          const { judgeName, judgeUid, judgePromoter, judgeTel } =
-            filterJudgeInfo;
+          const {
+            judgeName,
+            judgeUid,
+            judgePromoter,
+            judgeTel,
+            onedayPassword,
+          } = filterJudgeInfo;
           const newJudgeInfo = {
             contestId,
             categoryId,
@@ -275,6 +282,7 @@ const ContestTimetable = () => {
             judgeName,
             judgePromoter,
             judgeTel,
+            onedayPassword,
           };
           assignArray.push(newJudgeInfo);
         });
@@ -721,11 +729,14 @@ const ContestTimetable = () => {
                                           if (judgesArray?.length <= 0) {
                                             return;
                                           }
-                                          const filtered = judgesArray.filter(
-                                            (e) =>
-                                              e.contestGradeId ===
-                                              currentSubMenu.gradeId
-                                          );
+                                          const filtered =
+                                            judgeAssignTable.filter(
+                                              (e) =>
+                                                e.gradeId ===
+                                                currentSubMenu.gradeId
+                                            );
+
+                                          console.log(filtered);
 
                                           return (
                                             <div className="flex w-full px-2 pb-2 h-auto flex-wrap flex-col gap-y-1">
@@ -758,14 +769,58 @@ const ContestTimetable = () => {
                                                     { length: judgeCount },
                                                     (_, jIdx) => jIdx + 1
                                                   ).map((number) => {
+                                                    let judgeName;
+                                                    let judgePromoter;
+                                                    let judgeTel;
+                                                    let judgeInfo;
+                                                    const findIndex =
+                                                      filtered.findIndex(
+                                                        (f) =>
+                                                          f.seatIndex === number
+                                                      );
+
+                                                    if (findIndex === -1) {
+                                                      judgeInfo = {
+                                                        judgeName: "",
+                                                        judgeTel: "",
+                                                        judgePromoter: "",
+                                                      };
+                                                    } else {
+                                                      const findJudgeBySeatIndex =
+                                                        filtered.find(
+                                                          (f) =>
+                                                            f.seatIndex ===
+                                                            number
+                                                        );
+
+                                                      judgeInfo = {
+                                                        judgeName:
+                                                          findJudgeBySeatIndex.judgeName,
+                                                        judgeTel:
+                                                          findJudgeBySeatIndex.judgeTel,
+                                                        judgePromoter:
+                                                          findJudgeBySeatIndex.judgePromoter,
+                                                      };
+                                                    }
+
+                                                    // const { judgeName } =
+                                                    //   filteredJudgeBySeatIndex[0];
                                                     return (
                                                       <div className="flex bg-gray-100 w-full px-4 rounded-lg h-auto justify-start items-center ">
                                                         <div className="flex w-1/6">
                                                           {number}
                                                         </div>
-                                                        <div className="flex w-2/6"></div>
-                                                        <div className="flex w-3/6"></div>
-                                                        <div className="hidden lg:flex lg:w-3/6"></div>
+                                                        <div className="flex w-2/6">
+                                                          {judgeInfo.judgeName}
+                                                        </div>
+                                                        <div className="flex w-3/6">
+                                                          {judgeInfo.judgeTel}
+                                                        </div>
+                                                        <div className="hidden lg:flex lg:w-3/6">
+                                                          {
+                                                            judgeInfo.judgePromoter
+                                                          }
+                                                        </div>
                                                       </div>
                                                     );
                                                   })}
@@ -786,58 +841,6 @@ const ContestTimetable = () => {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const ContestPlayersReder = (
-    <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-t-lg rounded-b-lg p-2 gap-x-4">
-      <Modal open={isOpen.player} onClose={handlePlayerClose}>
-        <div
-          className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
-          style={{
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <PlayerInfoModal
-            setClose={handleCategoryClose}
-            propState={isOpen}
-            setState={setCategorysArray}
-          />
-        </div>
-      </Modal>
-      <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
-        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-2 gap-y-2">
-          <div className="flex w-full justify-start items-center ">
-            <div className="h-12 w-full rounded-lg px-3 bg-white">
-              <div className="flex w-full justify-start items-center">
-                <h1 className="text-2xl text-gray-600 mr-3">
-                  <MdOutlineSearch />
-                </h1>
-                <input
-                  type="text"
-                  name="contestCategoryTitle"
-                  className="h-12 outline-none"
-                  placeholder="선수검색"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex w-full justify-start items-center">
-            <button
-              className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
-              onClick={() =>
-                setIsOpen({
-                  ...isOpen,
-                  player: true,
-                  title: "선수추가",
-                })
-              }
-            >
-              선수추가
-            </button>
           </div>
         </div>
       </div>
@@ -1030,7 +1033,7 @@ const ContestTimetable = () => {
             className="font-sans text-lg font-semibold"
             style={{ letterSpacing: "2px" }}
           >
-            타임테이블
+            대회운영 데이터(개최순서/선수명단/심판배정)
           </h1>
         </div>
       </div>
@@ -1054,7 +1057,7 @@ const ContestTimetable = () => {
               ))}
             </div>
             {currentTab === 0 && ContestOrdersRender}
-            {currentTab === 1 && ContestPlayersReder}
+            {currentTab === 1 && <ContestPlayerOrderTableTabType />}
             {currentTab === 2 && ContestJudgesReder}
           </div>
         </div>

@@ -9,12 +9,31 @@ import timezone from "dayjs/plugin/timezone";
 import ko from "date-fns/locale/ko"; // Import Korean locale
 import { useParams } from "react-router-dom";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
-import { useFirestoreUpdateData } from "../hooks/useFirestores";
+import {
+  useFirestoreAddData,
+  useFirestoreUpdateData,
+} from "../hooks/useFirestores";
 import useFirebaseStorage from "../hooks/useFirebaseStorage";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault("Asia/Seoul");
+
+const generatePasswords = () => {
+  const passwords = [];
+  const usedPasswords = new Set();
+
+  while (passwords.length < 100) {
+    const password = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+
+    if (!usedPasswords.has(password)) {
+      passwords.push(password);
+      usedPasswords.add(password);
+    }
+  }
+
+  return passwords;
+};
 
 const ContestInfo = () => {
   const [currentContestInfo, setCurrentContestInfo] = useState({
@@ -23,6 +42,7 @@ const ContestInfo = () => {
     contestPriceType1: 0,
     contestPriceType2: 0,
   });
+  const [judgePasswords, setJudgePasswords] = useState(generatePasswords());
   const updateContestInfo = useFirestoreUpdateData("contest_notice");
   const [files, setFiles] = useState([]);
 
@@ -33,6 +53,9 @@ const ContestInfo = () => {
     files,
     "images/poster"
   );
+  const addCollection = useFirestoreAddData("contest_data");
+  const addPasswords = useFirestoreAddData("contest_passwords");
+  const updateContest = useFirestoreUpdateData("contests");
   const params = useParams();
 
   const formatNumber = (value) => {
@@ -98,6 +121,26 @@ const ContestInfo = () => {
           contestInfo: { ...updatedData },
         });
       }
+    }
+  };
+
+  const handleCollectionAdd = async () => {
+    try {
+      const addedData = await addCollection.addData({
+        contestId: currentContest.contests.id,
+        collectionTitle: currentContestInfo.contestCollectionName,
+      });
+      const addedPassword = await addPasswords.addData({
+        passwords: [...judgePasswords],
+        contestId: currentContest.contests.id,
+      });
+      await updateContest.updateData(currentContest.contests.id, {
+        ...currentContest.contests,
+        contestDataId: addedData.id,
+        contestPasswordId: addedPassword.id,
+      });
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -515,13 +558,20 @@ const ContestInfo = () => {
                 id="contestCollectionName"
                 value={currentContestInfo?.contestCollectionName}
                 onChange={(e) => handleContestInfo(e)}
-                className="h-10 w-full outline-none mb-1"
+                className="h-10 w-5/6 outline-none mb-1"
               />
+              {currentContestInfo?.contestCollectionName && (
+                <button className="w-1/6" onClick={() => handleCollectionAdd()}>
+                  컬렉션생성
+                </button>
+              )}
             </div>
             <div className="flex w-full h-12 justify-end items-center">
               <button
                 className="w-32 h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg mt-2"
-                onClick={() => handleUpdateContestInfo()}
+                onClick={() =>
+                  handleUpdateContestInfo(currentContest.contests.id)
+                }
               >
                 저장
               </button>

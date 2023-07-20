@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { BsCheckAll } from "react-icons/bs";
 import LoadingPage from "./LoadingPage";
 import { TiInputChecked } from "react-icons/ti";
-import { v4 as uuidv4 } from "uuid";
 import {
   useFirestoreGetDocument,
   useFirestoreQuery,
@@ -13,7 +12,7 @@ import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { Checkbox } from "@mui/material";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
-const ContestPlayerOrderTable = () => {
+const ContestPlayerOrderTableTabType = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [matchedArray, setMatchedArray] = useState([]);
   const [categorysArray, setCategorysArray] = useState([]);
@@ -29,7 +28,6 @@ const ContestPlayerOrderTable = () => {
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
   const updateEntrys = useFirestoreUpdateData("contest_entrys_list");
-  const updateContestData = useFirestoreUpdateData("contest_data");
   const fetchEntry = useFirestoreQuery();
   let categoryNumber = 0;
   let totalPlayerNumber = 0;
@@ -64,7 +62,6 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(true);
     let dummy = [];
     let playerNumber = 0;
-    let stageNumber = 0;
     categorysArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
       .map((category, cIdx) => {
@@ -75,7 +72,6 @@ const ContestPlayerOrderTable = () => {
         matchedGrades
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
           .map((grade, gIdx) => {
-            stageNumber++;
             const matchedPlayerWithPlayerNumber = [];
             const matchedPlayers = entrysArray.filter(
               (entry) => entry.contestGradeId === grade.contestGradeId
@@ -100,8 +96,6 @@ const ContestPlayerOrderTable = () => {
             const matchedInfo = {
               ...category,
               ...grade,
-              stageId: uuidv4(),
-              stageNumber,
               matchedPlayers: matchedPlayerWithPlayerNumber,
               matchedGradesLength,
             };
@@ -111,15 +105,6 @@ const ContestPlayerOrderTable = () => {
 
     setMatchedArray([...dummy]);
     setIsLoading(false);
-  };
-
-  const handleUpdateContestData = async () => {
-    try {
-      await updateContestData.updateData(
-        currentContest.contests.contestDataId,
-        { schedule: [...matchedArray] }
-      );
-    } catch (error) {}
   };
 
   const gradeChage = (
@@ -132,6 +117,12 @@ const ContestPlayerOrderTable = () => {
     // 종목에 포함된 체급의 갯수를 계산한후에
     // 현재 체급 코드의 gradeIndex가 체급 갯수보다 작다면 다음 체급으로 변경하도록 코드를 작성한다.
     // originalGrade와 isGradeChanged가 추가되었어.
+    console.log({
+      checked: e.target.checked,
+      currentCategoryId,
+      currentGradeId,
+      matchedArray,
+    });
 
     const newMatched = [...matchedArray];
 
@@ -218,6 +209,10 @@ const ContestPlayerOrderTable = () => {
     //setEntrysArray(handleReOrderPlayer(dummy));
   };
 
+  const filterdMatchedArray = useMemo(() => {
+    return matchedArray;
+  }, [matchedArray]);
+
   useEffect(() => {
     fetchPool();
   }, [currentContest]);
@@ -229,7 +224,7 @@ const ContestPlayerOrderTable = () => {
   }, [categorysArray, gradesArray, entrysArray]);
 
   useEffect(() => {
-    console.log(matchedArray);
+    console.log(filterdMatchedArray);
   }, [matchedArray]);
 
   return (
@@ -240,27 +235,11 @@ const ContestPlayerOrderTable = () => {
         </div>
       ) : (
         <>
-          <div className="flex w-full h-14">
-            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
-              <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-                <TiInputChecked />
-              </span>
-              <h1
-                className="font-sans text-lg font-semibold"
-                style={{ letterSpacing: "2px" }}
-              >
-                선수명단
-              </h1>
-            </div>
-          </div>
           <div className="flex w-full h-full">
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-3 lg:pt-3 flex-col bg-gray-100 rounded-lg gap-y-2">
                 <div className="flex">
-                  <button
-                    className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
-                    onClick={() => handleUpdateContestData()}
-                  >
+                  <button className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg">
                     저장
                   </button>
                 </div>
@@ -422,4 +401,4 @@ const ContestPlayerOrderTable = () => {
   );
 };
 
-export default ContestPlayerOrderTable;
+export default ContestPlayerOrderTableTabType;

@@ -10,6 +10,8 @@ import ContestInvoiceTable from "./pages/ContestInvoiceTable";
 import ContestPlayerOrderTable from "./pages/ContestPlayerOrderTable";
 import ContestNewInvoiceManual from "./pages/ContestNewInvoiceManual";
 import ContestJudgeTable from "./pages/ContestJudgeTable";
+import ContestPlayerOrderTableAfter from "./pages/ContestPlayerOrderTableAfter";
+import ContestMonitoring from "./pages/ContestMonitoring";
 
 function App() {
   return (
@@ -40,12 +42,22 @@ function App() {
             element={<ManagementHome children={<ContestPlayerOrderTable />} />}
           />
           <Route
+            path="/contestplayerordertableafter"
+            element={
+              <ManagementHome children={<ContestPlayerOrderTableAfter />} />
+            }
+          />
+          <Route
             path="/contestnewinvoicemanual"
             element={<ManagementHome children={<ContestNewInvoiceManual />} />}
           />
           <Route
             path="/contestjudgetable"
             element={<ManagementHome children={<ContestJudgeTable />} />}
+          />
+          <Route
+            path="/contestmonitoring"
+            element={<ManagementHome children={<ContestMonitoring />} />}
           />
         </Routes>
       </BrowserRouter>

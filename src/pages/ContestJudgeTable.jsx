@@ -8,6 +8,7 @@ import {
   useFirestoreUpdateData,
   useFirestoreAddData,
   useFirestoreDeleteData,
+  useFirestoreGetDocument,
 } from "../hooks/useFirestores";
 import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
@@ -20,6 +21,7 @@ import judgeInfoModal from "../modals/JudgeInfoModal";
 
 const ContestJudgeTable = () => {
   const [currentTab, setCurrentTab] = useState(1);
+  const [judgePasswords, setJudgePasswords] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSync, setIsSync] = useState(true);
   const [judgePool, setJudgePool] = useState([]);
@@ -41,17 +43,7 @@ const ContestJudgeTable = () => {
   const updateJudgeList = useFirestoreUpdateData("contest_judges_list");
   const deleteEntry = useFirestoreDeleteData("contest_entrys_list");
   const addJudge = useFirestoreAddData("contest_judges_list");
-
-  const firstAddJudgeList = async (judgePool, contestId) => {
-    if (judgePool.length > 0) {
-      judgePool.map(async (judge, jIdx) => {
-        await addJudge
-          .addData({ ...judge, refContestId: contestId })
-          .then(() => setIsSync(false))
-          .error((error) => console.log(error));
-      });
-    }
-  };
+  const getPassword = useFirestoreGetDocument("contest_passwords");
 
   const fetchQuery = async (contestId) => {
     setIsLoading(true);
@@ -61,8 +53,13 @@ const ContestJudgeTable = () => {
       "contest_judges_list",
       conditions
     );
+    const judgePasswordData = await getPassword.getDocument(
+      currentContest.contests.contestPasswordId
+    );
 
-    setJudgeList([...judgeListData]);
+    setJudgeList([
+      ...judgeListData.sort((a, b) => a.judgeName.localeCompare(b.judgeName)),
+    ]);
 
     if (judgePoolData?.length !== judgeListData?.length) {
       const newJudge = getNewJudges(judgePoolData, judgeListData);
@@ -80,6 +77,8 @@ const ContestJudgeTable = () => {
       console.log(newJudgeList);
       setJudgeList(...newJudgeList);
     }
+
+    setJudgePasswords([...judgePasswordData.passwords]);
 
     setIsLoading(false);
   };
@@ -150,13 +149,13 @@ const ContestJudgeTable = () => {
     {
       id: 1,
       title: "배정된목록",
-      subTitle: "이번대회에 배정된 심판명단 입니다.",
+      subTitle: "이번대회에 선발된 심판명단 입니다.",
       children: "",
     },
     {
       id: 2,
       title: "미배정된목록",
-      subTitle: "이번대회에 배정되지 않은 심판명단 입니다.",
+      subTitle: "이번대회에 선발되지 않은 심판명단 입니다.",
       children: "",
     },
   ];
@@ -194,6 +193,7 @@ const ContestJudgeTable = () => {
     const newJudgeInfo = {
       ...newJudgeList[findIndex],
       isJoined: e.target.checked,
+      onedayPassword: e.target.checked ? judgePasswords[findIndex] : null,
     };
 
     newJudgeList.splice(findIndex, 1, {
@@ -217,6 +217,10 @@ const ContestJudgeTable = () => {
   useEffect(() => {
     //console.log(filteredData);
   }, [filteredData]);
+
+  useEffect(() => {
+    console.log(judgePasswords);
+  }, [judgePasswords]);
 
   const ContestInvoiceUncompleteRender = (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
@@ -274,11 +278,14 @@ const ContestJudgeTable = () => {
                   <th className="text-left w-1/12 text-sm font-normal lg:font-semibold lg:text-base">
                     이름
                   </th>
-                  <th className="text-left w-2/12 text-sm font-normal lg:font-semibold lg:text-base">
+                  <th className="text-left w-2/12 text-sm font-normal hidden lg:table-cell lg:font-semibold lg:text-base">
                     연락처
                   </th>
                   <th className="text-left w-2/12 hidden lg:table-cell">
                     소속
+                  </th>
+                  <th className="text-left w-2/12 text-sm font-normal lg:font-semibold lg:text-base">
+                    개인비밀번호
                   </th>
                 </tr>
                 {filteredData?.length > 0 &&
@@ -292,6 +299,7 @@ const ContestJudgeTable = () => {
                       isActived,
                       isJoined,
                       isConfirmed,
+                      onedayPassword,
                     } = filtered;
 
                     return (
@@ -325,12 +333,15 @@ const ContestJudgeTable = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="text-left w-2/12 text-sm  lg:text-base">
+                        <td className="text-left w-2/12 text-sm hidden lg:table-cell lg:text-base">
                           {judgeTel}
                         </td>
 
                         <td className="text-left w-2/12 hidden lg:table-cell">
                           {judgePromoter}
+                        </td>
+                        <td className="text-left w-2/12 lg:table-cell">
+                          {onedayPassword}
                         </td>
                       </tr>
                     );
