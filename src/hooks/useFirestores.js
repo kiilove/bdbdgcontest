@@ -27,6 +27,7 @@ export function useFirestoreQuery() {
     limitNumber = 0
   ) {
     let q = collection(db, collectionName);
+
     if (conditions.length > 0) {
       conditions.forEach((condition) => {
         q = query(q, condition);
@@ -50,6 +51,7 @@ export function useFirestoreQuery() {
       }));
 
       // 데이터가 없는 경우에도 state를 초기화함
+      console.log(querySnapshot);
       setData(documents);
       setLoading(false);
       return documents;

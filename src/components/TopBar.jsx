@@ -32,7 +32,6 @@ const TopBar = () => {
   const fetchContestNotice = async () => {
     if (contestNoticeId) {
       const returnData = await fetchDocument.getDocument(contestNoticeId);
-      console.log("first");
 
       if (returnData.id) {
         setCurrentContest({
@@ -42,16 +41,16 @@ const TopBar = () => {
       }
     }
   };
+
   const fetchList = async () => {
-    const condition = [
-      //where("contestStatus", "==", "접수중"),
-      //where("contestStatus", "==", "테스트"),
-      where("contestStatus", "in", ["접수중", "테스트"]),
-    ];
+    const condition = [where("contestStatus", "==", "접수중")];
+
     const returnData = await fetchQuery.getDocuments(
       "contest_notice",
       condition
     );
+    console.log(returnData);
+
     setContestList([
       ...returnData.sort((a, b) =>
         a.contestTitle.localeCompare(b.contestTitle)
@@ -78,6 +77,10 @@ const TopBar = () => {
       }
     }
   };
+
+  useEffect(() => {
+    console.log(contestList);
+  }, [contestList]);
 
   useEffect(() => {
     fetchContest();
