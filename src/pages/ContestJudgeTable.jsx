@@ -194,6 +194,7 @@ const ContestJudgeTable = () => {
       ...newJudgeList[findIndex],
       isJoined: e.target.checked,
       onedayPassword: e.target.checked ? judgePasswords[findIndex] : null,
+      isHead: false,
     };
 
     newJudgeList.splice(findIndex, 1, {
@@ -276,12 +277,15 @@ const ContestJudgeTable = () => {
                     배정여부
                   </th>
                   <th className="text-left w-1/12 text-sm font-normal lg:font-semibold lg:text-base">
+                    위원장
+                  </th>
+                  <th className="text-left w-2/12 text-sm font-normal lg:font-semibold lg:text-base">
                     이름
                   </th>
                   <th className="text-left w-2/12 text-sm font-normal hidden lg:table-cell lg:font-semibold lg:text-base">
                     연락처
                   </th>
-                  <th className="text-left w-2/12 hidden lg:table-cell">
+                  <th className="text-left w-3/12 hidden lg:table-cell">
                     소속
                   </th>
                   <th className="text-left w-2/12 text-sm font-normal lg:font-semibold lg:text-base">
@@ -296,7 +300,7 @@ const ContestJudgeTable = () => {
                       judgeName,
                       judgePromoter,
                       judgeTel,
-                      isActived,
+                      isHead,
                       isJoined,
                       isConfirmed,
                       onedayPassword,
@@ -317,7 +321,16 @@ const ContestJudgeTable = () => {
                             />
                           )}
                         </td>
-                        <td className="text-left w-1/12 text-sm  lg:text-base">
+                        <td className="text-center w-1/12 h-10 ">
+                          <div className="flex justify-start w-full">
+                            {isHead ? (
+                              <button>배정취소</button>
+                            ) : (
+                              <button>위원장배정</button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-left w-2/12 text-sm  lg:text-base">
                           <div className="flex flex-col">
                             <span
                               onClick={() =>
@@ -337,7 +350,7 @@ const ContestJudgeTable = () => {
                           {judgeTel}
                         </td>
 
-                        <td className="text-left w-2/12 hidden lg:table-cell">
+                        <td className="text-left w-3/12 hidden lg:table-cell">
                           {judgePromoter}
                         </td>
                         <td className="text-left w-2/12 lg:table-cell">

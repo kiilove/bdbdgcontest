@@ -11,17 +11,20 @@ import { useEffect } from "react";
 import {
   useFirebaseRealtimeAddData,
   useFirebaseRealtimeGetDocument,
+  useFirebaseRealtimeQuery,
   useFirebaseRealtimeUpdateData,
 } from "../hooks/useFirebaseRealtime";
+import { useNavigate } from "react-router-dom";
 
 const ContestMonitoring = () => {
   const { currentContest } = useContext(CurrentContestContext);
+  const [isRefresh, setIsRefresh] = useState(false);
   const [contestData, setContestData] = useState([]);
   const [contestSchedule, setContestSchedule] = useState([]);
   const [judgeData, setJudgeData] = useState([]);
   const [currentState, setCurrentState] = useState({ stageId: null });
+  const navigate = useNavigate();
 
-  const contestDataQuery = useFirestoreQuery();
   const contestDataDocu = useFirestoreGetDocument("contest_data");
 
   const {
@@ -84,6 +87,17 @@ const ContestMonitoring = () => {
     realtimeGetDocument(collectionName, documentId);
   };
 
+  const handleGotoSummary = (
+    categoryId,
+    gradeId,
+    categoryTitle,
+    gradeTitle
+  ) => {
+    navigate("/contestranksummary", {
+      state: { categoryId, gradeId, categoryTitle, gradeTitle },
+    });
+  };
+
   const handleUpdateMonitoring = async (
     collectionName,
     documentId,
@@ -118,6 +132,7 @@ const ContestMonitoring = () => {
     );
     setCurrentState({ ...updatedData });
     console.log("Updated Data:", updatedData);
+    setIsRefresh(!isRefresh);
   };
   useEffect(() => {
     let isMounted = true; // 컴포넌트 마운트 상태를 추적하는 플래그 추가
@@ -131,20 +146,23 @@ const ContestMonitoring = () => {
   }, [currentContest?.contests]);
 
   useEffect(() => {
-    let isMounted = true;
-    if (isMounted && currentContest?.contests?.id) {
-      handleStartMonitoring("currentStage", currentContest.contests.id);
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [currentContest?.contests]);
+    realtimeGetDocument("currentStage", currentContest?.contests?.id);
+  }, [isRefresh]);
 
   useEffect(() => {
-    if (realtimeData) {
-      setCurrentState({ ...realtimeData });
-    }
+    console.log(realtimeData?.stageId);
   }, [realtimeData]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsRefresh((prevIsRefresh) => !prevIsRefresh);
+    }, 1000); // 1000 milliseconds = 1 second
+
+    // clean up function
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {}, [currentState]);
 
@@ -169,7 +187,7 @@ const ContestMonitoring = () => {
             모니터링
           </div>
           <div className="flex w-5/6 h-full justify-start ml-5 items-center">
-            {!currentState.stageId && (
+            {!realtimeData?.stageId && (
               <button
                 onClick={() => handleAddCurrentStage()}
                 className="w-auto h-10 px-5 bg-blue-200"
@@ -177,7 +195,7 @@ const ContestMonitoring = () => {
                 모니터링 데이터생성
               </button>
             )}
-            {currentState.stageId && <span>실시간 모니터링중...</span>}
+            {realtimeData?.stageId && <span>실시간 모니터링중...</span>}
           </div>
         </div>
       </div>
@@ -192,6 +210,8 @@ const ContestMonitoring = () => {
                 const {
                   contestCategoryTitle,
                   contestGradeTitle,
+                  contestCategoryId,
+                  contestGradeId,
                   stageId,
                   stageNumber,
                 } = schedule;
@@ -203,21 +223,21 @@ const ContestMonitoring = () => {
                   <div className="flex flex-col w-full h-auto">
                     <div
                       className={`${
-                        stageId === currentState.stageId
+                        stageId === realtimeData?.stageId
                           ? "flex w-full bg-blue-200 rounded-lg h-10 p-2"
                           : "flex w-full bg-white rounded-lg h-10 p-2"
                       }`}
                     >
-                      <div className="flex w-5/6">
+                      <div className="flex w-4/6">
                         {contestCategoryTitle} ({contestGradeTitle})
                       </div>
                       <div className="flex w-1/6">
-                        {stageId === currentState.stageId && (
+                        {stageId === realtimeData?.stageId && (
                           <button
                             onClick={() =>
                               handleUpdateMonitoring(
                                 "currentStage",
-                                currentState.id,
+                                realtimeData.id,
                                 findIndex
                               )
                             }
@@ -226,19 +246,33 @@ const ContestMonitoring = () => {
                           </button>
                         )}
                       </div>
+                      <div className="flex w-1/6">
+                        <button
+                          onClick={() =>
+                            handleGotoSummary(
+                              contestCategoryId,
+                              contestGradeId,
+                              contestCategoryTitle,
+                              contestGradeTitle
+                            )
+                          }
+                        >
+                          집계표
+                        </button>
+                      </div>
                     </div>
                     <div className="flex w-full h-auto">
-                      {stageId === currentState.stageId && (
+                      {stageId === realtimeData?.stageId && (
                         <div className="flex justify-start items-center h-20 w-full">
-                          {currentState.judges.map((judge, jIdx) => {
+                          {realtimeData.judges.map((judge, jIdx) => {
                             const { isEnd, isLogined, seatIndex } = judge;
 
                             return (
-                              <div className="flex w-32 h-20 justify-center items-center flex-col`">
-                                <div className="flex w-full h-10">
+                              <div className="flex w-32 h-20 justify-center items-center flex-col">
+                                <div className="flex w-full h-10 justify-center items-center">
                                   {seatIndex}
                                 </div>
-                                <div className="flex w-full h-10">
+                                <div className="flex w-full h-10 justify-center items-center">
                                   {isLogined === false && isEnd === false && (
                                     <span>준비중</span>
                                   )}

@@ -12,6 +12,7 @@ import ContestNewInvoiceManual from "./pages/ContestNewInvoiceManual";
 import ContestJudgeTable from "./pages/ContestJudgeTable";
 import ContestPlayerOrderTableAfter from "./pages/ContestPlayerOrderTableAfter";
 import ContestMonitoring from "./pages/ContestMonitoring";
+import ContestRankSummary from "./pages/ContestRankSummary";
 
 function App() {
   return (
@@ -58,6 +59,10 @@ function App() {
           <Route
             path="/contestmonitoring"
             element={<ManagementHome children={<ContestMonitoring />} />}
+          />
+          <Route
+            path="/contestranksummary"
+            element={<ManagementHome children={<ContestRankSummary />} />}
           />
         </Routes>
       </BrowserRouter>
