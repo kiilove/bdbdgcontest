@@ -98,6 +98,8 @@ const ContestMonitoring = () => {
     });
   };
 
+  const handleStatgeInfo = (stageId) => {};
+
   const handleUpdateMonitoring = async (
     collectionName,
     documentId,
@@ -151,6 +153,7 @@ const ContestMonitoring = () => {
 
   useEffect(() => {
     console.log(realtimeData?.stageId);
+    setCurrentState(realtimeData);
   }, [realtimeData]);
 
   useEffect(() => {
@@ -164,30 +167,27 @@ const ContestMonitoring = () => {
     };
   }, []);
 
-  useEffect(() => {}, [currentState]);
+  useEffect(() => {
+    console.log(currentState);
+  }, [currentState]);
 
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2 justify-start items-start">
       <div className="flex w-full h-14">
         <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
-          <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-            <TbHeartRateMonitor />
-          </span>
-          <h1
-            className="font-sans text-lg font-semibold"
-            style={{ letterSpacing: "2px" }}
-          >
-            대회모니터링
-          </h1>
-        </div>
-      </div>
-      <div className="flex w-full h-auto">
-        <div className="flex w-full h-10 bg-gray-100 justify-start items-center rounded-lg px-3">
-          <div className="flex w-1/6 h-full justify-end mr-5 items-center">
-            모니터링
+          <div className="flex w-1/2">
+            <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
+              <TbHeartRateMonitor />
+            </span>
+            <h1
+              className="font-sans text-lg font-semibold"
+              style={{ letterSpacing: "2px" }}
+            >
+              대회모니터링
+            </h1>
           </div>
-          <div className="flex w-5/6 h-full justify-start ml-5 items-center">
-            {!realtimeData?.stageId && (
+          <div className="flex w-1/2 h-full justify-start ml-5 items-center">
+            {!currentState?.stageId && (
               <button
                 onClick={() => handleAddCurrentStage()}
                 className="w-auto h-10 px-5 bg-blue-200"
@@ -195,16 +195,14 @@ const ContestMonitoring = () => {
                 모니터링 데이터생성
               </button>
             )}
-            {realtimeData?.stageId && <span>실시간 모니터링중...</span>}
+            {currentState?.stageId && <span>실시간 모니터링중...</span>}
           </div>
         </div>
       </div>
+
       <div className="flex w-full h-auto">
         <div className="flex w-full h-auto bg-gray-100 justify-start items-center rounded-lg px-3">
-          <div className="flex w-1/6 h-full justify-end mr-5 items-center">
-            대회타임테이블
-          </div>
-          <div className="flex w-5/6 h-full justify-start ml-5 items-center gap-y-2 flex-col py-3">
+          <div className="flex w-full h-full justify-start items-center gap-y-2 flex-col py-3">
             {contestSchedule?.length > 0 &&
               contestSchedule.map((schedule, sIdx) => {
                 const {
@@ -223,7 +221,7 @@ const ContestMonitoring = () => {
                   <div className="flex flex-col w-full h-auto">
                     <div
                       className={`${
-                        stageId === realtimeData?.stageId
+                        stageId === currentState?.stageId
                           ? "flex w-full bg-blue-200 rounded-lg h-10 p-2"
                           : "flex w-full bg-white rounded-lg h-10 p-2"
                       }`}
@@ -232,12 +230,12 @@ const ContestMonitoring = () => {
                         {contestCategoryTitle} ({contestGradeTitle})
                       </div>
                       <div className="flex w-1/6">
-                        {stageId === realtimeData?.stageId && (
+                        {stageId === currentState?.stageId && (
                           <button
                             onClick={() =>
                               handleUpdateMonitoring(
                                 "currentStage",
-                                realtimeData.id,
+                                currentState.id,
                                 findIndex
                               )
                             }
@@ -262,9 +260,9 @@ const ContestMonitoring = () => {
                       </div>
                     </div>
                     <div className="flex w-full h-auto">
-                      {stageId === realtimeData?.stageId && (
+                      {stageId === currentState?.stageId && (
                         <div className="flex justify-start items-center h-20 w-full">
-                          {realtimeData.judges.map((judge, jIdx) => {
+                          {currentState.judges.map((judge, jIdx) => {
                             const { isEnd, isLogined, seatIndex } = judge;
 
                             return (
