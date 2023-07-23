@@ -80,11 +80,6 @@ const ContestPlayerOrderTable = () => {
             const matchedPlayers = entrysArray.filter(
               (entry) => entry.contestGradeId === grade.contestGradeId
             );
-            // .sort((a, b) => {
-            //   const dateA = new Date(a.invoiceCreateAt);
-            //   const dateB = new Date(b.invoiceCreateAt);
-            //   return dateA.getTime() - dateB.getTime();
-            // });
 
             matchedPlayers.map((player, pIdx) => {
               playerNumber++;
@@ -98,12 +93,7 @@ const ContestPlayerOrderTable = () => {
             });
 
             const matchedInfo = {
-              ...category,
-              ...grade,
-              stageId: uuidv4(),
-              stageNumber,
               matchedPlayers: matchedPlayerWithPlayerNumber,
-              matchedGradesLength,
             };
             dummy.push({ ...matchedInfo });
           });

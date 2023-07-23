@@ -51,7 +51,7 @@ export function useFirestoreQuery() {
       }));
 
       // 데이터가 없는 경우에도 state를 초기화함
-      console.log(querySnapshot);
+
       setData(documents);
       setLoading(false);
       return documents;

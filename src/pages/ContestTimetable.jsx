@@ -21,6 +21,7 @@ import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import PlayerInfoModal from "../modals/PlayerInfoModal";
 import JudgeInfoModal from "../modals/JudgeInfoModal";
 import ContestPlayerOrderTableTabType from "./ContestPlayerOrderTableTabType";
+import ContestCategoryOrderTable from "./ContestCategoryOrderTable";
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
   const [currentTab, setCurrentTab] = useState(0);
@@ -75,12 +76,18 @@ const ContestTimetable = () => {
     },
     {
       id: 1,
+      title: "무대별종목배정",
+      subTitle: "통합출전 여부등을 설정합니다.",
+      children: "",
+    },
+    {
+      id: 2,
       title: "선수배정",
       subTitle: "대회출전을 위한 선수 명단(계측전)입니다.",
       children: "",
     },
     {
-      id: 2,
+      id: 3,
       title: "심판배정",
       subTitle: "종목/체급 심사를 위한 심판을 배정합니다.",
       children: "",
@@ -345,6 +352,48 @@ const ContestTimetable = () => {
       console.log(error);
     }
   };
+
+  const initScheduleInfo = () => {
+    const scheduleArray = [];
+    let stageNumber = 0;
+    categorysArray
+      .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
+      .map((category, cIdx) => {
+        let schedule = {};
+        const {
+          contestCategoryId: contestId,
+          contestCategoryIndex: contestIndex,
+          contestCategoryTitle: contestTitle,
+          contestCategory,
+        } = category;
+        const filteredGrades = gradesArray.filter(
+          (grade) => grade.refCategoryId === contestId
+        );
+
+        console.log(filteredGrades);
+
+        if (filteredGrades.length > 0) {
+          filteredGrades.map((filter, fIdx) => {
+            stageNumber++;
+            const {
+              contestGradeId: gradeId,
+              contestGradeTitle: gradeTitle,
+              contestGradeIndex: gradeIndex,
+            } = filter;
+
+            schedule = {
+              ...category,
+              stageId: uuidv4(),
+              stageNumber,
+              matchedGrades: [{ gradeId, gradeTitle, gradeIndex }],
+            };
+            scheduleArray.push(schedule);
+          });
+        }
+      });
+    console.log(scheduleArray);
+    return scheduleArray;
+  };
   useEffect(() => {
     console.log(currentContest);
     fetchPool();
@@ -353,6 +402,112 @@ const ContestTimetable = () => {
   useEffect(() => {
     console.log(judgeAssignTable);
   }, [judgeAssignTable]);
+
+  useEffect(() => {
+    initScheduleInfo();
+  }, []);
+
+  const ContestStagesRender = (
+    <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
+      <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
+        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-2 gap-y-2">
+          <div className="flex w-full justify-start items-center">
+            <button className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg">
+              스테이지 추가
+            </button>
+          </div>
+        </div>
+        <div className="flex bg-gray-100 w-full h-auto rounded-lg p-2">
+          <div className="w-full rounded-lg flex flex-col gap-y-2">
+            <div className="flex flex-col gap-y-2 w-full">
+              {categorysArray?.length <= 0 ? (
+                <div className="h-auto">
+                  <div colSpan={3} className="w-full text-center">
+                    종목데이터 내용이 없습니다. 다시 불러오기를 누르거나 종목을
+                    추가하세요
+                  </div>
+                </div>
+              ) : (
+                <div className="flex w-full h-auto">
+                  <DragDropContext onDragEnd={onDragCategoryEnd}>
+                    <Droppable droppableId="dropCategory">
+                      {(p, s) => (
+                        <div
+                          className="flex w-full flex-col bg-blue-100 rounded-lg gap-y-2"
+                          ref={p.innerRef}
+                        >
+                          {gradesArray
+                            .sort(
+                              (a, b) =>
+                                a.contestCategoryIndex - b.contestCategoryIndex
+                            )
+                            .map((category, cIdx) => {
+                              const {
+                                contestCategoryId: categoryId,
+                                contestCategoryIndex: categoryIndex,
+                                contestCategoryTitle: categoryTitle,
+                                contestCategoryJudgeCount: judgeCount,
+                              } = category;
+
+                              const matchedGrades = gradesArray
+                                .filter(
+                                  (grade) => grade.refCategoryId === categoryId
+                                )
+                                .sort(
+                                  (a, b) =>
+                                    a.contestGradeIndex - b.contestGradeIndex
+                                );
+                              return (
+                                <Draggable
+                                  key={categoryId}
+                                  draggableId={categoryId}
+                                  id={categoryId}
+                                  index={cIdx}
+                                >
+                                  {(provided, snapshot) => (
+                                    <div
+                                      className={`${
+                                        snapshot.isDragging
+                                          ? "flex w-full flex-col bg-blue-400 rounded-lg"
+                                          : "flex w-full flex-col bg-blue-200 rounded-lg"
+                                      }`}
+                                      key={categoryId + cIdx}
+                                      id={categoryId + "div"}
+                                      ref={provided.innerRef}
+                                      {...provided.dragHandleProps}
+                                      {...provided.draggableProps}
+                                    >
+                                      <div className="h-auto w-full flex items-center flex-col lg:flex-row">
+                                        <div className="flex w-full h-auto justify-start items-center">
+                                          <div className="w-1/6 h-14 flex justify-start items-center pl-4">
+                                            {categoryIndex}
+                                          </div>
+                                          <div className="w-4/6 h-14 flex justify-start items-center">
+                                            {categoryTitle}
+                                            {judgeCount &&
+                                              `(${judgeCount}심제)`}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex w-full px-2 pb-2 h-auto flex-wrap"></div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                          {p.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const ContestOrdersRender = (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
@@ -1056,9 +1211,10 @@ const ContestTimetable = () => {
                 </>
               ))}
             </div>
-            {currentTab === 0 && ContestOrdersRender}
-            {currentTab === 1 && <ContestPlayerOrderTableTabType />}
-            {currentTab === 2 && ContestJudgesReder}
+            {currentTab === 0 && <ContestCategoryOrderTable />}
+            {currentTab === 1 && ContestStagesRender}
+            {currentTab === 2 && <ContestPlayerOrderTableTabType />}
+            {currentTab === 3 && ContestJudgesReder}
           </div>
         </div>
       </div>

@@ -10,6 +10,9 @@ import {
 } from "react-icons/bs";
 
 import { TiInputChecked } from "react-icons/ti";
+import { FaUserEdit } from "react-icons/fa";
+import { PiUsersFour } from "react-icons/pi";
+import { CgUserList } from "react-icons/cg";
 import {
   TbCertificate,
   TbFileCertificate,
@@ -23,8 +26,8 @@ import {
   MdOutlineScale,
   MdOutlineTouchApp,
 } from "react-icons/md";
-import { BiAddToQueue } from "react-icons/bi";
-
+import { BiAddToQueue, BiUserPlus } from "react-icons/bi";
+import { BsClipboardData } from "react-icons/bs";
 export const MenuArray = [
   {
     id: 0,
@@ -47,25 +50,25 @@ export const MenuArray = [
       {
         id: 2,
         title: "참가신청서",
-        icon: <BsCheckAll />,
+        icon: <PiUsersFour />,
         link: "/contestinvoicetable",
       },
       {
         id: 3,
         title: "참가신청서 수동작성",
-        icon: <BsCheckAll />,
+        icon: <BiUserPlus />,
         link: "/contestnewinvoicemanual",
       },
       {
         id: 4,
-        title: "선수임시명단(계측전)",
-        icon: <TiInputChecked />,
+        title: "계측명단",
+        icon: <MdOutlineScale />,
         link: "/contestplayerordertable",
       },
       {
         id: 5,
-        title: "선수확정명단(계측후)",
-        icon: <TiInputChecked />,
+        title: "출전선수명단",
+        icon: <CgUserList />,
         link: "/contestplayerordertableafter",
       },
 
@@ -78,7 +81,7 @@ export const MenuArray = [
       {
         id: 7,
         title: "대회운영 데이터",
-        icon: <MdTimeline />,
+        icon: <BsClipboardData />,
         link: "/contesttimetable",
       },
     ],

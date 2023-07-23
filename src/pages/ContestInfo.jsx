@@ -53,7 +53,9 @@ const ContestInfo = () => {
     files,
     "images/poster"
   );
-  const addCollection = useFirestoreAddData("contest_data");
+  const addCollection = useFirestoreAddData("contest_stages_list");
+  const addPlayersAssign = useFirestoreAddData("contest_players_assign");
+  const addJudgesAssign = useFirestoreAddData("contest_judges_assign");
   const addPasswords = useFirestoreAddData("contest_passwords");
   const updateContest = useFirestoreUpdateData("contests");
   const params = useParams();
@@ -128,7 +130,13 @@ const ContestInfo = () => {
     try {
       const addedData = await addCollection.addData({
         contestId: currentContest.contests.id,
-        collectionTitle: currentContestInfo.contestCollectionName,
+        collectionName: currentContestInfo.contestCollectionName,
+      });
+      const addedPlayersAssign = await addPlayersAssign.addData({
+        contestId: currentContest.contests.id,
+      });
+      const addedJudgesAssign = await addJudgesAssign.addData({
+        contestId: currentContest.contests.id,
       });
       const addedPassword = await addPasswords.addData({
         passwords: [...judgePasswords],
@@ -136,8 +144,11 @@ const ContestInfo = () => {
       });
       await updateContest.updateData(currentContest.contests.id, {
         ...currentContest.contests,
-        contestDataId: addedData.id,
+        contestStagesListId: addedData.id,
         contestPasswordId: addedPassword.id,
+        contestPlayersAssignId: addedPassword.id,
+        contestJuedesAssignId: addedJudgesAssign.id,
+        collectionName: currentContestInfo.contestCollectionName,
       });
     } catch (error) {
       console.log(error);
