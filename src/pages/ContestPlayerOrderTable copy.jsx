@@ -64,6 +64,7 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(true);
     let dummy = [];
     let playerNumber = 0;
+    let stageNumber = 0;
     categorysArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
       .map((category, cIdx) => {
@@ -74,15 +75,11 @@ const ContestPlayerOrderTable = () => {
         matchedGrades
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
           .map((grade, gIdx) => {
+            stageNumber++;
             const matchedPlayerWithPlayerNumber = [];
             const matchedPlayers = entrysArray.filter(
               (entry) => entry.contestGradeId === grade.contestGradeId
             );
-            // .sort((a, b) => {
-            //   const dateA = new Date(a.invoiceCreateAt);
-            //   const dateB = new Date(b.invoiceCreateAt);
-            //   return dateA.getTime() - dateB.getTime();
-            // });
 
             matchedPlayers.map((player, pIdx) => {
               playerNumber++;
@@ -96,10 +93,7 @@ const ContestPlayerOrderTable = () => {
             });
 
             const matchedInfo = {
-              ...category,
-              ...grade,
               matchedPlayers: matchedPlayerWithPlayerNumber,
-              matchedGradesLength,
             };
             dummy.push({ ...matchedInfo });
           });
@@ -199,36 +193,19 @@ const ContestPlayerOrderTable = () => {
       console.log(error);
     }
   };
-
   const onDragPlayerEnd = (result) => {
     const { source, destination, draggableId } = result;
 
     if (!destination) {
       return;
     }
+    console.log(result);
 
-    const newMatchedArray = [...matchedArray];
-    const sourceIndex = source.index;
-    const destinationIndex = destination.index;
-    console.log(sourceIndex);
-    // Find the player that was dragged
-    const draggedPlayer = newMatchedArray[sourceIndex].matchedPlayers.find(
-      (player) => player.playerUid === draggableId
-    );
-
-    // Remove the player from the source category and grade
-    newMatchedArray[sourceIndex].matchedPlayers = newMatchedArray[
-      sourceIndex
-    ].matchedPlayers.filter((player) => player.playerUid !== draggableId);
-
-    // Insert the player at the destination category and grade
-    newMatchedArray[destinationIndex].matchedPlayers.splice(
-      destination.index,
-      0,
-      draggedPlayer
-    );
-    console.log(newMatchedArray);
-    //setMatchedArray(newMatchedArray);
+    const dummy = [...categorysArray];
+    const [reorderCategory] = dummy.splice(source.index, 1);
+    dummy.splice(destination.index, 0, reorderCategory);
+    //handleSavePlayerOrder(handleReOrderPlayer(dummy));
+    //setEntrysArray(handleReOrderPlayer(dummy));
   };
 
   useEffect(() => {

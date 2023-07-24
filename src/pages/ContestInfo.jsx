@@ -128,7 +128,7 @@ const ContestInfo = () => {
 
   const handleCollectionAdd = async () => {
     try {
-      const addedData = await addCollection.addData({
+      const addedStage = await addCollection.addData({
         contestId: currentContest.contests.id,
         collectionName: currentContestInfo.contestCollectionName,
       });
@@ -144,10 +144,10 @@ const ContestInfo = () => {
       });
       await updateContest.updateData(currentContest.contests.id, {
         ...currentContest.contests,
-        contestStagesListId: addedData.id,
+        contestStagesListId: addedStage.id,
         contestPasswordId: addedPassword.id,
-        contestPlayersAssignId: addedPassword.id,
-        contestJuedesAssignId: addedJudgesAssign.id,
+        contestPlayersAssignId: addedPlayersAssign.id,
+        contestJudgesAssignId: addedJudgesAssign.id,
         collectionName: currentContestInfo.contestCollectionName,
       });
     } catch (error) {
