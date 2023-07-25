@@ -76,20 +76,20 @@ const ContestTimetable = () => {
     },
     {
       id: 1,
-      title: "무대별종목배정",
-      subTitle: "통합출전 여부등을 설정합니다.",
-      children: "",
-    },
-    {
-      id: 2,
-      title: "선수배정",
+      title: "선수번호배정",
       subTitle: "대회출전을 위한 선수 명단(계측전)입니다.",
       children: "",
     },
     {
-      id: 3,
+      id: 2,
       title: "심판배정",
       subTitle: "종목/체급 심사를 위한 심판을 배정합니다.",
+      children: "",
+    },
+    {
+      id: 3,
+      title: "무대구성(체급통합)",
+      subTitle: "통합출전 여부등을 설정합니다.",
       children: "",
     },
   ];
@@ -1188,7 +1188,7 @@ const ContestTimetable = () => {
             className="font-sans text-lg font-semibold"
             style={{ letterSpacing: "2px" }}
           >
-            대회운영 데이터(개최순서/선수명단/심판배정)
+            대회운영 데이터(개최순서/선수명단(번호배정)/심판배정/무대구성)
           </h1>
         </div>
       </div>
@@ -1212,9 +1212,9 @@ const ContestTimetable = () => {
               ))}
             </div>
             {currentTab === 0 && <ContestCategoryOrderTable />}
-            {currentTab === 1 && ContestStagesRender}
-            {currentTab === 2 && <ContestPlayerOrderTableTabType />}
-            {currentTab === 3 && ContestJudgesReder}
+            {currentTab === 3 && ContestStagesRender}
+            {currentTab === 1 && <ContestPlayerOrderTableTabType />}
+            {currentTab === 2 && ContestJudgesReder}
           </div>
         </div>
       </div>

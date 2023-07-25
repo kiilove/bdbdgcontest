@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { BsCheckAll } from "react-icons/bs";
 import LoadingPage from "./LoadingPage";
 import { TiInputChecked } from "react-icons/ti";
+import { v4 as uuidv4 } from "uuid";
 import {
   useFirestoreGetDocument,
   useFirestoreQuery,
@@ -12,11 +13,12 @@ import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { Checkbox } from "@mui/material";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
-const ContestPlayerOrderTableTabType = () => {
+const ContestPlayerOrderTable = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [matchedArray, setMatchedArray] = useState([]);
   const [categorysArray, setCategorysArray] = useState([]);
-  const [categorysList, setCategorysList] = useState({});
+  const [playersArray, setPlayersArray] = useState([]);
+  const [playersAssign, setPlayersAssign] = useState({});
   const [gradesArray, setGradesArray] = useState([]);
   const [entrysArray, setEntrysArray] = useState([]);
   const { currentContest, setCurrentContest } = useContext(
@@ -27,7 +29,10 @@ const ContestPlayerOrderTableTabType = () => {
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
-  const updateEntrys = useFirestoreUpdateData("contest_entrys_list");
+  const fetchPlayersAssignDocument = useFirestoreGetDocument(
+    "contest_players_assign"
+  );
+  const updatePlayersAssign = useFirestoreUpdateData("contest_players_assign");
   const fetchEntry = useFirestoreQuery();
   let categoryNumber = 0;
   let totalPlayerNumber = 0;
@@ -48,20 +53,29 @@ const ContestPlayerOrderTableTabType = () => {
       );
 
       setGradesArray([...returnGrades?.grades]);
-    }
 
-    const condition = [where("contestId", "==", currentContest.contests.id)];
-    const returnEntrys = await fetchEntry.getDocuments(
-      "contest_entrys_list",
-      condition
-    );
-    setEntrysArray([...returnEntrys]);
+      const condition = [where("contestId", "==", currentContest.contests.id)];
+      console.log(currentContest.contests.id);
+      const returnEntrys = await fetchEntry.getDocuments(
+        "contest_entrys_list",
+        condition
+      );
+      setEntrysArray([...returnEntrys]);
+
+      const returnPlayersAssign = await fetchPlayersAssignDocument.getDocument(
+        currentContest.contests.contestPlayersAssignId
+      );
+      console.log(returnPlayersAssign);
+      setPlayersAssign({ ...returnPlayersAssign });
+      setPlayersArray([...returnPlayersAssign?.players]);
+    }
   };
 
   const initEntryList = () => {
     setIsLoading(true);
     let dummy = [];
     let playerNumber = 0;
+
     categorysArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
       .map((category, cIdx) => {
@@ -69,6 +83,7 @@ const ContestPlayerOrderTableTabType = () => {
           (grade) => grade.refCategoryId === category.contestCategoryId
         );
         const matchedGradesLength = matchedGrades.length;
+
         matchedGrades
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
           .map((grade, gIdx) => {
@@ -107,111 +122,49 @@ const ContestPlayerOrderTableTabType = () => {
     setIsLoading(false);
   };
 
-  const gradeChage = (
-    e,
-    currentCategoryId,
-    currentGradeId,
-    currentPlayerUid
-  ) => {
-    //현재 종목, 체급 코드를 받아와서
-    // 종목에 포함된 체급의 갯수를 계산한후에
-    // 현재 체급 코드의 gradeIndex가 체급 갯수보다 작다면 다음 체급으로 변경하도록 코드를 작성한다.
-    // originalGrade와 isGradeChanged가 추가되었어.
-    console.log({
-      checked: e.target.checked,
-      currentCategoryId,
-      currentGradeId,
-      matchedArray,
-    });
+  const handleUpdatePlayersAssign = async () => {};
 
-    const newMatched = [...matchedArray];
-
-    const entryFindIndex = newMatched.findIndex(
-      (entry) =>
-        entry.contestCategoryId === currentCategoryId &&
-        entry.contestGradeId === currentGradeId
-    );
-
-    const currentPlayerInfo = newMatched
-      .find(
-        (entry) =>
-          entry.contestCategoryId === currentCategoryId &&
-          entry.contestGradeId === currentGradeId
-      )
-      .matchedPlayers.find((player) => player.playerUid === currentPlayerUid);
-
-    const playerFindIndex = newMatched
-      .find(
-        (entry) =>
-          entry.contestCategoryId === currentCategoryId &&
-          entry.contestGradeId === currentGradeId
-      )
-      .matchedPlayers.findIndex(
-        (player) => player.playerUid === currentPlayerUid
-      );
-
-    if (e.target.checked) {
-      const newPlayerInfo = {
-        ...currentPlayerInfo,
-        isGradeChanged: true,
-        playerIndex: currentPlayerInfo.playerIndex + 100,
-      };
-      //기존 선수 배열에서 삭제
-      newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
-      //다음 선수 배열에 추가
-      newMatched[entryFindIndex + 1].matchedPlayers.push({
-        ...newPlayerInfo,
-      });
-
-      setMatchedArray(() => [...newMatched]);
-    } else {
-      const newPlayerInfo = {
-        ...currentPlayerInfo,
-        isGradeChanged: false,
-        playerIndex: currentPlayerInfo.playerIndex - 100,
-      };
-      //기존 선수 배열에서 삭제
-      newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
-      //다음 선수 배열에 추가
-      newMatched[entryFindIndex - 1].matchedPlayers.push({
-        ...newPlayerInfo,
-      });
-      setMatchedArray(() => [...newMatched]);
-    }
-  };
-  const handleReOrderPlayer = (data) => {
-    const prevOrder = [...data];
-    let newOrder = [];
-    prevOrder.map((item, idx) => newOrder.push({ ...item }));
-
-    return newOrder;
-  };
-
-  const handleSavePlayerOrder = async (data) => {
-    try {
-      await updateEntrys.updateData([...data]);
-    } catch (error) {
-      console.log(error);
-    }
-  };
   const onDragPlayerEnd = (result) => {
     const { source, destination, draggableId } = result;
 
     if (!destination) {
       return;
     }
-    console.log(result);
 
-    const dummy = [...categorysArray];
-    const [reorderCategory] = dummy.splice(source.index, 1);
-    dummy.splice(destination.index, 0, reorderCategory);
-    //handleSavePlayerOrder(handleReOrderPlayer(dummy));
-    //setEntrysArray(handleReOrderPlayer(dummy));
+    const newMatchedArray = [...matchedArray];
+    const sourceIndex = source.index;
+    const destinationIndex = destination.index;
+
+    // Find the player that was dragged
+    const draggedPlayer = newMatchedArray[
+      sourceIndex.parentIndex
+    ].matchedPlayers.find((player) => player.playerUid === draggableId);
+
+    // Remove the player from the source category and grade
+    newMatchedArray[sourceIndex.parentIndex].matchedPlayers.splice(
+      sourceIndex.childIndex,
+      1
+    );
+
+    // Insert the player at the destination category and grade
+    newMatchedArray[destinationIndex.parentIndex].matchedPlayers.splice(
+      destinationIndex.childIndex,
+      0,
+      draggedPlayer
+    );
+    // Flatten all matchedPlayers into a single array to update playerNumber and playerIndex
+    const allPlayers = newMatchedArray.flatMap(
+      (matched) => matched.matchedPlayers
+    );
+
+    // Update playerNumber and playerIndex based on the new order
+    allPlayers.forEach((player, index) => {
+      player.playerNumber = index + 1;
+      player.playerIndex = index + 1; // If you want to update playerIndex based on playerNumber, use 'player.playerNumber' instead of 'index + 1'
+    });
+
+    setMatchedArray(newMatchedArray);
   };
-
-  const filterdMatchedArray = useMemo(() => {
-    return matchedArray;
-  }, [matchedArray]);
 
   useEffect(() => {
     fetchPool();
@@ -224,7 +177,7 @@ const ContestPlayerOrderTableTabType = () => {
   }, [categorysArray, gradesArray, entrysArray]);
 
   useEffect(() => {
-    console.log(filterdMatchedArray);
+    //console.log(matchedArray);
   }, [matchedArray]);
 
   return (
@@ -235,11 +188,27 @@ const ContestPlayerOrderTableTabType = () => {
         </div>
       ) : (
         <>
+          <div className="flex w-full h-14">
+            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
+              <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
+                <TiInputChecked />
+              </span>
+              <h1
+                className="font-sans text-lg font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                선수명단/번호배정
+              </h1>
+            </div>
+          </div>
           <div className="flex w-full h-full">
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-3 lg:pt-3 flex-col bg-gray-100 rounded-lg gap-y-2">
                 <div className="flex">
-                  <button className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg">
+                  <button
+                    className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
+                    onClick={() => handleUpdatePlayersAssign()}
+                  >
                     저장
                   </button>
                 </div>
@@ -281,8 +250,6 @@ const ContestPlayerOrderTableTabType = () => {
                                     <div className="flex w-1/6">선수번호</div>
                                     <div className="flex w-1/6">이름</div>
                                     <div className="flex w-1/6">소속</div>
-                                    <div className="flex w-1/6">월체</div>
-                                    <div className="flex w-1/6">불참</div>
                                     <div className="hidden lg:flex w-1/6">
                                       신청일
                                     </div>
@@ -314,7 +281,10 @@ const ContestPlayerOrderTableTabType = () => {
                                               return (
                                                 <Draggable
                                                   draggableId={playerUid}
-                                                  index={pIdx}
+                                                  index={{
+                                                    parentIndex: mIdx,
+                                                    childIndex: pIdx,
+                                                  }}
                                                   key={playerUid}
                                                 >
                                                   {(provided, snapshot) => (
@@ -342,36 +312,7 @@ const ContestPlayerOrderTableTabType = () => {
                                                       <div className="flex w-1/6">
                                                         {playerGym}
                                                       </div>
-                                                      <div className="flex w-1/6">
-                                                        {gradeIndex <
-                                                          parseInt(
-                                                            gradeLength
-                                                          ) ||
-                                                        isGradeChanged ? (
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={
-                                                              isGradeChanged
-                                                            }
-                                                            onChange={(e) =>
-                                                              gradeChage(
-                                                                e,
-                                                                categoryId,
-                                                                gradeId,
-                                                                playerUid
-                                                              )
-                                                            }
-                                                          />
-                                                        ) : (
-                                                          <span>불가</span>
-                                                        )}
-                                                      </div>
-                                                      <div className="flex w-1/6">
-                                                        <input
-                                                          type="checkbox"
-                                                          checked={playerNoShow}
-                                                        />
-                                                      </div>
+
                                                       <div className="hidden lg:flex w-1/6">
                                                         {invoiceCreateAt}
                                                       </div>
@@ -401,4 +342,4 @@ const ContestPlayerOrderTableTabType = () => {
   );
 };
 
-export default ContestPlayerOrderTableTabType;
+export default ContestPlayerOrderTable;

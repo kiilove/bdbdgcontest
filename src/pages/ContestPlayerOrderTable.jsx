@@ -210,25 +210,36 @@ const ContestPlayerOrderTable = () => {
     const newMatchedArray = [...matchedArray];
     const sourceIndex = source.index;
     const destinationIndex = destination.index;
-    console.log(sourceIndex);
+
     // Find the player that was dragged
-    const draggedPlayer = newMatchedArray[sourceIndex].matchedPlayers.find(
-      (player) => player.playerUid === draggableId
-    );
+    const draggedPlayer = newMatchedArray[
+      sourceIndex.parentIndex
+    ].matchedPlayers.find((player) => player.playerUid === draggableId);
 
     // Remove the player from the source category and grade
-    newMatchedArray[sourceIndex].matchedPlayers = newMatchedArray[
-      sourceIndex
-    ].matchedPlayers.filter((player) => player.playerUid !== draggableId);
+    newMatchedArray[sourceIndex.parentIndex].matchedPlayers.splice(
+      sourceIndex.childIndex,
+      1
+    );
 
     // Insert the player at the destination category and grade
-    newMatchedArray[destinationIndex].matchedPlayers.splice(
-      destination.index,
+    newMatchedArray[destinationIndex.parentIndex].matchedPlayers.splice(
+      destinationIndex.childIndex,
       0,
       draggedPlayer
     );
-    console.log(newMatchedArray);
-    //setMatchedArray(newMatchedArray);
+    // Flatten all matchedPlayers into a single array to update playerNumber and playerIndex
+    const allPlayers = newMatchedArray.flatMap(
+      (matched) => matched.matchedPlayers
+    );
+
+    // Update playerNumber and playerIndex based on the new order
+    allPlayers.forEach((player, index) => {
+      player.playerNumber = index + 1;
+      player.playerIndex = index + 1; // If you want to update playerIndex based on playerNumber, use 'player.playerNumber' instead of 'index + 1'
+    });
+
+    setMatchedArray(newMatchedArray);
   };
 
   useEffect(() => {
@@ -348,7 +359,10 @@ const ContestPlayerOrderTable = () => {
                                               return (
                                                 <Draggable
                                                   draggableId={playerUid}
-                                                  index={pIdx}
+                                                  index={{
+                                                    parentIndex: mIdx,
+                                                    childIndex: pIdx,
+                                                  }}
                                                   key={playerUid}
                                                 >
                                                   {(provided, snapshot) => (
