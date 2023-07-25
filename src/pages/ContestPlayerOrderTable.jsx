@@ -28,6 +28,8 @@ const ContestPlayerOrderTable = () => {
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
+  // TODO: contest_players_assign에서 선수 정보를 불러오고, 월체에 대한 부분도 여기서 처리해야한다.
+  // 월체정리 이후에는 불참선수 처리까지 완료해야한다.
   const updateEntrys = useFirestoreUpdateData("contest_entrys_list");
   const updateContestData = useFirestoreUpdateData("contest_data");
   const fetchEntry = useFirestoreQuery();
@@ -53,7 +55,7 @@ const ContestPlayerOrderTable = () => {
     }
 
     const condition = [where("contestId", "==", currentContest.contests.id)];
-    const returnEntrys = await fetchEntry.getDocuments(
+    const returnPlayersAssign = await fetchEntry.getDocuments(
       "contest_entrys_list",
       condition
     );

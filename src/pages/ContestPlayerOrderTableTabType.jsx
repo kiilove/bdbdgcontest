@@ -122,7 +122,15 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(false);
   };
 
-  const handleUpdatePlayersAssign = async () => {};
+  const handleUpdatePlayersAssign = async (id) => {
+    const newPlayersAssign = { ...playersAssign, players: [...dummyArray] };
+    try {
+      await updatePlayersAssign.updateData(id, newPlayersAssign);
+      console.log("updated");
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const onDragPlayerEnd = (result) => {
     const { source, destination, draggableId } = result;
@@ -180,6 +188,8 @@ const ContestPlayerOrderTable = () => {
     //console.log(matchedArray);
   }, [matchedArray]);
 
+  const dummyArray = [];
+
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2">
       {isLoading ? (
@@ -229,7 +239,11 @@ const ContestPlayerOrderTable = () => {
                         matchedGradesLength: gradeLength,
                       } = matched;
 
-                      if (matchedPlayers.length === 0) return null;
+                      if (matchedPlayers.length === 0) {
+                        return null;
+                      } else {
+                        dummyArray.push(...matchedPlayers);
+                      }
 
                       let categoryNumber = 0;
                       return (
@@ -273,8 +287,7 @@ const ContestPlayerOrderTable = () => {
                                                 playerGym,
                                                 playerUid,
                                                 playerNumber,
-                                                playerNoShow,
-                                                isGradeChanged,
+
                                                 invoiceCreateAt,
                                               } = player;
 
