@@ -151,23 +151,8 @@ const ContestCategoryOrderTable = () => {
           />
         </div>
       </Modal>
-      <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
-        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-2 gap-y-2">
-          <div className="flex w-full justify-start items-center ">
-            <div className="h-12 w-full rounded-lg px-3 bg-white">
-              <div className="flex w-full justify-start items-center">
-                <h1 className="text-2xl text-gray-600 mr-3">
-                  <MdOutlineSearch />
-                </h1>
-                <input
-                  type="text"
-                  name="contestCategoryTitle"
-                  className="h-12 outline-none"
-                  placeholder="종목검색"
-                />
-              </div>
-            </div>
-          </div>
+      <div className="w-full blue-100 flex rounded-lg flex-col p-0 h-full gap-y-2">
+        <div className="flex bg-gray-100 w-full h-auto rounded-lg p-2 flex-col gap-y-2">
           <div className="flex w-full justify-start items-center">
             <button
               className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
@@ -183,8 +168,6 @@ const ContestCategoryOrderTable = () => {
               종목추가
             </button>
           </div>
-        </div>
-        <div className="flex bg-gray-100 w-full h-auto rounded-lg p-2">
           <div className="w-full rounded-lg flex flex-col gap-y-2">
             <div className="flex flex-col gap-y-2 w-full">
               {categoriesArray?.length <= 0 ? (
@@ -200,7 +183,7 @@ const ContestCategoryOrderTable = () => {
                     <Droppable droppableId="dropCategory">
                       {(p, s) => (
                         <div
-                          className="flex w-full flex-col bg-blue-100 rounded-lg gap-y-2"
+                          className="flex w-full flex-col bg-gray-100 rounded-lg gap-y-2"
                           ref={p.innerRef}
                         >
                           {categoriesArray

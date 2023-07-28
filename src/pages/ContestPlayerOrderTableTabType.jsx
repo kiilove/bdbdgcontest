@@ -249,30 +249,16 @@ const ContestPlayerOrderTable = () => {
   const dummyArray = [];
 
   return (
-    <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2">
+    <div className="flex flex-col w-full h-full bg-white rounded-lg p-2 gap-y-2">
       {isLoading ? (
         <div className="flex w-full h-screen justify-center items-center">
           <LoadingPage />
         </div>
       ) : (
         <>
-          <div className="flex w-full h-14">
-            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
-              <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-                <TiInputChecked />
-              </span>
-              <h1
-                className="font-sans text-lg font-semibold"
-                style={{ letterSpacing: "2px" }}
-              >
-                선수명단/번호배정(
-                {entryTitle})
-              </h1>
-            </div>
-          </div>
           <div className="flex w-full h-full">
             <div className="flex w-full justify-start items-center">
-              <div className="flex w-full h-full justify-start lg:px-3 lg:pt-3 flex-col bg-gray-100 rounded-lg gap-y-2">
+              <div className="flex w-full h-full justify-start lg:px-2 lg:pt-2 flex-col bg-gray-100 rounded-lg gap-y-2">
                 <div className="flex w-full gap-x-5">
                   <button
                     className="w-full h-12 bg-gradient-to-l from-green-300 to-green-200 rounded-lg"

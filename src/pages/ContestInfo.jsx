@@ -53,10 +53,11 @@ const ContestInfo = () => {
     files,
     "images/poster"
   );
-  const addCollection = useFirestoreAddData("contest_stages_list");
+
   const addPlayersAssign = useFirestoreAddData("contest_players_assign");
   const addJudgesAssign = useFirestoreAddData("contest_judges_assign");
   const addPasswords = useFirestoreAddData("contest_passwords");
+  const addStagesAssign = useFirestoreAddData("contest_stages_assign");
   const updateContest = useFirestoreUpdateData("contests");
   const params = useParams();
 
@@ -128,9 +129,10 @@ const ContestInfo = () => {
 
   const handleCollectionAdd = async () => {
     try {
-      const addedStage = await addCollection.addData({
+      const addedStagesAssign = await addStagesAssign.addData({
         contestId: currentContest.contests.id,
         collectionName: currentContestInfo.contestCollectionName,
+        stages: [],
       });
       const addedPlayersAssign = await addPlayersAssign.addData({
         contestId: currentContest.contests.id,
@@ -138,13 +140,14 @@ const ContestInfo = () => {
       const addedJudgesAssign = await addJudgesAssign.addData({
         contestId: currentContest.contests.id,
       });
+
       const addedPassword = await addPasswords.addData({
         passwords: [...judgePasswords],
         contestId: currentContest.contests.id,
       });
       await updateContest.updateData(currentContest.contests.id, {
         ...currentContest.contests,
-        contestStagesListId: addedStage.id,
+        contestStagesAssignId: addedStagesAssign.id,
         contestPasswordId: addedPassword.id,
         contestPlayersAssignId: addedPlayersAssign.id,
         contestJudgesAssignId: addedJudgesAssign.id,

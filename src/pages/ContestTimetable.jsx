@@ -22,6 +22,8 @@ import PlayerInfoModal from "../modals/PlayerInfoModal";
 import JudgeInfoModal from "../modals/JudgeInfoModal";
 import ContestPlayerOrderTableTabType from "./ContestPlayerOrderTableTabType";
 import ContestCategoryOrderTable from "./ContestCategoryOrderTable";
+import ContestStagetable from "./ContestStagetable";
+import { BsClipboardData } from "react-icons/bs";
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
   const [currentTab, setCurrentTab] = useState(0);
@@ -1018,8 +1020,8 @@ const ContestTimetable = () => {
           />
         </div>
       </Modal>
-      <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
-        <div className="flex bg-blue-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-0 lg:p-0 gap-y-2">
+      <div className="w-full bg-gray-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
+        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-0 lg:p-0 gap-y-2">
           <div className="flex w-full justify-start items-center">
             {currentContest?.contests.contestJudgeAssignListId ? (
               <button
@@ -1048,7 +1050,7 @@ const ContestTimetable = () => {
               </button>
             )}
           </div>
-          <div className="flex w-full flex-col bg-blue-100 rounded-lg gap-y-2">
+          <div className="flex w-full flex-col bg-gray-100 rounded-lg gap-y-2">
             {categorysArray
               .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
               .map((category, cIdx) => {
@@ -1182,7 +1184,7 @@ const ContestTimetable = () => {
       <div className="flex w-full h-14">
         <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
           <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-            <MdTimeline />
+            <BsClipboardData />
           </span>
           <h1
             className="font-sans text-lg font-semibold"
@@ -1214,7 +1216,7 @@ const ContestTimetable = () => {
             {currentTab === 0 && <ContestCategoryOrderTable />}
             {currentTab === 1 && <ContestPlayerOrderTableTabType />}
             {currentTab === 2 && ContestJudgesReder}
-            {currentTab === 3 && ContestStagesRender}
+            {currentTab === 3 && <ContestStagetable />}
           </div>
         </div>
       </div>
