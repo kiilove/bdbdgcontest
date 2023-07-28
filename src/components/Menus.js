@@ -61,28 +61,28 @@ export const MenuArray = [
       },
       {
         id: 4,
-        title: "계측명단",
+        title: "대회운영 데이터(1단계)",
+        icon: <BsClipboardData />,
+        link: "/contesttimetable",
+      },
+      {
+        id: 5,
+        title: "계측결과반영(2단계)",
         icon: <MdOutlineScale />,
         link: "/contestplayerordertable",
       },
       {
-        id: 5,
-        title: "출전선수명단",
+        id: 6,
+        title: "최종명단(3단계)",
         icon: <CgUserList />,
         link: "/contestplayerordertableafter",
       },
 
       {
-        id: 6,
+        id: 7,
         title: "심판선발",
         icon: <MdBalance />,
         link: "/contestjudgetable",
-      },
-      {
-        id: 7,
-        title: "대회운영 데이터",
-        icon: <BsClipboardData />,
-        link: "/contesttimetable",
       },
     ],
   },

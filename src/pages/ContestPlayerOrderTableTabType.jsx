@@ -21,6 +21,7 @@ const ContestPlayerOrderTable = () => {
   const [playersAssign, setPlayersAssign] = useState({});
   const [gradesArray, setGradesArray] = useState([]);
   const [entrysArray, setEntrysArray] = useState([]);
+  const [entryTitle, setEntryTitle] = useState("");
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
@@ -73,6 +74,7 @@ const ContestPlayerOrderTable = () => {
 
   const initEntryList = () => {
     setIsLoading(true);
+    setEntryTitle(() => "초기명단/계측명단 출력불가능");
     let dummy = [];
     let playerNumber = 0;
 
@@ -122,11 +124,65 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(false);
   };
 
-  const handleUpdatePlayersAssign = async (id) => {
+  const fetchEntryList = () => {
+    setIsLoading(true);
+    let dummy = [];
+    setEntryTitle(() => "저장된명단/계측명단 출력가능");
+
+    categorysArray
+      .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
+      .map((category, cIdx) => {
+        const matchedGrades = gradesArray.filter(
+          (grade) => grade.refCategoryId === category.contestCategoryId
+        );
+        const matchedGradesLength = matchedGrades.length;
+
+        matchedGrades
+          .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
+          .map((grade, gIdx) => {
+            const matchedPlayerWithPlayerNumber = [];
+            const matchedPlayers = playersArray.filter(
+              (entry) => entry.contestGradeId === grade.contestGradeId
+            );
+            // .sort((a, b) => {
+            //   const dateA = new Date(a.invoiceCreateAt);
+            //   const dateB = new Date(b.invoiceCreateAt);
+            //   return dateA.getTime() - dateB.getTime();
+            // });
+
+            matchedPlayers
+              .sort((a, b) => a.playerIndex - b.playerIndex)
+              .map((player, pIdx) => {
+                const { playerNumber } = player;
+
+                const newPlayer = {
+                  ...player,
+                  playerNumber,
+                  playerNoShow: false,
+                  playerIndex: playerNumber,
+                };
+                matchedPlayerWithPlayerNumber.push({ ...newPlayer });
+              });
+
+            const matchedInfo = {
+              ...category,
+              ...grade,
+              matchedPlayers: matchedPlayerWithPlayerNumber,
+              matchedGradesLength,
+            };
+            dummy.push({ ...matchedInfo });
+          });
+      });
+
+    setMatchedArray([...dummy]);
+    setIsLoading(false);
+  };
+
+  const handleUpdatePlayersAssign = async (id, title) => {
     const newPlayersAssign = { ...playersAssign, players: [...dummyArray] };
     try {
       await updatePlayersAssign.updateData(id, newPlayersAssign);
-      console.log("updated");
+      setEntryTitle(() => "저장된명단/계측명단 출력가능");
     } catch (error) {
       console.log(error);
     }
@@ -179,10 +235,12 @@ const ContestPlayerOrderTable = () => {
   }, [currentContest]);
 
   useEffect(() => {
-    if (categorysArray.length > 0) {
+    if (categorysArray.length > 0 && playersArray?.length > 0) {
+      fetchEntryList();
+    } else if (categorysArray.length > 0 && playersArray?.length === 0) {
       initEntryList();
     }
-  }, [categorysArray, gradesArray, entrysArray]);
+  }, [categorysArray, gradesArray, entrysArray, playersArray]);
 
   useEffect(() => {
     //console.log(matchedArray);
@@ -207,19 +265,31 @@ const ContestPlayerOrderTable = () => {
                 className="font-sans text-lg font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                선수명단/번호배정
+                선수명단/번호배정(
+                {entryTitle})
               </h1>
             </div>
           </div>
           <div className="flex w-full h-full">
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-3 lg:pt-3 flex-col bg-gray-100 rounded-lg gap-y-2">
-                <div className="flex">
+                <div className="flex w-full gap-x-5">
+                  <button
+                    className="w-full h-12 bg-gradient-to-l from-green-300 to-green-200 rounded-lg"
+                    onClick={() => initEntryList()}
+                  >
+                    초기화(신규등록선수 있을경우)
+                  </button>
                   <button
                     className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
-                    onClick={() => handleUpdatePlayersAssign()}
+                    onClick={() =>
+                      handleUpdatePlayersAssign(
+                        currentContest.contests.contestPlayersAssignId,
+                        "저장된명단"
+                      )
+                    }
                   >
-                    저장
+                    저장(계측명단을 위해 저장필요)
                   </button>
                 </div>
                 {matchedArray.length > 0 &&

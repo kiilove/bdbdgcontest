@@ -1212,9 +1212,9 @@ const ContestTimetable = () => {
               ))}
             </div>
             {currentTab === 0 && <ContestCategoryOrderTable />}
-            {currentTab === 3 && ContestStagesRender}
             {currentTab === 1 && <ContestPlayerOrderTableTabType />}
             {currentTab === 2 && ContestJudgesReder}
+            {currentTab === 3 && ContestStagesRender}
           </div>
         </div>
       </div>

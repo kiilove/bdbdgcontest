@@ -17,24 +17,25 @@ const ContestPlayerOrderTable = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [matchedArray, setMatchedArray] = useState([]);
   const [categorysArray, setCategorysArray] = useState([]);
-  const [categorysList, setCategorysList] = useState({});
+
   const [gradesArray, setGradesArray] = useState([]);
-  const [entrysArray, setEntrysArray] = useState([]);
-  const { currentContest, setCurrentContest } = useContext(
-    CurrentContestContext
-  );
+  const [playersAssign, setPlayersAssign] = useState({});
+  const [playersArray, setPlayersArray] = useState([]);
+
+  const { currentContest } = useContext(CurrentContestContext);
 
   const fetchCategoryDocument = useFirestoreGetDocument(
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
+  const fetchPlayersAssignDocument = useFirestoreGetDocument(
+    "contest_players_assign"
+  );
   // TODO: contest_players_assign에서 선수 정보를 불러오고, 월체에 대한 부분도 여기서 처리해야한다.
   // 월체정리 이후에는 불참선수 처리까지 완료해야한다.
-  const updateEntrys = useFirestoreUpdateData("contest_entrys_list");
-  const updateContestData = useFirestoreUpdateData("contest_data");
-  const fetchEntry = useFirestoreQuery();
-  let categoryNumber = 0;
-  let totalPlayerNumber = 0;
+
+  const updatePlayersAssign = useFirestoreUpdateData("contest_players_assign");
+
   const fetchPool = async () => {
     if (currentContest.contests.contestCategorysListId) {
       const returnCategorys = await fetchCategoryDocument.getDocument(
@@ -54,18 +55,20 @@ const ContestPlayerOrderTable = () => {
       setGradesArray([...returnGrades?.grades]);
     }
 
-    const condition = [where("contestId", "==", currentContest.contests.id)];
-    const returnPlayersAssign = await fetchEntry.getDocuments(
-      "contest_entrys_list",
-      condition
+    const returnPlayersAssign = await fetchPlayersAssignDocument.getDocument(
+      currentContest.contests.contestPlayersAssignId
     );
-    setEntrysArray([...returnEntrys]);
+    if (!returnPlayersAssign) {
+      return;
+    } else {
+      setPlayersAssign({ ...returnPlayersAssign });
+      setPlayersArray([...returnPlayersAssign?.players]);
+    }
   };
 
   const initEntryList = () => {
     setIsLoading(true);
     let dummy = [];
-    let playerNumber = 0;
     categorysArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
       .map((category, cIdx) => {
@@ -77,22 +80,18 @@ const ContestPlayerOrderTable = () => {
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
           .map((grade, gIdx) => {
             const matchedPlayerWithPlayerNumber = [];
-            const matchedPlayers = entrysArray.filter(
+            const matchedPlayers = playersArray.filter(
               (entry) => entry.contestGradeId === grade.contestGradeId
             );
-            // .sort((a, b) => {
-            //   const dateA = new Date(a.invoiceCreateAt);
-            //   const dateB = new Date(b.invoiceCreateAt);
-            //   return dateA.getTime() - dateB.getTime();
-            // });
 
             matchedPlayers.map((player, pIdx) => {
-              playerNumber++;
+              const { playerNumber, playerIndex, playerNoShow } = player;
+
               const newPlayer = {
                 ...player,
                 playerNumber,
-                playerNoShow: false,
-                playerIndex: playerNumber,
+                playerNoShow,
+                playerIndex,
               };
               matchedPlayerWithPlayerNumber.push({ ...newPlayer });
             });
@@ -111,19 +110,47 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(false);
   };
 
-  const handleUpdateContestData = async () => {
+  const handleUpdatePlayerAssign = async (data) => {
     try {
-      await updateContestData.updateData(
-        currentContest.contests.contestDataId,
-        { schedule: [...matchedArray] }
-      );
-    } catch (error) {}
+      await updatePlayersAssign
+        .updateData(currentContest.contests.contestPlayersAssignId, {
+          ...playersAssign,
+          players: [...data],
+        })
+        .then(() => setPlayersArray([...data]));
+    } catch (error) {
+      console.log(error);
+    }
   };
 
+  const handleNoShow = async (playerNumber, e) => {
+    const newPlayersArray = [...playersArray];
+    const findIndexPlayer = playersArray.findIndex(
+      (player) => player.playerNumber === parseInt(playerNumber)
+    );
+    console.log(findIndexPlayer);
+    if (findIndexPlayer === -1) {
+      return;
+    } else {
+      const newPlayerInfo = {
+        ...playersArray[findIndexPlayer],
+        playerNoShow: e.target.checked,
+      };
+      console.log(newPlayerInfo);
+      newPlayersArray.splice(findIndexPlayer, 1, { ...newPlayerInfo });
+      console.log(newPlayersArray);
+      try {
+        await handleUpdatePlayerAssign(newPlayersArray);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
   const gradeChage = (
     e,
     currentCategoryId,
     currentGradeId,
+    currentGradeTitle,
     currentPlayerUid
   ) => {
     //현재 종목, 체급 코드를 받아와서
@@ -147,6 +174,9 @@ const ContestPlayerOrderTable = () => {
       )
       .matchedPlayers.find((player) => player.playerUid === currentPlayerUid);
 
+    const { contestGradeId: nextGradeId, contestGradeTitle: nextGradeTitle } =
+      newMatched[entryFindIndex + 1];
+
     const playerFindIndex = newMatched
       .find(
         (entry) =>
@@ -160,8 +190,10 @@ const ContestPlayerOrderTable = () => {
     if (e.target.checked) {
       const newPlayerInfo = {
         ...currentPlayerInfo,
+        contestGradeId: nextGradeId,
+        contestGradeTitle: nextGradeTitle,
         isGradeChanged: true,
-        playerIndex: currentPlayerInfo.playerIndex + 100,
+        playerIndex: currentPlayerInfo.playerIndex + 1000,
       };
       //기존 선수 배열에서 삭제
       newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
@@ -175,73 +207,18 @@ const ContestPlayerOrderTable = () => {
       const newPlayerInfo = {
         ...currentPlayerInfo,
         isGradeChanged: false,
-        playerIndex: currentPlayerInfo.playerIndex - 100,
+        playerIndex: currentPlayerInfo.playerIndex - 1000,
       };
       //기존 선수 배열에서 삭제
       newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
       //다음 선수 배열에 추가
       newMatched[entryFindIndex - 1].matchedPlayers.push({
         ...newPlayerInfo,
+        contestGradeId: newPlayerInfo.originalGradeId,
+        contestGradeTitle: newPlayerInfo.originalGradeTitle,
       });
       setMatchedArray(() => [...newMatched]);
     }
-  };
-  const handleReOrderPlayer = (data) => {
-    const prevOrder = [...data];
-    let newOrder = [];
-    prevOrder.map((item, idx) => newOrder.push({ ...item }));
-
-    return newOrder;
-  };
-
-  const handleSavePlayerOrder = async (data) => {
-    try {
-      await updateEntrys.updateData([...data]);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const onDragPlayerEnd = (result) => {
-    const { source, destination, draggableId } = result;
-
-    if (!destination) {
-      return;
-    }
-
-    const newMatchedArray = [...matchedArray];
-    const sourceIndex = source.index;
-    const destinationIndex = destination.index;
-
-    // Find the player that was dragged
-    const draggedPlayer = newMatchedArray[
-      sourceIndex.parentIndex
-    ].matchedPlayers.find((player) => player.playerUid === draggableId);
-
-    // Remove the player from the source category and grade
-    newMatchedArray[sourceIndex.parentIndex].matchedPlayers.splice(
-      sourceIndex.childIndex,
-      1
-    );
-
-    // Insert the player at the destination category and grade
-    newMatchedArray[destinationIndex.parentIndex].matchedPlayers.splice(
-      destinationIndex.childIndex,
-      0,
-      draggedPlayer
-    );
-    // Flatten all matchedPlayers into a single array to update playerNumber and playerIndex
-    const allPlayers = newMatchedArray.flatMap(
-      (matched) => matched.matchedPlayers
-    );
-
-    // Update playerNumber and playerIndex based on the new order
-    allPlayers.forEach((player, index) => {
-      player.playerNumber = index + 1;
-      player.playerIndex = index + 1; // If you want to update playerIndex based on playerNumber, use 'player.playerNumber' instead of 'index + 1'
-    });
-
-    setMatchedArray(newMatchedArray);
   };
 
   useEffect(() => {
@@ -252,7 +229,7 @@ const ContestPlayerOrderTable = () => {
     if (categorysArray.length > 0) {
       initEntryList();
     }
-  }, [categorysArray, gradesArray, entrysArray]);
+  }, [categorysArray, gradesArray, playersArray]);
 
   useEffect(() => {
     console.log(matchedArray);
@@ -275,7 +252,7 @@ const ContestPlayerOrderTable = () => {
                 className="font-sans text-lg font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                선수명단
+                계측결과반영(2단계)
               </h1>
             </div>
           </div>
@@ -285,7 +262,7 @@ const ContestPlayerOrderTable = () => {
                 <div className="flex">
                   <button
                     className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
-                    onClick={() => handleUpdateContestData()}
+                    onClick={() => handleUpdatePlayerAssign(playersArray)}
                   >
                     저장
                   </button>
@@ -335,106 +312,125 @@ const ContestPlayerOrderTable = () => {
                                     </div>
                                   </div>
 
-                                  <DragDropContext onDragEnd={onDragPlayerEnd}>
-                                    <Droppable droppableId="players">
-                                      {(provided) => (
-                                        <div
-                                          ref={provided.innerRef}
-                                          {...provided.droppableProps}
-                                        >
-                                          {matchedPlayers
-                                            .sort(
-                                              (a, b) =>
-                                                a.playerIndex - b.playerIndex
-                                            )
-                                            .map((player, pIdx) => {
-                                              const {
-                                                playerName,
-                                                playerGym,
-                                                playerUid,
-                                                playerNumber,
-                                                playerNoShow,
-                                                isGradeChanged,
-                                                invoiceCreateAt,
-                                              } = player;
+                                  <div>
+                                    {matchedPlayers
+                                      .sort(
+                                        (a, b) => a.playerIndex - b.playerIndex
+                                      )
+                                      .map((player, pIdx) => {
+                                        const {
+                                          playerName,
+                                          playerGym,
+                                          playerUid,
+                                          playerNumber,
+                                          playerNoShow,
+                                          isGradeChanged,
+                                          invoiceCreateAt,
+                                        } = player;
 
-                                              return (
-                                                <Draggable
-                                                  draggableId={playerUid}
-                                                  index={{
-                                                    parentIndex: mIdx,
-                                                    childIndex: pIdx,
-                                                  }}
-                                                  key={playerUid}
-                                                >
-                                                  {(provided, snapshot) => (
-                                                    <div
-                                                      className={`${
-                                                        snapshot.isDragging
-                                                          ? "flex w-full h-10 border-b border-gray-300 items-center text-sm lg:px-2 bg-blue-400 text-white"
-                                                          : "flex w-full h-10 border-b border-gray-300 items-center text-sm lg:px-2"
-                                                      }`}
-                                                      key={playerUid}
-                                                      id={playerUid}
-                                                      ref={provided.innerRef}
-                                                      {...provided.dragHandleProps}
-                                                      {...provided.draggableProps}
-                                                    >
-                                                      <div className="flex w-1/6">
-                                                        {pIdx + 1}
-                                                      </div>
-                                                      <div className="flex w-1/6">
-                                                        {playerNumber}
-                                                      </div>
-                                                      <div className="flex w-1/6">
-                                                        {playerName}
-                                                      </div>
-                                                      <div className="flex w-1/6">
-                                                        {playerGym}
-                                                      </div>
-                                                      <div className="flex w-1/6">
-                                                        {gradeIndex <
-                                                          parseInt(
-                                                            gradeLength
-                                                          ) ||
-                                                        isGradeChanged ? (
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={
-                                                              isGradeChanged
-                                                            }
-                                                            onChange={(e) =>
-                                                              gradeChage(
-                                                                e,
-                                                                categoryId,
-                                                                gradeId,
-                                                                playerUid
-                                                              )
-                                                            }
-                                                          />
-                                                        ) : (
-                                                          <span>불가</span>
-                                                        )}
-                                                      </div>
-                                                      <div className="flex w-1/6">
-                                                        <input
-                                                          type="checkbox"
-                                                          checked={playerNoShow}
-                                                        />
-                                                      </div>
-                                                      <div className="hidden lg:flex w-1/6">
-                                                        {invoiceCreateAt}
-                                                      </div>
-                                                    </div>
-                                                  )}
-                                                </Draggable>
-                                              );
-                                            })}
-                                          {provided.placeholder}
-                                        </div>
-                                      )}
-                                    </Droppable>
-                                  </DragDropContext>
+                                        return (
+                                          <div
+                                            className="flex w-full h-10 border-b border-gray-300 items-center text-sm lg:px-2"
+                                            key={playerUid}
+                                            id={playerUid}
+                                          >
+                                            <div
+                                              className={`${
+                                                !playerNoShow
+                                                  ? "flex w-1/6"
+                                                  : "flex w-1/6 text-gray-300 line-through"
+                                              }`}
+                                            >
+                                              {pIdx + 1}
+                                            </div>
+                                            <div
+                                              className={`${
+                                                !playerNoShow
+                                                  ? "flex w-1/6"
+                                                  : "flex w-1/6 text-gray-300 line-through"
+                                              }`}
+                                            >
+                                              {playerNumber}
+                                            </div>
+                                            <div
+                                              className={`${
+                                                !playerNoShow
+                                                  ? "flex w-1/6"
+                                                  : "flex w-1/6 text-gray-300 line-through"
+                                              }`}
+                                            >
+                                              {playerName}
+                                            </div>
+                                            <div
+                                              className={`${
+                                                !playerNoShow
+                                                  ? "flex w-1/6"
+                                                  : "flex w-1/6 text-gray-300 line-through"
+                                              }`}
+                                            >
+                                              {playerGym}
+                                            </div>
+                                            <div
+                                              className={`${
+                                                !playerNoShow
+                                                  ? "flex w-1/6"
+                                                  : "flex w-1/6 text-gray-300 line-through"
+                                              }`}
+                                            >
+                                              {gradeIndex <
+                                                parseInt(gradeLength) ||
+                                              isGradeChanged ? (
+                                                <input
+                                                  type="checkbox"
+                                                  checked={isGradeChanged}
+                                                  className={`${
+                                                    playerNoShow
+                                                      ? "hidden"
+                                                      : "w-5 h-5"
+                                                  }`}
+                                                  onChange={(e) =>
+                                                    gradeChage(
+                                                      e,
+                                                      categoryId,
+                                                      gradeId,
+                                                      gradeTitle,
+                                                      playerUid
+                                                    )
+                                                  }
+                                                />
+                                              ) : (
+                                                <span>불가</span>
+                                              )}
+                                            </div>
+                                            <div
+                                              className={`${
+                                                !playerNoShow
+                                                  ? "flex w-1/6"
+                                                  : "flex w-1/6 text-gray-300 line-through"
+                                              }`}
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={playerNoShow}
+                                                className="w-5 h-5"
+                                                onChange={(e) =>
+                                                  handleNoShow(playerNumber, e)
+                                                }
+                                              />
+                                            </div>
+                                            <div
+                                              className={`${
+                                                !playerNoShow
+                                                  ? "hidden lg:flex w-1/6"
+                                                  : "hidden lg:flex w-1/6 text-gray-300 line-through"
+                                              }`}
+                                            >
+                                              {invoiceCreateAt}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
                                 </div>
                               </div>
                             </div>
