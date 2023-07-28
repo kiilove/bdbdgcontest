@@ -146,7 +146,9 @@ const ContestPlayerOrderTable = () => {
       }
     }
   };
-  const gradeChage = (
+
+  //update를 위해서 이부분 재설계가 필요해 보인다.
+  const gradeChage = async (
     e,
     currentCategoryId,
     currentGradeId,
@@ -201,8 +203,9 @@ const ContestPlayerOrderTable = () => {
       newMatched[entryFindIndex + 1].matchedPlayers.push({
         ...newPlayerInfo,
       });
-
-      setMatchedArray(() => [...newMatched]);
+      // await updatePlayersAssign(newMatched)
+      //   .then(() => setMatchedArray(() => [...newMatched]))
+      //   .catch((error) => console.log(error));
     } else {
       const newPlayerInfo = {
         ...currentPlayerInfo,
@@ -217,7 +220,9 @@ const ContestPlayerOrderTable = () => {
         contestGradeId: newPlayerInfo.originalGradeId,
         contestGradeTitle: newPlayerInfo.originalGradeTitle,
       });
-      setMatchedArray(() => [...newMatched]);
+      // await updatePlayersAssign(newMatched)
+      //   .then(() => setMatchedArray(() => [...newMatched]))
+      //   .catch((error) => console.log(error));
     }
   };
 

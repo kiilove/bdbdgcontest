@@ -65,6 +65,7 @@ const ContestTimetable = () => {
   const fetchJudge = useFirestoreQuery();
   const fetchAssign = useFirestoreQuery();
 
+  //심판 배정에서 콜렉션을 새로 만들었는데 왜 예전 데이터가 그대로 살아있는지 체크가 필요함
   const updateAssignTable = useFirestoreUpdateData("contest_judges_assign");
   const updateContests = useFirestoreUpdateData("contests");
   const addAssignTable = useFirestoreAddData("contest_judges_assign");
@@ -1004,6 +1005,8 @@ const ContestTimetable = () => {
     </div>
   );
 
+  // TODO: 일관성을 위해서 이부분 외부 컴포넌트로 분리시켜야함
+  // 심판 리스트 받아오는 부분 다시 체크해야함 의도하지 않게 예전 데이터 불러오고 있음
   const ContestJudgesReder = (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-t-lg rounded-b-lg p-2 gap-x-4">
       <Modal open={isOpen.judge} onClose={handleJudgeClose}>
