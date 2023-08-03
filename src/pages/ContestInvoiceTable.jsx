@@ -39,11 +39,9 @@ const ContestInvoiceTable = () => {
   const updateInvoice = useFirestoreUpdateData("invoices_pool");
   const deleteEntry = useFirestoreDeleteData("contest_entrys_list");
   const addEntry = useFirestoreAddData("contest_entrys_list");
-  const fetchQuery = async () => {
+  const fetchQuery = async (contestId) => {
     setIsLoading(true);
-    const invoiceCondition = [
-      where("contestId", "==", currentContest.contests.id),
-    ];
+    const invoiceCondition = [where("contestId", "==", contestId)];
 
     const invoiceData = await getQuery.getDocuments(
       "invoices_pool",
@@ -56,9 +54,13 @@ const ContestInvoiceTable = () => {
     );
     if (invoiceData?.length > 0) {
       setInvoiceList([...invoiceData]);
+    } else {
+      setInvoiceList([]);
     }
     if (entryData?.length > 0) {
       setEntryList([...entryData]);
+    } else {
+      setEntryList([]);
     }
 
     setIsLoading(false);
@@ -127,7 +129,7 @@ const ContestInvoiceTable = () => {
     }
     setIsLoading(false);
     return newData;
-  }, [currentTab, invoiceList, searchKeyword]);
+  }, [currentTab, invoiceList, searchKeyword, currentContest?.contests?.id]);
 
   const tabArray = [
     {
@@ -235,6 +237,7 @@ const ContestInvoiceTable = () => {
           playerTel,
           playerText,
           invoiceCreateAt,
+          createBy,
         } = newInvoiceList[findIndex];
         newInvoiceList[findIndex].joins.map(async (join, jIdx) => {
           const {
@@ -254,6 +257,7 @@ const ContestInvoiceTable = () => {
             playerTel,
             playerText,
             invoiceCreateAt,
+            createBy,
             contestCategoryTitle,
             contestCategoryId,
             contestGradeTitle,
@@ -280,11 +284,11 @@ const ContestInvoiceTable = () => {
   };
 
   useEffect(() => {
-    if (currentContest?.contests?.contestNoticeId) {
-      fetchQuery();
+    if (currentContest?.contests?.id) {
+      fetchQuery(currentContest.contests.id);
     }
     //console.log(currentContest?.contests?.contestNoticeId);
-  }, [currentContest]);
+  }, [currentContest?.contests?.id]);
 
   useEffect(() => {
     //console.log(filteredData);

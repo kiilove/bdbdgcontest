@@ -34,7 +34,7 @@ const Sidebar = () => {
 
   return (
     <div className="flex flex-col w-full bg-transparent min-h-screen">
-      {MenuArray.map((menu, idx) => (
+      {MenuArray.filter((menu) => menu.isActive === true).map((menu, idx) => (
         <div key={menu.index} className="flex flex-col ">
           <div
             className={`${
@@ -69,27 +69,29 @@ const Sidebar = () => {
             menu?.subMenus && (
               <div className={`overflow-hidden transition-all duration-500 `}>
                 <div className="flex flex-col text-gray-200 text-base bg-sky-700 w-full">
-                  {menu.subMenus.map((subMenu, sIdx) => {
-                    return (
-                      <div className="flex w-full" key={subMenu.id}>
-                        <div className="flex w-full h-12">
-                          <button
-                            className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
-                            onClick={() => navigate(subMenu?.link)}
-                          >
-                            <div className="flex justify-start items-center">
-                              <span className="text-base text-white mr-2">
-                                {subMenu?.icon}
-                              </span>
-                              <span className="text-sm text-white">
-                                {subMenu.title}
-                              </span>
-                            </div>
-                          </button>
+                  {menu.subMenus
+                    .filter((sub) => sub.isActive === true)
+                    .map((subMenu, sIdx) => {
+                      return (
+                        <div className="flex w-full" key={subMenu.id}>
+                          <div className="flex w-full h-12">
+                            <button
+                              className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
+                              onClick={() => navigate(subMenu?.link)}
+                            >
+                              <div className="flex justify-start items-center">
+                                <span className="text-base text-white mr-2">
+                                  {subMenu?.icon}
+                                </span>
+                                <span className="text-sm text-white">
+                                  {subMenu.title}
+                                </span>
+                              </div>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </div>
             )}

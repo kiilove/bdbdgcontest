@@ -1,40 +1,45 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
-import { BsCheckAll } from "react-icons/bs";
+import React, { useContext, useEffect, useState } from "react";
+
 import LoadingPage from "./LoadingPage";
 import { TiInputChecked } from "react-icons/ti";
-import { v4 as uuidv4 } from "uuid";
+
 import {
   useFirestoreGetDocument,
-  useFirestoreQuery,
   useFirestoreUpdateData,
 } from "../hooks/useFirestores";
-import { where } from "firebase/firestore";
+
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
-import { Checkbox } from "@mui/material";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+
+import { useNavigate } from "react-router-dom";
+import ConfirmationModal from "../messageBox/ConfirmationModal";
+import { MdOutlineScale } from "react-icons/md";
 
 const ContestPlayerOrderTable = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [matchedArray, setMatchedArray] = useState([]);
   const [categorysArray, setCategorysArray] = useState([]);
 
   const [gradesArray, setGradesArray] = useState([]);
-  const [playersAssign, setPlayersAssign] = useState({});
+  const [playersFinal, setPlayersFinal] = useState({});
   const [playersArray, setPlayersArray] = useState([]);
 
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [message, setMessage] = useState({});
+
   const { currentContest } = useContext(CurrentContestContext);
+  const navigate = useNavigate();
 
   const fetchCategoryDocument = useFirestoreGetDocument(
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
-  const fetchPlayersAssignDocument = useFirestoreGetDocument(
-    "contest_players_assign"
+  const fetchPlayersFinalDocument = useFirestoreGetDocument(
+    "contest_players_final"
   );
   // TODO: contest_players_assign에서 선수 정보를 불러오고, 월체에 대한 부분도 여기서 처리해야한다.
   // 월체정리 이후에는 불참선수 처리까지 완료해야한다.
 
-  const updatePlayersAssign = useFirestoreUpdateData("contest_players_assign");
+  const updatePlayersFinal = useFirestoreUpdateData("contest_players_final");
 
   const fetchPool = async () => {
     if (currentContest.contests.contestCategorysListId) {
@@ -55,19 +60,18 @@ const ContestPlayerOrderTable = () => {
       setGradesArray([...returnGrades?.grades]);
     }
 
-    const returnPlayersAssign = await fetchPlayersAssignDocument.getDocument(
-      currentContest.contests.contestPlayersAssignId
+    const returnPlayersFinal = await fetchPlayersFinalDocument.getDocument(
+      currentContest.contests.contestPlayersFinalId
     );
-    if (!returnPlayersAssign) {
+    if (!returnPlayersFinal) {
       return;
     } else {
-      setPlayersAssign({ ...returnPlayersAssign });
-      setPlayersArray([...returnPlayersAssign?.players]);
+      setPlayersFinal({ ...returnPlayersFinal });
+      setPlayersArray([...returnPlayersFinal?.players]);
     }
   };
 
   const initEntryList = () => {
-    setIsLoading(true);
     let dummy = [];
     categorysArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
@@ -110,25 +114,35 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(false);
   };
 
-  const handleUpdatePlayerAssign = async (data) => {
+  const handleUpdatePlayersFinal = async (id, data) => {
+    setMessage({ body: "저장중", isButton: false });
+    setMsgOpen(true);
     try {
-      await updatePlayersAssign
-        .updateData(currentContest.contests.contestPlayersAssignId, {
-          ...playersAssign,
+      await updatePlayersFinal
+        .updateData(currentContest.contests.contestPlayersFinalId, {
+          ...playersFinal,
           players: [...data],
         })
-        .then(() => setPlayersArray([...data]));
+        .then(() => setPlayersArray([...data]))
+        .then(() =>
+          setMessage({
+            body: "저장되었습니다.",
+            isButton: true,
+            confirmButtonText: "확인",
+          })
+        );
     } catch (error) {
       console.log(error);
     }
   };
 
   const handleNoShow = async (playerNumber, e) => {
+    setIsLoading(true);
     const newPlayersArray = [...playersArray];
     const findIndexPlayer = playersArray.findIndex(
       (player) => player.playerNumber === parseInt(playerNumber)
     );
-    console.log(findIndexPlayer);
+
     if (findIndexPlayer === -1) {
       return;
     } else {
@@ -136,31 +150,23 @@ const ContestPlayerOrderTable = () => {
         ...playersArray[findIndexPlayer],
         playerNoShow: e.target.checked,
       };
-      console.log(newPlayerInfo);
+
       newPlayersArray.splice(findIndexPlayer, 1, { ...newPlayerInfo });
-      console.log(newPlayersArray);
-      try {
-        await handleUpdatePlayerAssign(newPlayersArray);
-      } catch (error) {
-        console.log(error);
-      }
+      setPlayersArray([...newPlayersArray]);
     }
+    setIsLoading(false);
   };
 
-  //update를 위해서 이부분 재설계가 필요해 보인다.
-  const gradeChage = async (
+  const handleGradeChage = async (
     e,
     currentCategoryId,
     currentGradeId,
     currentGradeTitle,
     currentPlayerUid
   ) => {
-    //현재 종목, 체급 코드를 받아와서
-    // 종목에 포함된 체급의 갯수를 계산한후에
-    // 현재 체급 코드의 gradeIndex가 체급 갯수보다 작다면 다음 체급으로 변경하도록 코드를 작성한다.
-    // originalGrade와 isGradeChanged가 추가되었어.
-
+    setIsLoading(true);
     const newMatched = [...matchedArray];
+    const newPlayers = [...playersArray];
 
     const entryFindIndex = newMatched.findIndex(
       (entry) =>
@@ -168,26 +174,22 @@ const ContestPlayerOrderTable = () => {
         entry.contestGradeId === currentGradeId
     );
 
-    const currentPlayerInfo = newMatched
-      .find(
-        (entry) =>
-          entry.contestCategoryId === currentCategoryId &&
-          entry.contestGradeId === currentGradeId
-      )
-      .matchedPlayers.find((player) => player.playerUid === currentPlayerUid);
+    const playerFindIndex = playersArray.findIndex(
+      (entry) =>
+        entry.contestCategoryId === currentCategoryId &&
+        entry.contestGradeId === currentGradeId &&
+        entry.playerUid === currentPlayerUid
+    );
+
+    const currentPlayerInfo = newPlayers.find(
+      (entry) =>
+        entry.contestCategoryId === currentCategoryId &&
+        entry.contestGradeId === currentGradeId &&
+        entry.playerUid === currentPlayerUid
+    );
 
     const { contestGradeId: nextGradeId, contestGradeTitle: nextGradeTitle } =
       newMatched[entryFindIndex + 1];
-
-    const playerFindIndex = newMatched
-      .find(
-        (entry) =>
-          entry.contestCategoryId === currentCategoryId &&
-          entry.contestGradeId === currentGradeId
-      )
-      .matchedPlayers.findIndex(
-        (player) => player.playerUid === currentPlayerUid
-      );
 
     if (e.target.checked) {
       const newPlayerInfo = {
@@ -197,33 +199,24 @@ const ContestPlayerOrderTable = () => {
         isGradeChanged: true,
         playerIndex: currentPlayerInfo.playerIndex + 1000,
       };
-      //기존 선수 배열에서 삭제
-      newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
-      //다음 선수 배열에 추가
-      newMatched[entryFindIndex + 1].matchedPlayers.push({
-        ...newPlayerInfo,
-      });
-      // await updatePlayersAssign(newMatched)
-      //   .then(() => setMatchedArray(() => [...newMatched]))
-      //   .catch((error) => console.log(error));
+      newPlayers.splice(playerFindIndex, 1, { ...newPlayerInfo });
+
+      setPlayersArray([...newPlayers]);
+      initEntryList();
     } else {
       const newPlayerInfo = {
         ...currentPlayerInfo,
+        contestGradeId: currentPlayerInfo.originalGradeId,
+        contestGradeTitle: currentPlayerInfo.originalGradeTitle,
         isGradeChanged: false,
         playerIndex: currentPlayerInfo.playerIndex - 1000,
       };
-      //기존 선수 배열에서 삭제
-      newMatched[entryFindIndex].matchedPlayers.splice(playerFindIndex, 1);
-      //다음 선수 배열에 추가
-      newMatched[entryFindIndex - 1].matchedPlayers.push({
-        ...newPlayerInfo,
-        contestGradeId: newPlayerInfo.originalGradeId,
-        contestGradeTitle: newPlayerInfo.originalGradeTitle,
-      });
-      // await updatePlayersAssign(newMatched)
-      //   .then(() => setMatchedArray(() => [...newMatched]))
-      //   .catch((error) => console.log(error));
+      newPlayers.splice(playerFindIndex, 1, { ...newPlayerInfo });
+
+      setPlayersArray([...newPlayers]);
+      initEntryList();
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -236,10 +229,6 @@ const ContestPlayerOrderTable = () => {
     }
   }, [categorysArray, gradesArray, playersArray]);
 
-  useEffect(() => {
-    console.log(matchedArray);
-  }, [matchedArray]);
-
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2">
       {isLoading ? (
@@ -249,29 +238,54 @@ const ContestPlayerOrderTable = () => {
       ) : (
         <>
           <div className="flex w-full h-14">
+            <ConfirmationModal
+              isOpen={msgOpen}
+              onConfirm={() => setMsgOpen(false)}
+              onCancel={() => setMsgOpen(false)}
+              message={message}
+            />
             <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
               <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
-                <TiInputChecked />
+                <MdOutlineScale />
               </span>
               <h1
                 className="font-sans text-lg font-semibold"
                 style={{ letterSpacing: "2px" }}
               >
-                계측결과반영(2단계)
+                계측(2단계)
               </h1>
             </div>
           </div>
           <div className="flex w-full h-full">
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-3 lg:pt-3 flex-col bg-gray-100 rounded-lg gap-y-2">
-                <div className="flex">
-                  <button
-                    className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
-                    onClick={() => handleUpdatePlayerAssign(playersArray)}
-                  >
-                    저장
-                  </button>
-                </div>
+                {playersArray?.length ? (
+                  <div className="flex w-full gap-x-5">
+                    <button
+                      className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
+                      onClick={() =>
+                        handleUpdatePlayersFinal(
+                          currentContest.contests.contestPlayersFinalId,
+                          playersArray
+                        )
+                      }
+                    >
+                      최종명단 저장
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex w-full gap-x-5">
+                    <button
+                      className="w-full h-12 bg-gradient-to-l from-green-300 to-green-200 rounded-lg"
+                      onClick={() =>
+                        navigate("/contesttimetable", { state: { tabId: 1 } })
+                      }
+                    >
+                      선수번호 배정이 필요합니다.
+                    </button>
+                  </div>
+                )}
+
                 {matchedArray.length > 0 &&
                   matchedArray
                     .sort(
@@ -394,7 +408,7 @@ const ContestPlayerOrderTable = () => {
                                                       : "w-5 h-5"
                                                   }`}
                                                   onChange={(e) =>
-                                                    gradeChage(
+                                                    handleGradeChage(
                                                       e,
                                                       categoryId,
                                                       gradeId,

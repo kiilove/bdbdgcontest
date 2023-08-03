@@ -34,11 +34,8 @@ const NewContest = () => {
 
       const [
         contestNoticeData,
-        contestJudgesListData,
         contestCategorysListData,
         contestGradesListData,
-        contestEntrysListData,
-        invoicesPoolData,
       ] = await Promise.all([
         contestNoticeHook
           .addData({
@@ -50,15 +47,7 @@ const NewContest = () => {
             console.error("Error adding contest notice:", error);
             return null;
           }),
-        contestJudgesListHook
-          .addData({
-            refContestId: addedContest.id,
-            judges: [],
-          })
-          .catch((error) => {
-            console.error("Error adding contest judges list:", error);
-            return null;
-          }),
+
         contestCategorysListHook
           .addData({
             refContestId: addedContest.id,
@@ -100,29 +89,20 @@ const NewContest = () => {
       // Check if any errors occurred during the Promise.all execution
       if (
         contestNoticeData &&
-        contestJudgesListData &&
         contestCategorysListData &&
-        contestGradesListData &&
-        contestEntrysListData &&
-        invoicesPoolData
+        contestGradesListData
       ) {
         await updateContest.updateData(addedContest.id, {
           contestNoticeId: contestNoticeData.id,
-          contestJudgesListId: contestJudgesListData.id,
           contestCategorysListId: contestCategorysListData.id,
           contestGradesListId: contestGradesListData.id,
-          contestEntrysListId: contestEntrysListData.id,
-          invoicesPoolId: invoicesPoolData.id,
         });
 
         setCurrentContest({
           contestId: addedContest.id,
           contestNoticeId: contestNoticeData.id,
-          contestJudgesListId: contestJudgesListData.id,
           contestCategorysListId: contestCategorysListData.id,
           contestGradesListId: contestGradesListData.id,
-          contestEntrysListId: contestEntrysListData.id,
-          invoicesPoolId: invoicesPoolData.id,
         });
 
         // Save the contest data to local storage
@@ -131,11 +111,8 @@ const NewContest = () => {
           JSON.stringify({
             contestId: addedContest.id,
             contestNoticeId: contestNoticeData.id,
-            contestJudgesListId: contestJudgesListData.id,
             contestCategorysListId: contestCategorysListData.id,
             contestGradesListId: contestGradesListData.id,
-            contestEntrysListId: contestEntrysListData.id,
-            invoicesPoolId: invoicesPoolData.id,
           })
         );
       } else {

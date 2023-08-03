@@ -13,6 +13,7 @@ import ContestJudgeTable from "./pages/ContestJudgeTable";
 import ContestPlayerOrderTableAfter from "./pages/ContestPlayerOrderTableAfter";
 import ContestMonitoring from "./pages/ContestMonitoring";
 import ContestRankSummary from "./pages/ContestRankSummary";
+import ContestStagetable from "./pages/ContestStagetable";
 
 function App() {
   return (
@@ -47,6 +48,10 @@ function App() {
             element={
               <ManagementHome children={<ContestPlayerOrderTableAfter />} />
             }
+          />
+          <Route
+            path="/conteststagetable"
+            element={<ManagementHome children={<ContestStagetable />} />}
           />
           <Route
             path="/contestnewinvoicemanual"

@@ -24,6 +24,8 @@ import ContestPlayerOrderTableTabType from "./ContestPlayerOrderTableTabType";
 import ContestCategoryOrderTable from "./ContestCategoryOrderTable";
 import ContestStagetable from "./ContestStagetable";
 import { BsClipboardData } from "react-icons/bs";
+import { useLocation } from "react-router-dom";
+import ContestJudgeAssignTable from "./ContestJudgeAssignTable";
 const ContestTimetable = () => {
   const [currentOrders, setCurrentOrders] = useState();
   const [currentTab, setCurrentTab] = useState(0);
@@ -34,7 +36,7 @@ const ContestTimetable = () => {
   const [judgesArray, setJudgesArray] = useState([]);
   const [judgeAssignTable, setJudgeAssignTable] = useState([]);
   const [currentCategoryId, setCurrentCategoryId] = useState("");
-  const [currentSection, setSection] = useState([{ id: 0, title: "전체" }]);
+  const location = useLocation();
   const [currentSubMenu, setCurrentSubMenu] = useState({
     categoryId: "",
     gradeId: "",
@@ -87,12 +89,6 @@ const ContestTimetable = () => {
       id: 2,
       title: "심판배정",
       subTitle: "종목/체급 심사를 위한 심판을 배정합니다.",
-      children: "",
-    },
-    {
-      id: 3,
-      title: "무대구성(체급통합)",
-      subTitle: "통합출전 여부등을 설정합니다.",
       children: "",
     },
   ];
@@ -397,14 +393,12 @@ const ContestTimetable = () => {
     console.log(scheduleArray);
     return scheduleArray;
   };
-  useEffect(() => {
-    console.log(currentContest);
-    fetchPool();
-  }, [currentContest]);
 
   useEffect(() => {
-    console.log(judgeAssignTable);
-  }, [judgeAssignTable]);
+    if (location?.state?.tabId) {
+      setCurrentTab(location.state.tabId);
+    }
+  }, [location]);
 
   useEffect(() => {
     initScheduleInfo();
@@ -1007,181 +1001,7 @@ const ContestTimetable = () => {
 
   // TODO: 일관성을 위해서 이부분 외부 컴포넌트로 분리시켜야함
   // 심판 리스트 받아오는 부분 다시 체크해야함 의도하지 않게 예전 데이터 불러오고 있음
-  const ContestJudgesReder = (
-    <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-t-lg rounded-b-lg p-2 gap-x-4">
-      <Modal open={isOpen.judge} onClose={handleJudgeClose}>
-        <div
-          className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
-          style={{
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <JudgeInfoModal
-            setClose={handleJudgeClose}
-            propState={isOpen}
-            setState={setCategorysArray}
-          />
-        </div>
-      </Modal>
-      <div className="w-full bg-gray-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
-        <div className="flex bg-gray-100 h-auto rounded-lg justify-start categoryIdart lg:items-center gay-y-2 flex-col p-0 lg:p-0 gap-y-2">
-          <div className="flex w-full justify-start items-center">
-            {currentContest?.contests.contestJudgeAssignListId ? (
-              <button
-                className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
-                onClick={() =>
-                  handleUpdateAssignTable(
-                    currentContest.contests.contestJudgeAssignListId,
-                    judgeAssignTable
-                  )
-                }
-              >
-                저장
-              </button>
-            ) : (
-              <button
-                className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
-                onClick={() =>
-                  handleAddAssignTable(
-                    currentContest.contests.id,
 
-                    judgeAssignTable
-                  )
-                }
-              >
-                저장
-              </button>
-            )}
-          </div>
-          <div className="flex w-full flex-col bg-gray-100 rounded-lg gap-y-2">
-            {categorysArray
-              .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
-              .map((category, cIdx) => {
-                const {
-                  contestCategoryId: categoryId,
-                  contestCategoryIndex: categoryIndex,
-                  contestCategoryTitle: categoryTitle,
-                  contestCategoryJudgeCount: judgeCount,
-                } = category;
-
-                const matchedGrades = gradesArray
-                  .filter((grade) => grade.refCategoryId === categoryId)
-                  .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex);
-                return (
-                  <div className="flex w-full flex-col bg-blue-200 rounded-lg">
-                    <div className="h-auto w-full flex items-center flex-col lg:flex-row">
-                      <div className="flex w-full h-auto justify-start items-center">
-                        <div className="w-1/6 h-14 flex justify-start items-center pl-4">
-                          {categoryIndex}
-                        </div>
-                        <div className="w-4/6 h-14 flex justify-start items-center">
-                          {categoryTitle}
-                          {judgeCount && `(${judgeCount}심제)`}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex p-2">
-                      <div className="flex bg-gray-100 w-full gap-2 p-2 rounded-lg h-auto justify-start items-center flex-col">
-                        <div className="flex w-full bg-white rounded-lg p-2">
-                          <div className="flex w-1/6">좌석</div>
-                          <div className="flex w-5/6">선택</div>
-                        </div>
-                        {judgeCount > 0 &&
-                          Array.from(
-                            { length: judgeCount },
-                            (_, jIdx) => jIdx + 1
-                          ).map((number) => {
-                            // const { judgeName, judgeTel, judgePromoter } =
-                            //   judgeAssignTable.find(
-                            //     (assign) =>
-                            //       assign.categoryId === categoryId &&
-                            //       assign.seatIndex === number
-                            //   );
-                            let selectedJudgeInfo = {};
-                            const findAssignIndex = judgeAssignTable.findIndex(
-                              (assign) =>
-                                assign.categoryId === categoryId &&
-                                assign.seatIndex === number
-                            );
-                            if (findAssignIndex != -1) {
-                              selectedJudgeInfo = {
-                                ...judgeAssignTable.find(
-                                  (assign) =>
-                                    assign.categoryId === categoryId &&
-                                    assign.seatIndex === number
-                                ),
-                              };
-                            } else {
-                              selectedJudgeInfo = { judgeUid: undefined };
-                            }
-                            //console.log("불러온값", selectedJudgeInfo);
-                            return (
-                              <div className="flex bg-gray-100 w-full px-4 rounded-lg h-auto justify-start items-center ">
-                                <div className="flex w-1/6">{number}</div>
-                                <div className="flex w-5/6">
-                                  <select
-                                    name="categoryJudgeSelect"
-                                    className="w-full text-sm"
-                                    onChange={(e) =>
-                                      handleSelectJudge(
-                                        e.target.value,
-                                        currentContest.contests.id,
-                                        categoryId,
-                                        number
-                                      )
-                                    }
-                                  >
-                                    <option
-                                      selected={
-                                        selectedJudgeInfo.judgeUid === undefined
-                                      }
-                                    >
-                                      선택
-                                    </option>
-                                    {judgesArray
-                                      .sort((a, b) =>
-                                        a.judgeName.localeCompare(b.judgeName)
-                                      )
-                                      .map((judge, jIdx) => {
-                                        const {
-                                          id,
-                                          judgeName,
-                                          judgeTel,
-                                          judgePromoter,
-                                          judgeUid,
-                                        } = judge;
-
-                                        return (
-                                          <option
-                                            value={id}
-                                            className="text-sm"
-                                            selected={
-                                              selectedJudgeInfo.judgeUid ===
-                                              judgeUid
-                                            }
-                                          >
-                                            {judgeName} ( {judgePromoter} /{" "}
-                                            {judgeTel} )
-                                          </option>
-                                        );
-                                      })}
-                                  </select>
-                                </div>
-                                <div className="flex w-3/6"></div>
-                                <div className="hidden lg:flex lg:w-3/6"></div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2">
       <div className="flex w-full h-14">
@@ -1193,7 +1013,7 @@ const ContestTimetable = () => {
             className="font-sans text-lg font-semibold"
             style={{ letterSpacing: "2px" }}
           >
-            대회운영 데이터(개최순서/선수명단(번호배정)/심판배정/무대구성)
+            기초데이터(1단계)
           </h1>
         </div>
       </div>
@@ -1218,7 +1038,7 @@ const ContestTimetable = () => {
             </div>
             {currentTab === 0 && <ContestCategoryOrderTable />}
             {currentTab === 1 && <ContestPlayerOrderTableTabType />}
-            {currentTab === 2 && ContestJudgesReder}
+            {currentTab === 2 && <ContestJudgeAssignTable />}
             {currentTab === 3 && <ContestStagetable />}
           </div>
         </div>

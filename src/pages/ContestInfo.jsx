@@ -31,17 +31,14 @@ const generatePasswords = () => {
       usedPasswords.add(password);
     }
   }
-
-  return passwords;
+  const returnValue = passwords.map((password, pIdx) => {
+    return { id: pIdx, value: password, used: false };
+  });
+  return returnValue;
 };
 
 const ContestInfo = () => {
-  const [currentContestInfo, setCurrentContestInfo] = useState({
-    contestPriceBasic: 0,
-    contestPriceExtra: 0,
-    contestPriceType1: 0,
-    contestPriceType2: 0,
-  });
+  const [currentContestInfo, setCurrentContestInfo] = useState({});
   const [judgePasswords, setJudgePasswords] = useState(generatePasswords());
   const updateContestInfo = useFirestoreUpdateData("contest_notice");
   const [files, setFiles] = useState([]);
@@ -54,13 +51,37 @@ const ContestInfo = () => {
     "images/poster"
   );
 
+  const addCollection = useFirestoreAddData(
+    currentContest.contests.collectionName
+  );
   const addPlayersAssign = useFirestoreAddData("contest_players_assign");
+  const addPlayersFinal = useFirestoreAddData("contest_players_final");
   const addJudgesAssign = useFirestoreAddData("contest_judges_assign");
   const addPasswords = useFirestoreAddData("contest_passwords");
   const addStagesAssign = useFirestoreAddData("contest_stages_assign");
   const updateContest = useFirestoreUpdateData("contests");
   const params = useParams();
 
+  const initContestInfo = {
+    contestAccountNumber: "",
+    contestAccountOwner: "",
+    contestAssociate: "",
+    contestBankName: "",
+    contestCollectionFileLink: "",
+    contestDate: "",
+    contestLocation: "",
+    contestPoster: "",
+    contestPosterTheme: [],
+    contestPriceBasic: 0,
+    contestPriceExtra: 0,
+    contestPriceExtraType: "누적",
+    contestPriceType1: 0,
+    contestPriceType2: 0,
+    contestPromoter: "",
+    contestStatus: "",
+    contestTitle: "",
+    contestTitleShort: "",
+  };
   const formatNumber = (value) => {
     if (isNaN(value) || value === "") {
       return 0;
@@ -84,6 +105,7 @@ const ContestInfo = () => {
   };
 
   const handleUpdateContestInfo = async () => {
+    console.log(currentContest);
     const contestPriceReformat = (field) => {
       let reFormatNumber = 0;
       if (
@@ -112,13 +134,15 @@ const ContestInfo = () => {
       contestPriceType2: contestPriceReformat("contestPriceType2"),
     };
 
-    if (currentContestInfo.id) {
+    console.log(dbContestInfo);
+
+    if (currentContest.contestNoticeId) {
       const updatedData = await updateContestInfo.updateData(
-        currentContestInfo.id,
+        currentContest.contestNoticeId,
         dbContestInfo
       );
 
-      if (updatedData.id) {
+      if (updatedData) {
         setCurrentContest({
           ...currentContest,
           contestInfo: { ...updatedData },
@@ -129,6 +153,9 @@ const ContestInfo = () => {
 
   const handleCollectionAdd = async () => {
     try {
+      const addedCollection = await addCollection.addData({
+        contestId: currentContest.contests.id,
+      });
       const addedStagesAssign = await addStagesAssign.addData({
         contestId: currentContest.contests.id,
         collectionName: currentContestInfo.contestCollectionName,
@@ -136,11 +163,16 @@ const ContestInfo = () => {
       });
       const addedPlayersAssign = await addPlayersAssign.addData({
         contestId: currentContest.contests.id,
+        players: [],
       });
       const addedJudgesAssign = await addJudgesAssign.addData({
         contestId: currentContest.contests.id,
+        judges: [],
       });
-
+      const addedPlayersFinal = await addPlayersFinal.addData({
+        contestId: currentContest.contests.id,
+        players: [],
+      });
       const addedPassword = await addPasswords.addData({
         passwords: [...judgePasswords],
         contestId: currentContest.contests.id,
@@ -150,6 +182,7 @@ const ContestInfo = () => {
         contestStagesAssignId: addedStagesAssign.id,
         contestPasswordId: addedPassword.id,
         contestPlayersAssignId: addedPlayersAssign.id,
+        contestPlayersFinalId: addedPlayersFinal.id,
         contestJudgesAssignId: addedJudgesAssign.id,
         collectionName: currentContestInfo.contestCollectionName,
       });
@@ -160,6 +193,7 @@ const ContestInfo = () => {
 
   useEffect(() => {
     if (currentContest?.contestInfo) {
+      setCurrentContestInfo({ ...initContestInfo });
       setCurrentContestInfo({ ...currentContest.contestInfo });
     }
   }, [currentContest?.contestInfo]);

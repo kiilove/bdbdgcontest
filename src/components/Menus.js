@@ -9,8 +9,7 @@ import {
   BsCardChecklist,
 } from "react-icons/bs";
 
-import { TiInputChecked } from "react-icons/ti";
-import { FaUserEdit } from "react-icons/fa";
+import { AiOutlineGroup } from "react-icons/ai";
 import { PiUsersFour } from "react-icons/pi";
 import { CgUserList } from "react-icons/cg";
 import {
@@ -32,6 +31,7 @@ export const MenuArray = [
   {
     id: 0,
     title: "대회관리",
+    isActive: true,
     icon: <BsTrophyFill />,
     subMenus: [
       {
@@ -39,12 +39,14 @@ export const MenuArray = [
         title: "새로운대회개설",
         icon: <BiAddToQueue />,
         link: "/newcontest",
+        isActive: false,
       },
       {
         id: 1,
         title: "대회정보관리",
         icon: <BsInfoLg />,
         link: "/contestinfo",
+        isActive: true,
       },
 
       {
@@ -52,37 +54,50 @@ export const MenuArray = [
         title: "참가신청서",
         icon: <PiUsersFour />,
         link: "/contestinvoicetable",
+        isActive: true,
       },
       {
         id: 3,
         title: "참가신청서 수동작성",
         icon: <BiUserPlus />,
         link: "/contestnewinvoicemanual",
+        isActive: true,
       },
       {
         id: 4,
-        title: "대회운영 데이터(1단계)",
+        title: "기초데이터(1단계)",
         icon: <BsClipboardData />,
         link: "/contesttimetable",
+        isActive: true,
       },
       {
         id: 5,
-        title: "계측결과반영(2단계)",
+        title: "계측(2단계)",
         icon: <MdOutlineScale />,
         link: "/contestplayerordertable",
+        isActive: true,
       },
       {
         id: 6,
         title: "최종명단(3단계)",
         icon: <CgUserList />,
         link: "/contestplayerordertableafter",
+        isActive: true,
+      },
+      {
+        id: 7,
+        title: "무대설정(4단계)",
+        icon: <AiOutlineGroup />,
+        link: "/conteststagetable",
+        isActive: true,
       },
 
       {
-        id: 7,
+        id: 8,
         title: "심판선발",
         icon: <MdBalance />,
         link: "/contestjudgetable",
+        isActive: true,
       },
     ],
   },
@@ -90,6 +105,7 @@ export const MenuArray = [
     id: 1,
     title: "출력관리",
     icon: <BsPrinterFill />,
+    isActive: true,
     subMenus: [
       { id: 1, title: "계측명단 통합", icon: <MdOutlineScale /> },
       { id: 2, title: "계측명단 종목별", icon: <MdOutlineScale /> },
@@ -105,17 +121,20 @@ export const MenuArray = [
   {
     id: 2,
     title: "수동모드",
+    isActive: true,
     icon: <BsFillHandIndexThumbFill />,
     subMenus: [{ id: 1, title: "심사표 입력", icon: <MdOutlineTouchApp /> }],
   },
   {
     id: 3,
     title: "자동모드",
+    isActive: true,
     icon: <BsCpuFill />,
     subMenus: [
       {
         id: 1,
         title: "모니터링 화면",
+        isActive: true,
         icon: <TbHeartRateMonitor />,
         link: "/contestmonitoring",
       },

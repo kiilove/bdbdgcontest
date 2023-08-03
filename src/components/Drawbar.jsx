@@ -34,7 +34,7 @@ const Drawbar = ({ setOpen }) => {
 
   return (
     <div className="flex flex-col w-full bg-sky-800 h-screen">
-      {MenuArray.map((menu, idx) => (
+      {MenuArray.filter((menu) => menu.isActive === true).map((menu, idx) => (
         <div key={menu.index} className="flex flex-col ">
           <div
             className={`${
@@ -66,25 +66,27 @@ const Drawbar = ({ setOpen }) => {
             menuVisible.isHidden === false &&
             menu?.subMenus && (
               <div className="flex flex-col text-gray-200 text-base bg-sky-700 w-full">
-                {menu.subMenus.map((subMenus, sIdx) => (
-                  <div className="flex w-full">
-                    <div className="flex w-full h-12" key={subMenus.id}>
-                      <button
-                        className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
-                        onClick={() => handleSubMenuClick(idx, sIdx)}
-                      >
-                        <div className="flex justify-start items-center">
-                          <span className="text-base text-white mr-2">
-                            {subMenus?.icon}
-                          </span>
-                          <span className="text-sm text-white">
-                            {subMenus.title}
-                          </span>
-                        </div>
-                      </button>
+                {menu.subMenus
+                  .filter((sub) => sub.isActive === true)
+                  .map((subMenus, sIdx) => (
+                    <div className="flex w-full">
+                      <div className="flex w-full h-12" key={subMenus.id}>
+                        <button
+                          className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
+                          onClick={() => handleSubMenuClick(idx, sIdx)}
+                        >
+                          <div className="flex justify-start items-center">
+                            <span className="text-base text-white mr-2">
+                              {subMenus?.icon}
+                            </span>
+                            <span className="text-sm text-white">
+                              {subMenus.title}
+                            </span>
+                          </div>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
         </div>

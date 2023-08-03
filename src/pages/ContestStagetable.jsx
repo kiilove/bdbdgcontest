@@ -2,21 +2,35 @@ import React, { useContext, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import LoadingPage from "./LoadingPage";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
-import { useFirestoreGetDocument } from "../hooks/useFirestores";
+import {
+  useFirestoreAddData,
+  useFirestoreGetDocument,
+  useFirestoreUpdateData,
+} from "../hooks/useFirestores";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { PiSplitHorizontalFill } from "react-icons/pi";
+import { AiOutlineGroup } from "react-icons/ai";
+import ConfirmationModal from "../messageBox/ConfirmationModal";
 
 const ContestStagetable = () => {
   const [isLoading, setIsLoading] = useState(false);
+
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [message, setMessage] = useState({});
+
   const [categoriesArray, setCategoriesArray] = useState([]);
   const [gradesArray, setGradesArray] = useState([]);
   const [playersArray, setPlayersArray] = useState([]);
   const [stagesArray, setStagesArray] = useState([]);
+  const [stagesInfo, setStagesInfo] = useState({});
+
   const { currentContest } = useContext(CurrentContestContext);
 
   const fetchCategoies = useFirestoreGetDocument("contest_categorys_list");
   const fetchGrades = useFirestoreGetDocument("contest_grades_list");
   const fetchPlayersAssign = useFirestoreGetDocument("contest_players_assign");
+  const fetchStagesAssign = useFirestoreGetDocument("contest_stages_assign");
+  const updateStages = useFirestoreUpdateData("contest_stages_assign");
 
   const fetchPool = async () => {
     const returnCategoies = await fetchCategoies.getDocument(
@@ -29,7 +43,9 @@ const ContestStagetable = () => {
       currentContest.contests.contestPlayersAssignId
     );
 
-    console.log(returnGrades);
+    const returnStagesAssign = await fetchStagesAssign.getDocument(
+      currentContest.contests.contestStagesAssignId
+    );
 
     if (returnCategoies) {
       setCategoriesArray([
@@ -46,6 +62,18 @@ const ContestStagetable = () => {
     if (returnPlayersAssign) {
       setPlayersArray([...returnPlayersAssign.players]);
     }
+
+    if (returnStagesAssign) {
+      setStagesInfo({ ...returnStagesAssign });
+      if (returnPlayersAssign.stages.length > 0) {
+        fetchStages([...returnStagesAssign.stages]);
+      }
+    }
+  };
+
+  const fetchStages = (propData) => {
+    console.log(propData);
+    setStagesArray([...propData]);
   };
 
   const initStage = (contestId) => {
@@ -58,6 +86,8 @@ const ContestStagetable = () => {
         const {
           contestCategoryId: categoryId,
           contestCategoryTitle: categoryTitle,
+          contestCategoryIndex: categoryIndex,
+          contestCategoryJudgeCount: categoryJudgeCount,
         } = category;
         const matchedGrades = gradesArray.filter(
           (grade) => grade.refCategoryId === categoryId
@@ -69,8 +99,11 @@ const ContestStagetable = () => {
         matchedGrades
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
           .map((grade, gIdx) => {
-            const { contestGradeId: gradeId, contestGradeTitle: gradeTitle } =
-              grade;
+            const {
+              contestGradeId: gradeId,
+              contestGradeTitle: gradeTitle,
+              contestGradeIndex: gradeIndex,
+            } = grade;
 
             const matchedPlayers = playersArray.filter(
               (player) => player.contestGradeId === gradeId
@@ -84,12 +117,18 @@ const ContestStagetable = () => {
             const newStageInfo = {
               stageId: uuidv4(),
               stageNumber,
+              categoryJudgeCount,
+              categoryId,
+              categoryTitle,
               grades: [
                 {
                   categoryId,
                   categoryTitle,
+                  categoryIndex,
+                  categoryJudgeCount,
                   gradeId,
                   gradeTitle,
+                  gradeIndex,
                   playerCount: matchedPlayers?.length,
                 },
               ],
@@ -100,83 +139,6 @@ const ContestStagetable = () => {
       });
     setStagesArray([...stages]);
   };
-
-  // const onDragEnd = (result) => {
-  //   const { source, destination, draggableId, type } = result;
-  //   if (!destination) return;
-
-  //   if (type === "stage") {
-  //     const [removed] = stagesArray.splice(source.index, 1);
-  //     stagesArray.splice(destination.index, 0, removed);
-  //     setStagesArray([...stagesArray]);
-  //   } else {
-  //     const sourceStageIndex = stagesArray.findIndex(
-  //       (stage) => stage.stageId === source.droppableId
-  //     );
-  //     const destinationStageIndex = stagesArray.findIndex(
-  //       (stage) => stage.stageId === destination.droppableId
-  //     );
-
-  //     const [removedGrade] = stagesArray[sourceStageIndex].grades.splice(
-  //       source.index,
-  //       1
-  //     );
-  //     stagesArray[destinationStageIndex].grades.splice(
-  //       destination.index,
-  //       0,
-  //       removedGrade
-  //     );
-  //     setStagesArray([...stagesArray]);
-  //   }
-
-  //   let updatedStagesArray = [...stagesArray];
-  //   if (source.droppableId === destination.droppableId) {
-  //     // Reorder dragItems within the same stage (dragBase)
-  //     const stageIndex = stagesArray.findIndex(
-  //       (stage) => stage.stageId === source.droppableId
-  //     );
-  //     const [draggedItem] = updatedStagesArray[stageIndex].grades.splice(
-  //       source.index,
-  //       1
-  //     );
-  //     updatedStagesArray[stageIndex].grades.splice(
-  //       destination.index,
-  //       0,
-  //       draggedItem
-  //     );
-  //   } else {
-  //     // Move dragItem to a different stage
-  //     const sourceStageIndex = stagesArray.findIndex(
-  //       (stage) => stage.stageId === source.droppableId
-  //     );
-  //     const destinationStageIndex = stagesArray.findIndex(
-  //       (stage) => stage.stageId === destination.droppableId
-  //     );
-
-  //     const [draggedItem] = updatedStagesArray[sourceStageIndex].grades.splice(
-  //       source.index,
-  //       1
-  //     );
-  //     updatedStagesArray[destinationStageIndex].grades.splice(
-  //       destination.index,
-  //       0,
-  //       draggedItem
-  //     );
-  //   }
-
-  //   // Filter out stages with no grades
-  //   updatedStagesArray = updatedStagesArray.filter(
-  //     (stage) => stage.grades.length > 0
-  //   );
-
-  //   // Recalculate stage numbers
-  //   updatedStagesArray = updatedStagesArray.map((stage, index) => ({
-  //     ...stage,
-  //     stageNumber: index + 1,
-  //   }));
-
-  //   setStagesArray(updatedStagesArray);
-  // };
 
   const onDragEnd = (result) => {
     const { destination, source, draggableId, type } = result;
@@ -312,17 +274,49 @@ const ContestStagetable = () => {
     setStagesArray(updatedStagesArray);
   };
 
+  const handleUpdateStages = async (id, propData) => {
+    try {
+      await updateStages.updateData(id, { ...propData }).then(() => {
+        setMessage({
+          body: "저장되었습니다.",
+          isButton: true,
+          confirmButtonText: "확인",
+        });
+        setMsgOpen(true);
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleInitStages = async (contestId) => {
+    initStage(contestId);
+    setMessage({
+      body: "초기화되었습니다..",
+      isButton: true,
+      confirmButtonText: "확인",
+    });
+    setMsgOpen(true);
+  };
+
   useEffect(() => {
-    if (currentContest?.contests) {
+    if (stagesInfo.stages?.length > 0) {
+      console.log("first");
+      fetchStages([...stagesInfo.stages]);
+    } else {
       initStage(currentContest.contests.id);
     }
-  }, [categoriesArray, gradesArray, playersArray]);
+  }, [stagesInfo]);
 
   useEffect(() => {
     if (currentContest?.contests) {
       fetchPool();
     }
   }, [currentContest]);
+
+  useEffect(() => {
+    console.log(stagesArray);
+  }, [stagesArray]);
 
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-2 gap-y-2">
@@ -332,14 +326,47 @@ const ContestStagetable = () => {
         </div>
       ) : (
         <>
+          <div className="flex w-full h-14">
+            <ConfirmationModal
+              isOpen={msgOpen}
+              message={message}
+              onCancel={() => setMsgOpen(false)}
+              onConfirm={() => setMsgOpen(false)}
+            />
+            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
+              <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
+                <AiOutlineGroup />
+              </span>
+              <h1
+                className="font-sans text-lg font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                무대설정(4단계)
+              </h1>
+            </div>
+          </div>
           <div className="flex w-full h-full ">
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-2 lg:pt-2 flex-col bg-gray-100 rounded-lg gap-y-2">
                 <div className="flex w-full gap-x-5">
-                  <button className="w-full h-12 bg-gradient-to-l from-green-300 to-green-200 rounded-lg">
+                  <button
+                    className="w-full h-12 bg-gradient-to-l from-green-300 to-green-200 rounded-lg"
+                    onClick={() => handleInitStages(currentContest.contests.id)}
+                  >
                     초기화(계측명단 변동이 있는경우)
                   </button>
-                  <button className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg">
+                  <button
+                    className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
+                    onClick={() => {
+                      handleUpdateStages(
+                        currentContest.contests.contestStagesAssignId,
+                        {
+                          ...stagesInfo,
+                          stages: [...stagesArray],
+                        }
+                      );
+                    }}
+                  >
                     저장(대회진행을 위한 최종명단)
                   </button>
                 </div>

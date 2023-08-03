@@ -18,14 +18,16 @@ import LoadingPage from "./LoadingPage";
 import { Link } from "react-router-dom";
 import { Modal } from "@mui/material";
 import judgeInfoModal from "../modals/JudgeInfoModal";
+import CanvasWithImageData from "../components/CanvasWithImageData";
+import { FaCrown } from "react-icons/fa";
 
 const ContestJudgeTable = () => {
   const [currentTab, setCurrentTab] = useState(1);
   const [judgePasswords, setJudgePasswords] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSync, setIsSync] = useState(true);
-  const [judgePool, setJudgePool] = useState([]);
-  const [judgeList, setJudgeList] = useState([]);
+  const [judgesAllPool, setJudgesAllPool] = useState([]);
+  const [judgesAssignPool, setJudgesAssignPool] = useState([]);
   const [searchInfo, setSearchInfo] = useState();
   const [searchKeyword, setSearchKeyword] = useState("");
 
@@ -38,106 +40,40 @@ const ContestJudgeTable = () => {
   });
   //const [filteredInvoiceList, setFilteredInvoiceList] = useState([]);
   const { currentContest } = useContext(CurrentContestContext);
-  const getPool = useFirestoreQuery();
-  const getList = useFirestoreQuery();
-  const updateJudgeList = useFirestoreUpdateData("contest_judges_list");
-  const deleteEntry = useFirestoreDeleteData("contest_entrys_list");
-  const addJudge = useFirestoreAddData("contest_judges_list");
-  const getPassword = useFirestoreGetDocument("contest_passwords");
+  const fetchJudgesAllPool = useFirestoreQuery();
+  const fetchJudgesAssignPool = useFirestoreQuery();
+  const addJudgesAssignPool = useFirestoreAddData("contest_judges_pool");
+  const updateJudgesAssignPool = useFirestoreUpdateData("contest_judges_pool");
+  const deleteJudgesAssignPool = useFirestoreDeleteData("contest_judges_pool");
 
-  const fetchQuery = async (contestId) => {
+  const getPassword = useFirestoreGetDocument("contest_passwords");
+  const updatePassword = useFirestoreUpdateData("contest_passwords");
+
+  const fetchPool = async (contestId) => {
     setIsLoading(true);
     const conditions = [where("contestId", "==", contestId)];
-    const judgePoolData = await getPool.getDocuments("judges_pool");
-    const judgeListData = await getList.getDocuments(
-      "contest_judges_list",
-      conditions
-    );
-    const judgePasswordData = await getPassword.getDocument(
-      currentContest.contests.contestPasswordId
-    );
+    try {
+      await fetchJudgesAllPool
+        .getDocuments("judges_pool")
+        .then((data) => setJudgesAllPool([...data]));
 
-    setJudgeList([
-      ...judgeListData.sort((a, b) => a.judgeName.localeCompare(b.judgeName)),
-    ]);
+      await fetchJudgesAssignPool
+        .getDocuments("contest_judges_pool", conditions)
+        .then((data) =>
+          setJudgesAssignPool(
+            [...data].sort((a, b) => a.judgeName.localeCompare(b.judgeName))
+          )
+        );
 
-    if (judgePoolData?.length !== judgeListData?.length) {
-      const newJudge = getNewJudges(judgePoolData, judgeListData);
-
-      const newJudgeList = [...judgeListData];
-      newJudgeList.push(newJudge);
-
-      newJudge.map(async (judge, jIdx) => {
-        try {
-          await addJudge.addData({ ...judge, contestId });
-        } catch (error) {
-          console.log(error.message);
-        }
-      });
-      console.log(newJudgeList);
-      setJudgeList(...newJudgeList);
+      await getPassword
+        .getDocument(currentContest.contests.contestPasswordId)
+        .then((data) => setJudgePasswords([...data.passwords]));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-
-    setJudgePasswords([...judgePasswordData.passwords]);
-
-    setIsLoading(false);
   };
-
-  const getNewJudges = (judgePoolData, judgeListData) => {
-    const selectedJudgeUids = judgeListData.map((judge) => judge.judgeUid);
-    const unselectedJudges = judgePoolData
-      .filter((judge) => !selectedJudgeUids.includes(judge.judgeUid))
-      .map(({ id, ...rest }) => rest);
-
-    console.log(...unselectedJudges);
-    return unselectedJudges;
-  };
-
-  const filteredData = useMemo(() => {
-    console.log(judgeList);
-    setIsLoading(true);
-
-    let newData = [];
-    if (judgeList?.length > 0) {
-      switch (currentTab) {
-        case 0:
-          newData = judgeList.filter(
-            (judge) =>
-              judge.judgeName.includes(searchKeyword) ||
-              judge.judgeTel.includes(searchKeyword) ||
-              judge.judgePromoter.includes(searchKeyword)
-          );
-          break;
-        case 1:
-          newData = judgeList.filter(
-            (judge) =>
-              judge.isConfirmed &&
-              judge.isActived &&
-              judge.isJoined &&
-              (judge.judgeName.includes(searchKeyword) ||
-                judge.judgeTel.includes(searchKeyword) ||
-                judge.judgePromoter.includes(searchKeyword))
-          );
-          break;
-        case 2:
-          newData = judgeList.filter(
-            (judge) =>
-              judge.isConfirmed &&
-              judge.isActived &&
-              !judge.isJoined &&
-              (judge.judgeName.includes(searchKeyword) ||
-                judge.judgeTel.includes(searchKeyword) ||
-                judge.judgePromoter.includes(searchKeyword))
-          );
-          break;
-
-        default:
-          break;
-      }
-    }
-    setIsLoading(false);
-    return newData;
-  }, [currentTab, searchKeyword, judgeList]);
 
   const tabArray = [
     {
@@ -166,62 +102,260 @@ const ContestJudgeTable = () => {
       info: {},
     }));
   };
-  const handleJudgeModal = (judgeUid, judgeInfo) => {
-    if (judgeUid) {
-      setIsOpen(() => ({
-        judge: true,
-        title: "심판정보",
-        info: judgeInfo,
-        list: judgeList,
-        setList: setJudgeList,
-      }));
-    }
-  };
+  // const handleJudgeModal = (judgeUid, judgeInfo) => {
+  //   if (judgeUid) {
+  //     setIsOpen(() => ({
+  //       judge: true,
+  //       title: "심판정보",
+  //       info: judgeInfo,
+  //       list: judgeList,
+  //       setList: setJudgeList,
+  //     }));
+  //   }
+  // };
   const handleSearchKeyword = () => {
     setSearchKeyword(searchInfo);
   };
 
-  const handleJudgeJoinUpdate = async (judgeId, judgeUid, e) => {
-    setIsLoading(true);
-    //initInvoice(playerUid);
-    const findIndex = judgeList.findIndex(
-      (judge) => judge.judgeUid === judgeUid
+  const filteredData = useMemo(() => {
+    let newData = [];
+    const newJudgesAllPool = judgesAllPool
+      .sort((a, b) => a.judgeName.localeCompare(b.judgeName))
+      .map((judge, jIdx) => {
+        const {
+          judgeName,
+          judgeTel,
+          judgeUid,
+          judgePromoter,
+          isConfirmed,
+
+          judgeSignature,
+        } = judge;
+        const isJoined = judgesAssignPool.some(
+          (assign) => assign.judgeUid === judgeUid
+        );
+        const findJudesAssignInfo = judgesAssignPool.find(
+          (assign) => assign.judgeUid === judgeUid
+        );
+
+        return {
+          judgeUid,
+          judgeName,
+          judgePromoter,
+          judgeTel,
+          isJoined,
+          isConfirmed,
+          isHead: findJudesAssignInfo?.isHead || false,
+          judgeSignature,
+          onedayPassword: findJudesAssignInfo?.onedayPassword || "",
+          judgeAssignId: findJudesAssignInfo?.id || "",
+        };
+      });
+
+    const newJudgesAssignPool = judgesAssignPool
+      .sort((a, b) => a.judgeName.localeCompare(b.judgeName))
+      .map((judge, jIdx) => {
+        const {
+          judgeName,
+          judgeTel,
+          judgeUid,
+          judgePromoter,
+          judgeSignature,
+          isHead,
+          isConfirmed,
+          onedayPassword,
+          id,
+        } = judge;
+
+        return {
+          judgeUid,
+          judgeName,
+          judgePromoter,
+          judgeTel,
+          isJoined: true,
+          isConfirmed,
+          isHead,
+          judgeSignature,
+          onedayPassword,
+          judgeAssignId: id,
+        };
+      });
+
+    switch (currentTab) {
+      case 0:
+        newData = newJudgesAllPool.filter(
+          (judge) =>
+            judge.judgeName.includes(searchKeyword) ||
+            judge.judgeTel.includes(searchKeyword) ||
+            judge.judgePromoter.includes(searchKeyword)
+        );
+        break;
+
+      case 1:
+        newData = newJudgesAssignPool.filter(
+          (judge) =>
+            judge.judgeName.includes(searchKeyword) ||
+            judge.judgeTel.includes(searchKeyword) ||
+            judge.judgePromoter.includes(searchKeyword)
+        );
+
+      default:
+        break;
+    }
+
+    return newData;
+  }, [judgesAllPool, judgesAssignPool, searchKeyword, currentTab]);
+
+  const handleJudgeHeadAssign = async (e, judgeAssignId) => {
+    const { name, checked } = e.target;
+
+    const newJudgesAssignPool = [...judgesAssignPool];
+    const findIndexJudge = newJudgesAssignPool.findIndex(
+      (find) => find.id === judgeAssignId
     );
-    console.log(findIndex);
-    const newJudgeList = [...judgeList];
+    const newJudgesInfo = newJudgesAssignPool[findIndexJudge];
 
-    const newJudgeInfo = {
-      ...newJudgeList[findIndex],
-      isJoined: e.target.checked,
-      onedayPassword: e.target.checked ? judgePasswords[findIndex] : null,
-      isHead: false,
-    };
+    if (checked) {
+      try {
+        await updateJudgesAssignPool
+          .updateData(judgeAssignId, {
+            ...newJudgesInfo,
+            isHead: true,
+          })
+          .then(() => {
+            newJudgesAssignPool.splice(findIndexJudge, 1, {
+              ...newJudgesInfo,
+              isHead: true,
+            });
+          })
+          .then(() => setJudgesAssignPool(() => [...newJudgesAssignPool]));
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      try {
+        await updateJudgesAssignPool
+          .updateData(judgeAssignId, {
+            ...newJudgesInfo,
+            isHead: false,
+          })
+          .then(() => {
+            newJudgesAssignPool.splice(findIndexJudge, 1, {
+              ...newJudgesInfo,
+              isHead: false,
+            });
+          })
+          .then(() => setJudgesAssignPool(() => [...newJudgesAssignPool]));
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+  const handleJudgesAssignPool = async (
+    e,
+    judges,
+    contestId,
+    judgeAssignId,
+    passwordIndex
+  ) => {
+    const { name, checked } = e.target;
 
-    newJudgeList.splice(findIndex, 1, {
-      ...newJudgeInfo,
-    });
+    if (checked) {
+      try {
+        const newJudgesAssignPool = [...judgesAssignPool];
+        const newJudgeInfo = {
+          judgeName: judges.judgeName,
+          judgePromoter: judges.judgePromoter,
+          judgeSignature: judges.judgeSignature,
+          judgeTel: judges.judgeTel,
+          judgeUid: judges.judgeUid,
+          isAcitve: true,
+          isConfirmed: true,
+        };
+        const newPassword = [...judgePasswords];
+        const onedayPassword = newPassword.find(
+          (password) => password.used === false
+        ).value;
 
-    await updateJudgeList
-      .updateData(judgeId, { ...newJudgeInfo })
-      .then(() => setJudgeList([...newJudgeList]))
-      .then(() => setIsLoading(false))
-      .catch((error) => console.log(error));
+        const findIndexOneDayPassword = judgePasswords.findIndex(
+          (password) => password.value === onedayPassword
+        );
+
+        newPassword.splice(findIndexOneDayPassword, 1, {
+          ...newPassword[findIndexOneDayPassword],
+          used: true,
+        });
+
+        await addJudgesAssignPool
+          .addData({
+            ...newJudgeInfo,
+            contestId,
+            isJoined: true,
+            isHead: false,
+            onedayPassword,
+          })
+          .then((data) => {
+            newJudgesAssignPool.push({ ...data });
+            setJudgesAssignPool(() => [...newJudgesAssignPool]);
+          })
+          .then(async () => {
+            await updatePassword.updateData(
+              currentContest.contests.contestPasswordId,
+              { contestId, passwords: [...newPassword] }
+            );
+            setJudgePasswords(() => [...newPassword]);
+          });
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      if (!judgeAssignId) {
+        return;
+      } else {
+        try {
+          const newJudgesAssignPool = [...judgesAssignPool];
+          const findIndexJudgesAssignPool = newJudgesAssignPool.findIndex(
+            (judge) => judge.id === judgeAssignId
+          );
+          const { onedayPassword } =
+            newJudgesAssignPool[findIndexJudgesAssignPool];
+
+          const newPassword = [...judgePasswords];
+
+          const findIndexOneDayPassword = newPassword.findIndex(
+            (password) => password.value === onedayPassword
+          );
+
+          newPassword.splice(findIndexOneDayPassword, 1, {
+            ...newPassword[findIndexOneDayPassword],
+            used: false,
+          });
+
+          await deleteJudgesAssignPool
+            .deleteData(judgeAssignId)
+            .then(() =>
+              newJudgesAssignPool.splice(findIndexJudgesAssignPool, 1)
+            )
+            .then(() => setJudgesAssignPool(() => [...newJudgesAssignPool]))
+            .then(async () => {
+              await updatePassword.updateData(
+                currentContest.contests.contestPasswordId,
+                { contestId, passwords: [...newPassword] }
+              );
+              setJudgePasswords(() => [...newPassword]);
+            });
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    }
   };
 
   useEffect(() => {
     if (currentContest?.contests?.id) {
-      fetchQuery(currentContest.contests.id);
+      fetchPool(currentContest.contests.id);
     }
-    console.log(currentContest?.contests);
-  }, [currentContest]);
-
-  useEffect(() => {
-    //console.log(filteredData);
-  }, [filteredData]);
-
-  useEffect(() => {
-    console.log(judgePasswords);
-  }, [judgePasswords]);
+  }, [currentContest?.contests?.id]);
 
   const ContestInvoiceUncompleteRender = (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
@@ -232,11 +366,11 @@ const ContestJudgeTable = () => {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <judgeInfoModal
+          {/* <judgeInfoModal
             setClose={handleJudgeClose}
             propState={isOpen}
             setState={setJudgeList}
-          />
+          /> */}
         </div>
       </Modal>
       <div className="w-full bg-blue-100 flex rounded-lg flex-col p-2 h-full gap-y-2">
@@ -273,22 +407,46 @@ const ContestJudgeTable = () => {
             <div className="w-full rounded-lg px-0 lg:px-3 h-auto py-0 lg:py-2">
               <table className="w-full bg-white">
                 <tr className="bg-gray-200 h-10">
-                  <th className="w-1/12 text-center text-sm font-normal lg:font-semibold lg:text-base">
-                    배정여부
+                  <th
+                    className="text-center text-sm font-normal lg:font-semibold lg:text-base"
+                    style={{ width: "8%" }}
+                  >
+                    배정
                   </th>
-                  <th className="text-left w-1/12 text-sm font-normal lg:font-semibold lg:text-base">
+                  <th
+                    className="text-center text-sm font-normal lg:font-semibold lg:text-base"
+                    style={{ width: "8%" }}
+                  >
                     위원장
                   </th>
-                  <th className="text-left w-2/12 text-sm font-normal lg:font-semibold lg:text-base">
+                  <th
+                    className="text-left text-sm font-normal lg:font-semibold lg:text-base"
+                    style={{ width: "20%" }}
+                  >
                     이름
                   </th>
-                  <th className="text-left w-2/12 text-sm font-normal hidden lg:table-cell lg:font-semibold lg:text-base">
+                  <th
+                    className="text-left text-sm font-normal hidden lg:table-cell lg:font-semibold lg:text-base"
+                    style={{ width: "20%" }}
+                  >
                     연락처
                   </th>
-                  <th className="text-left w-3/12 hidden lg:table-cell">
+                  <th
+                    className="text-left hidden lg:table-cell"
+                    style={{ width: "14%" }}
+                  >
                     소속
                   </th>
-                  <th className="text-left w-2/12 text-sm font-normal lg:font-semibold lg:text-base">
+                  <th
+                    className="text-left hidden lg:table-cell"
+                    style={{ width: "22%" }}
+                  >
+                    사인
+                  </th>
+                  <th
+                    className="text-left text-sm font-normal lg:font-semibold lg:text-base"
+                    style={{ width: "10%" }}
+                  >
                     개인비밀번호
                   </th>
                 </tr>
@@ -300,42 +458,49 @@ const ContestJudgeTable = () => {
                       judgeName,
                       judgePromoter,
                       judgeTel,
+                      judgeSignature,
                       isHead,
                       isJoined,
                       isConfirmed,
                       onedayPassword,
+                      judgeAssignId,
                     } = filtered;
 
                     return (
                       <tr className="border border-t-0 border-x-0" key={id}>
-                        <td className="text-center w-1/12 h-10">
+                        <td className="text-center h-10">
                           {!isConfirmed ? (
                             <span className="text-sm">불가</span>
                           ) : (
                             <input
                               type="checkbox"
+                              name="judgeAssignJoin"
                               checked={isJoined}
                               onClick={(e) =>
-                                handleJudgeJoinUpdate(id, judgeUid, e)
+                                handleJudgesAssignPool(
+                                  e,
+                                  filtered,
+                                  currentContest.contests.id,
+                                  judgeAssignId,
+                                  fIdx
+                                )
                               }
                             />
                           )}
                         </td>
-                        <td className="text-center w-1/12 h-10 ">
-                          <div className="flex justify-start w-full">
-                            {isHead ? (
-                              <button>배정취소</button>
-                            ) : (
-                              <button>위원장배정</button>
-                            )}
-                          </div>
+                        <td className="text-center h-10 ">
+                          <input
+                            type="checkbox"
+                            name="judgeAssignHead"
+                            checked={isHead}
+                            onClick={(e) =>
+                              handleJudgeHeadAssign(e, judgeAssignId)
+                            }
+                          />
                         </td>
-                        <td className="text-left w-2/12 text-sm  lg:text-base">
-                          <div className="flex flex-col">
+                        <td className="text-left text-sm  lg:text-base">
+                          <div className="flex justify-start items-center gap-x-2">
                             <span
-                              onClick={() =>
-                                handleJudgeModal(judgeUid, filtered)
-                              }
                               className={`${
                                 !isConfirmed
                                   ? " cursor-pointer line-through text-gray-500"
@@ -344,16 +509,31 @@ const ContestJudgeTable = () => {
                             >
                               {judgeName}
                             </span>
+                            {isHead && (
+                              <span className="text-orange-500">
+                                <FaCrown />
+                              </span>
+                            )}
                           </div>
                         </td>
-                        <td className="text-left w-2/12 text-sm hidden lg:table-cell lg:text-base">
+                        <td className="text-left text-sm hidden lg:table-cell lg:text-base">
                           {judgeTel}
                         </td>
 
-                        <td className="text-left w-3/12 hidden lg:table-cell">
+                        <td className="text-left hidden lg:table-cell">
                           {judgePromoter}
                         </td>
-                        <td className="text-left w-2/12 lg:table-cell">
+                        <td className="text-left hidden lg:table-cell ">
+                          <CanvasWithImageData
+                            imageData={judgeSignature}
+                            style={{
+                              width: "90px",
+                              height: "90px",
+                              padding: "0",
+                            }}
+                          />
+                        </td>
+                        <td className="text-left lg:table-cell">
                           {onedayPassword}
                         </td>
                       </tr>

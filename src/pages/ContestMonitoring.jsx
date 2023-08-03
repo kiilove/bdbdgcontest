@@ -25,7 +25,7 @@ const ContestMonitoring = () => {
   const [currentState, setCurrentState] = useState({ stageId: null });
   const navigate = useNavigate();
 
-  const contestDataDocu = useFirestoreGetDocument("contest_data");
+  const fetchStages = useFirestoreGetDocument("contest_stages_assign");
 
   const {
     data: realtimeData,
@@ -37,37 +37,34 @@ const ContestMonitoring = () => {
   const updateCurrentStage = useFirebaseRealtimeUpdateData();
 
   const fetchPool = async () => {
-    const returnContestData = await contestDataDocu.getDocument(
-      currentContest.contests.contestDataId
+    const returnContestStage = await fetchStages.getDocument(
+      currentContest.contests.contestStagesAssignId
     );
 
     //console.log(returnContestData.schedule);
-    if (returnContestData) {
+    if (returnContestStage) {
       setContestSchedule(
-        returnContestData.schedule.sort((a, b) => a.stageIndex - b.stageIndex)
+        returnContestStage.stages.sort((a, b) => a.stageNumber - b.stageNumber)
       );
     }
   };
 
   const handleAddCurrentStage = async () => {
     const {
-      contestCategoryId: categoryId,
-      contestCategoryTitle: categoryTitle,
-      contestGradeId: gradeId,
-      contestGradeTitle: gradeTitle,
-      contestCategoryJudgeCount,
       stageId,
       stageNumber,
+      categoryJudgeCount,
+      categoryId,
+      categoryTitle,
+      grades,
     } = contestSchedule[0];
 
     const judgeInitState = Array.from(
-      { length: contestCategoryJudgeCount },
+      { length: categoryJudgeCount },
       (_, jIdx) => jIdx + 1
     ).map((number) => {
       return { seatIndex: number, isLogined: false, isEnd: false };
     });
-
-    console.log(judgeInitState);
 
     const currentStateInfo = {
       stageId,
@@ -87,14 +84,9 @@ const ContestMonitoring = () => {
     realtimeGetDocument(collectionName, documentId);
   };
 
-  const handleGotoSummary = (
-    categoryId,
-    gradeId,
-    categoryTitle,
-    gradeTitle
-  ) => {
+  const handleGotoSummary = (categoryId, categoryTitle, grades) => {
     navigate("/contestranksummary", {
-      state: { categoryId, gradeId, categoryTitle, gradeTitle },
+      state: { categoryId, categoryTitle, grades },
     });
   };
 
@@ -106,17 +98,16 @@ const ContestMonitoring = () => {
     stageIndex
   ) => {
     const {
-      contestCategoryId: categoryId,
-      contestCategoryTitle: categoryTitle,
-      contestGradeId: gradeId,
-      contestGradeTitle: gradeTitle,
-      contestCategoryJudgeCount,
       stageId,
       stageNumber,
+      categoryJudgeCount,
+      categoryId,
+      categoryTitle,
+      grades,
     } = contestSchedule[stageIndex + 1];
 
     const judgeInitState = Array.from(
-      { length: contestCategoryJudgeCount },
+      { length: categoryJudgeCount },
       (_, jIdx) => jIdx + 1
     ).map((number) => {
       return { seatIndex: number, isLogined: false, isEnd: false };
@@ -206,13 +197,26 @@ const ContestMonitoring = () => {
             {contestSchedule?.length > 0 &&
               contestSchedule.map((schedule, sIdx) => {
                 const {
-                  contestCategoryTitle,
-                  contestGradeTitle,
-                  contestCategoryId,
-                  contestGradeId,
+                  categoryTitle,
+                  categoryId,
+                  grades,
                   stageId,
                   stageNumber,
                 } = schedule;
+
+                let gradeTitle = "";
+
+                if (grades?.length === 0) {
+                  gradeTitle = "오류발생";
+                }
+                if (grades.length === 1) {
+                  gradeTitle = grades[0].gradeTitle;
+                } else if (grades.length > 1) {
+                  const madeTitle = grades.map((grade, gIdx) => {
+                    return grade.gradeTitle + " ";
+                  });
+                  gradeTitle = madeTitle + "통합";
+                }
 
                 const findIndex = contestSchedule.findIndex(
                   (f) => f.stageId === stageId
@@ -227,7 +231,7 @@ const ContestMonitoring = () => {
                       }`}
                     >
                       <div className="flex w-4/6">
-                        {contestCategoryTitle} ({contestGradeTitle})
+                        {categoryTitle} ({gradeTitle})
                       </div>
                       <div className="flex w-1/6">
                         {stageId === currentState?.stageId && (
@@ -247,12 +251,7 @@ const ContestMonitoring = () => {
                       <div className="flex w-1/6">
                         <button
                           onClick={() =>
-                            handleGotoSummary(
-                              contestCategoryId,
-                              contestGradeId,
-                              contestCategoryTitle,
-                              contestGradeTitle
-                            )
+                            handleGotoSummary(categoryId, categoryTitle, grades)
                           }
                         >
                           집계표

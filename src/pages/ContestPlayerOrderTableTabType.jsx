@@ -2,6 +2,9 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { BsCheckAll } from "react-icons/bs";
 import LoadingPage from "./LoadingPage";
 import { TiInputChecked } from "react-icons/ti";
+import { TfiWrite } from "react-icons/tfi";
+import { CiMobile3 } from "react-icons/ci";
+import { BsBrowserChrome } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
 import {
   useFirestoreGetDocument,
@@ -12,13 +15,20 @@ import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { Checkbox } from "@mui/material";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import { TbWorldWww } from "react-icons/tb";
+import ConfirmationModal from "../messageBox/ConfirmationModal";
 
 const ContestPlayerOrderTable = () => {
   const [isLoading, setIsLoading] = useState(false);
+
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [message, setMessage] = useState({});
+
   const [matchedArray, setMatchedArray] = useState([]);
   const [categorysArray, setCategorysArray] = useState([]);
   const [playersArray, setPlayersArray] = useState([]);
   const [playersAssign, setPlayersAssign] = useState({});
+  const [playersFinal, setPlayersFinal] = useState({});
   const [gradesArray, setGradesArray] = useState([]);
   const [entrysArray, setEntrysArray] = useState([]);
   const [entryTitle, setEntryTitle] = useState("");
@@ -33,21 +43,28 @@ const ContestPlayerOrderTable = () => {
   const fetchPlayersAssignDocument = useFirestoreGetDocument(
     "contest_players_assign"
   );
+  const fetchPlayersFinalDocument = useFirestoreGetDocument(
+    "contest_players_final"
+  );
   const updatePlayersAssign = useFirestoreUpdateData("contest_players_assign");
+  const updatePlayersFinal = useFirestoreUpdateData("contest_players_final");
   const fetchEntry = useFirestoreQuery();
-  let categoryNumber = 0;
-  let totalPlayerNumber = 0;
+
   const fetchPool = async () => {
     if (currentContest.contests.contestCategorysListId) {
       const returnCategorys = await fetchCategoryDocument.getDocument(
         currentContest.contests.contestCategorysListId
       );
 
-      setCategorysArray([
-        ...returnCategorys?.categorys.sort(
-          (a, b) => a.contestCategoryIndex - b.contestCategoryIndex
-        ),
-      ]);
+      if (returnCategorys?.categorys?.length > 0) {
+        setCategorysArray([
+          ...returnCategorys?.categorys.sort(
+            (a, b) => a.contestCategoryIndex - b.contestCategoryIndex
+          ),
+        ]);
+      } else {
+        setCategorysArray([]);
+      }
 
       const returnGrades = await fetchGradeDocument.getDocument(
         currentContest.contests.contestGradesListId
@@ -56,7 +73,7 @@ const ContestPlayerOrderTable = () => {
       setGradesArray([...returnGrades?.grades]);
 
       const condition = [where("contestId", "==", currentContest.contests.id)];
-      console.log(currentContest.contests.id);
+
       const returnEntrys = await fetchEntry.getDocuments(
         "contest_entrys_list",
         condition
@@ -66,9 +83,15 @@ const ContestPlayerOrderTable = () => {
       const returnPlayersAssign = await fetchPlayersAssignDocument.getDocument(
         currentContest.contests.contestPlayersAssignId
       );
-      console.log(returnPlayersAssign);
+
       setPlayersAssign({ ...returnPlayersAssign });
       setPlayersArray([...returnPlayersAssign?.players]);
+
+      const returnPlayersFinal = await fetchPlayersFinalDocument.getDocument(
+        currentContest.contests.contestPlayersFinalId
+      );
+
+      setPlayersFinal({ ...returnPlayersFinal });
     }
   };
 
@@ -175,14 +198,23 @@ const ContestPlayerOrderTable = () => {
       });
 
     setMatchedArray([...dummy]);
+
     setIsLoading(false);
   };
 
-  const handleUpdatePlayersAssign = async (id, title) => {
+  const handleUpdatePlayersAssign = async (assignId, finalId) => {
     const newPlayersAssign = { ...playersAssign, players: [...dummyArray] };
+    const newPlayersFinal = { ...playersFinal, players: [...dummyArray] };
     try {
-      await updatePlayersAssign.updateData(id, newPlayersAssign);
-      setEntryTitle(() => "저장된명단/계측명단 출력가능");
+      await updatePlayersAssign.updateData(assignId, newPlayersAssign);
+      await updatePlayersFinal.updateData(finalId, newPlayersFinal).then(() => {
+        setMessage({
+          body: "저장되었습니다.",
+          isButton: true,
+          confirmButtonText: "확인",
+        });
+        setMsgOpen(true);
+      });
     } catch (error) {
       console.log(error);
     }
@@ -242,10 +274,6 @@ const ContestPlayerOrderTable = () => {
     }
   }, [categorysArray, gradesArray, entrysArray, playersArray]);
 
-  useEffect(() => {
-    //console.log(matchedArray);
-  }, [matchedArray]);
-
   const dummyArray = [];
 
   return (
@@ -257,12 +285,26 @@ const ContestPlayerOrderTable = () => {
       ) : (
         <>
           <div className="flex w-full h-full">
+            <ConfirmationModal
+              isOpen={msgOpen}
+              message={message}
+              onCancel={() => setMsgOpen(false)}
+              onConfirm={() => setMsgOpen(false)}
+            />
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-2 lg:pt-2 flex-col bg-gray-100 rounded-lg gap-y-2">
                 <div className="flex w-full gap-x-5">
                   <button
                     className="w-full h-12 bg-gradient-to-l from-green-300 to-green-200 rounded-lg"
-                    onClick={() => initEntryList()}
+                    onClick={() => {
+                      initEntryList();
+                      setMessage({
+                        body: "초기화되었습니다.",
+                        isButton: true,
+                        confirmButtonText: "확인",
+                      });
+                      setMsgOpen(true);
+                    }}
                   >
                     초기화(신규등록선수 있을경우)
                   </button>
@@ -271,11 +313,11 @@ const ContestPlayerOrderTable = () => {
                     onClick={() =>
                       handleUpdatePlayersAssign(
                         currentContest.contests.contestPlayersAssignId,
-                        "저장된명단"
+                        currentContest.contests.contestPlayersFinalId
                       )
                     }
                   >
-                    저장(계측명단을 위해 저장필요)
+                    계측명단 저장
                   </button>
                 </div>
                 {matchedArray.length > 0 &&
@@ -343,7 +385,7 @@ const ContestPlayerOrderTable = () => {
                                                 playerGym,
                                                 playerUid,
                                                 playerNumber,
-
+                                                createBy,
                                                 invoiceCreateAt,
                                               } = player;
 
@@ -375,8 +417,20 @@ const ContestPlayerOrderTable = () => {
                                                       <div className="flex w-1/6">
                                                         {playerNumber}
                                                       </div>
-                                                      <div className="flex w-1/6">
-                                                        {playerName}
+                                                      <div className="flex w-1/6 justify-start items-center gap-x-2">
+                                                        {playerName}{" "}
+                                                        {createBy ===
+                                                          "manual" && (
+                                                          <span className="text-green-600 text-lg">
+                                                            <TfiWrite />
+                                                          </span>
+                                                        )}
+                                                        {createBy ===
+                                                          undefined && (
+                                                          <span className="text-blue-600 text-lg">
+                                                            <TbWorldWww />
+                                                          </span>
+                                                        )}
                                                       </div>
                                                       <div className="flex w-1/6">
                                                         {playerGym}
