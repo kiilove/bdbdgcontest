@@ -49,6 +49,28 @@ const ContestMonitoring = () => {
     }
   };
 
+  const handleGradeInfo = (grades) => {
+    let gradeTitle = "";
+    let gradeId = "";
+
+    if (grades?.length === 0) {
+      gradeTitle = "오류발생";
+      gradeId = "";
+    }
+    if (grades.length === 1) {
+      gradeTitle = grades[0].gradeTitle;
+      gradeId = grades[0].gradeId;
+    } else if (grades.length > 1) {
+      const madeTitle = grades.map((grade, gIdx) => {
+        return grade.gradeTitle + " ";
+      });
+      gradeId = grades[0].gradeId;
+      gradeTitle = madeTitle + "통합";
+    }
+
+    return { gradeTitle, gradeId };
+  };
+
   const handleAddCurrentStage = async () => {
     const {
       stageId,
@@ -58,6 +80,9 @@ const ContestMonitoring = () => {
       categoryTitle,
       grades,
     } = contestSchedule[0];
+
+    const gradeTitle = handleGradeInfo(grades).gradeTitle;
+    const gradeId = handleGradeInfo(grades).gradeId;
 
     const judgeInitState = Array.from(
       { length: categoryJudgeCount },
@@ -69,6 +94,9 @@ const ContestMonitoring = () => {
     const currentStateInfo = {
       stageId,
       stageNumber,
+      categoryTitle,
+      gradeId,
+      gradeTitle,
       judges: judgeInitState,
     };
     const addedData = await addCurrentStage.addData(
@@ -106,6 +134,9 @@ const ContestMonitoring = () => {
       grades,
     } = contestSchedule[stageIndex + 1];
 
+    const gradeTitle = handleGradeInfo(grades).gradeTitle;
+    const gradeId = handleGradeInfo(grades).gradeId;
+
     const judgeInitState = Array.from(
       { length: categoryJudgeCount },
       (_, jIdx) => jIdx + 1
@@ -116,6 +147,8 @@ const ContestMonitoring = () => {
     const currentStateInfo = {
       stageId,
       stageNumber,
+      categoryTitle,
+      gradeTitle,
       judges: judgeInitState,
     };
     const updatedData = await updateCurrentStage.updateData(
@@ -204,19 +237,7 @@ const ContestMonitoring = () => {
                   stageNumber,
                 } = schedule;
 
-                let gradeTitle = "";
-
-                if (grades?.length === 0) {
-                  gradeTitle = "오류발생";
-                }
-                if (grades.length === 1) {
-                  gradeTitle = grades[0].gradeTitle;
-                } else if (grades.length > 1) {
-                  const madeTitle = grades.map((grade, gIdx) => {
-                    return grade.gradeTitle + " ";
-                  });
-                  gradeTitle = madeTitle + "통합";
-                }
+                const gradeTitle = handleGradeInfo(grades).gradeTitle;
 
                 const findIndex = contestSchedule.findIndex(
                   (f) => f.stageId === stageId

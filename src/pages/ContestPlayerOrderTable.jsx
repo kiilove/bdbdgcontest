@@ -20,7 +20,7 @@ const ContestPlayerOrderTable = () => {
   const [categorysArray, setCategorysArray] = useState([]);
 
   const [gradesArray, setGradesArray] = useState([]);
-  const [playersFinal, setPlayersFinal] = useState({});
+  const [playersAssign, setPlayersAssign] = useState({});
   const [playersArray, setPlayersArray] = useState([]);
 
   const [msgOpen, setMsgOpen] = useState(false);
@@ -33,6 +33,9 @@ const ContestPlayerOrderTable = () => {
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
+  const fetchPlayersAssignDocument = useFirestoreGetDocument(
+    "contest_players_assign"
+  );
   const fetchPlayersFinalDocument = useFirestoreGetDocument(
     "contest_players_final"
   );
@@ -40,6 +43,7 @@ const ContestPlayerOrderTable = () => {
   // 월체정리 이후에는 불참선수 처리까지 완료해야한다.
 
   const updatePlayersFinal = useFirestoreUpdateData("contest_players_final");
+  const updatePlayersAssign = useFirestoreUpdateData("contest_players_assign");
 
   const fetchPool = async () => {
     if (currentContest.contests.contestCategorysListId) {
@@ -60,14 +64,14 @@ const ContestPlayerOrderTable = () => {
       setGradesArray([...returnGrades?.grades]);
     }
 
-    const returnPlayersFinal = await fetchPlayersFinalDocument.getDocument(
-      currentContest.contests.contestPlayersFinalId
+    const returnPlayersAssign = await fetchPlayersAssignDocument.getDocument(
+      currentContest.contests.contestPlayersAssignId
     );
-    if (!returnPlayersFinal) {
+    if (!returnPlayersAssign) {
       return;
     } else {
-      setPlayersFinal({ ...returnPlayersFinal });
-      setPlayersArray([...returnPlayersFinal?.players]);
+      setPlayersAssign({ ...returnPlayersAssign });
+      setPlayersArray([...returnPlayersAssign?.players]);
     }
   };
 
@@ -114,14 +118,52 @@ const ContestPlayerOrderTable = () => {
     setIsLoading(false);
   };
 
-  const handleUpdatePlayersFinal = async (id, data) => {
+  const handleUpdatePlayersFinal = async (
+    contestId,
+    playerAssignId,
+    playersFinalId,
+    data
+  ) => {
     setMessage({ body: "저장중", isButton: false });
     setMsgOpen(true);
+
+    const finalPlayers = data.map((player, pIdx) => {
+      const {
+        contestCategoryId,
+        contestGradeId,
+        contestId,
+        playerNumber,
+        playerUid,
+        playerName,
+        playerGym,
+        playerIndex,
+        playerNoShow,
+        isGradeChanged,
+      } = player;
+      const playerInfo = {
+        contestCategoryId,
+        contestGradeId,
+        contestId,
+        playerNumber,
+        playerUid,
+        playerName,
+        playerGym,
+        playerIndex,
+        playerNoShow,
+        isGradeChanged,
+      };
+      return playerInfo;
+    });
+
     try {
+      await updatePlayersAssign.updateData(playerAssignId, {
+        ...playersAssign,
+        players: [...data],
+      });
       await updatePlayersFinal
-        .updateData(currentContest.contests.contestPlayersFinalId, {
-          ...playersFinal,
-          players: [...data],
+        .updateData(playersFinalId, {
+          contestId,
+          players: [...finalPlayers],
         })
         .then(() => setPlayersArray([...data]))
         .then(() =>
@@ -265,6 +307,8 @@ const ContestPlayerOrderTable = () => {
                       className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
                       onClick={() =>
                         handleUpdatePlayersFinal(
+                          currentContest.contests.id,
+                          currentContest.contests.contestPlayersAssignId,
                           currentContest.contests.contestPlayersFinalId,
                           playersArray
                         )
