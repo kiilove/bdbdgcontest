@@ -59,6 +59,7 @@ const ContestInfo = () => {
   const addJudgesAssign = useFirestoreAddData("contest_judges_assign");
   const addPasswords = useFirestoreAddData("contest_passwords");
   const addStagesAssign = useFirestoreAddData("contest_stages_assign");
+  const addComparesList = useFirestoreAddData("contest_compares_list");
   const updateContest = useFirestoreUpdateData("contests");
   const params = useParams();
 
@@ -177,6 +178,11 @@ const ContestInfo = () => {
         passwords: [...judgePasswords],
         contestId: currentContest.contests.id,
       });
+      const addedCompare = await addComparesList.addData({
+        contestId: currentContest.contests.id,
+        compares: [],
+      });
+
       await updateContest.updateData(currentContest.contests.id, {
         ...currentContest.contests,
         contestStagesAssignId: addedStagesAssign.id,
@@ -184,6 +190,7 @@ const ContestInfo = () => {
         contestPlayersAssignId: addedPlayersAssign.id,
         contestPlayersFinalId: addedPlayersFinal.id,
         contestJudgesAssignId: addedJudgesAssign.id,
+        contestComparesListId: addedCompare.id,
         collectionName: currentContestInfo.contestCollectionName,
       });
     } catch (error) {

@@ -42,7 +42,7 @@ export const MenuArray = [
         isActive: false,
       },
       {
-        id: 1,
+        id: 2,
         title: "대회정보관리",
         icon: <BsInfoLg />,
         link: "/contestinfo",
@@ -50,42 +50,42 @@ export const MenuArray = [
       },
 
       {
-        id: 2,
+        id: 3,
         title: "참가신청서",
         icon: <PiUsersFour />,
         link: "/contestinvoicetable",
         isActive: true,
       },
       {
-        id: 3,
+        id: 4,
         title: "참가신청서 수동작성",
         icon: <BiUserPlus />,
         link: "/contestnewinvoicemanual",
         isActive: true,
       },
       {
-        id: 4,
+        id: 5,
         title: "기초데이터(1단계)",
         icon: <BsClipboardData />,
         link: "/contesttimetable",
         isActive: true,
       },
       {
-        id: 5,
+        id: 6,
         title: "계측(2단계)",
         icon: <MdOutlineScale />,
         link: "/contestplayerordertable",
         isActive: true,
       },
       {
-        id: 6,
+        id: 7,
         title: "최종명단(3단계)",
         icon: <CgUserList />,
         link: "/contestplayerordertableafter",
         isActive: true,
       },
       {
-        id: 7,
+        id: 8,
         title: "무대설정(4단계)",
         icon: <AiOutlineGroup />,
         link: "/conteststagetable",
@@ -93,7 +93,7 @@ export const MenuArray = [
       },
 
       {
-        id: 8,
+        id: 9,
         title: "심판선발",
         icon: <MdBalance />,
         link: "/contestjudgetable",

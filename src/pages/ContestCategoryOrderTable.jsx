@@ -308,7 +308,7 @@ const ContestCategoryOrderTable = () => {
                                                           id={gradeId + "grade"}
                                                         >
                                                           <div className="flex w-full">
-                                                            <span className="mr-5">
+                                                            <span className="mr-5 text-sm">
                                                               {gradeTitle}
                                                             </span>
                                                           </div>

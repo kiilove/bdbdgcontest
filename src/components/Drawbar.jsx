@@ -25,7 +25,7 @@ const Drawbar = ({ setOpen }) => {
 
   const handleSubMenuClick = (parentIdx, subIdx) => {
     setOpen();
-    navigate(MenuArray[parentIdx].subMenus[subIdx].link);
+    navigate(MenuArray[parentIdx].subMenus[subIdx + 1].link);
   };
 
   useEffect(() => {

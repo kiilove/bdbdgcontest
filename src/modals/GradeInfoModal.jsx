@@ -72,6 +72,7 @@ const GradeInfoModal = ({ setClose, propState, setState }) => {
           contestGradeId: uuidv4(),
           contestGradeIndex: parseInt(updatedGradeInfo.contestGradeIndex),
           refCategoryId: propState.categoryId,
+          isCompared: false,
         });
 
         await handleSaveGrades(dummy);
@@ -216,6 +217,33 @@ const GradeInfoModal = ({ setClose, propState, setState }) => {
               </div>
             </div>
           </div>
+          {/* <div className="flex w-full justify-start items-center ">
+            <div className="flex w-1/4 justify-end mr-2">
+              <h3
+                className="font-sans font-semibold"
+                style={{ letterSpacing: "2px" }}
+              >
+                비교심사
+              </h3>
+            </div>
+            <div className="h-12 w-3/4 rounded-lg px-3 bg-white">
+              <div className="flex w-full justify-start items-center">
+                <input
+                  type="checkbox"
+                  name="isCompared"
+                  onChange={(e) =>
+                    setGradeInfo({
+                      ...gradeInfo,
+                      isCompared: e.target.checked,
+                    })
+                  }
+                  checked={gradeInfo.isCompared}
+                  ref={(ref) => (gradeInfoRef.current.isCompared = ref)}
+                  className="h-12 outline-none"
+                />
+              </div>
+            </div>
+          </div> */}
         </div>
       </div>
       <div className="flex w-full gap-x-2 h-auto">

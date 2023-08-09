@@ -32,6 +32,9 @@ const ConfirmationModal = ({ isOpen, onConfirm, onCancel, message }) => {
             {message.body3 && (
               <h2 className="font-semibold">{message.body3}</h2>
             )}
+            {message.body4 && (
+              <h2 className="text-sm font-normal">{message.body4}</h2>
+            )}
           </div>
           {message.isButton === true && (
             <div className="flex justify-center gap-x-5 mt-5">
