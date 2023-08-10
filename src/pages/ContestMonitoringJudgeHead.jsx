@@ -20,8 +20,10 @@ import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
 import ConfirmationModal from "../messageBox/ConfirmationModal";
 import { where } from "firebase/firestore";
+import { Modal } from "@mui/material";
+import CompareSetting from "../modals/CompareSetting";
 
-const ContestMonitoringBasecamp = () => {
+const ContestMonitoringJudgeHead = () => {
   const navigate = useNavigate();
   const { currentContest } = useContext(CurrentContestContext);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,8 +33,13 @@ const ContestMonitoringBasecamp = () => {
   const [msgOpen, setMsgOpen] = useState(false);
   const [message, setMessage] = useState({});
 
+  const [compareOpen, setCompareOpen] = useState(false);
+
   const [stagesArray, setStagesArray] = useState([]);
   const [playersArray, setPlayersArray] = useState([]);
+  const [currentStageMatchedPlayers, setCurrentStageMatchedPlayers] = useState(
+    []
+  );
   const [currentStageInfo, setCurrentStageInfo] = useState({ stageId: null });
   const [currentRealtime, setCurrentRealtime] = useState({});
 
@@ -77,10 +84,7 @@ const ContestMonitoringBasecamp = () => {
 
         Promise.all(promises);
 
-        // 1초 후에 setIsLoading을 false로 설정
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 2000);
+        setIsLoading(false);
       }
     } catch (error) {
       setMessage({
@@ -248,6 +252,13 @@ const ContestMonitoringBasecamp = () => {
       playersArray?.length > 0
     ) {
       handleScoreTableByJudge(currentStageInfo.grades);
+      setCurrentStageMatchedPlayers(
+        playersArray
+          .filter(
+            (f) => f.contestGradeId === currentStageInfo.grades[0].gradeId
+          )
+          .sort((a, b) => a.playerIndex - b.playerIndex)
+      );
     }
   }, [
     fetchRealTimeCurrentStage?.stageJudgeCount,
@@ -271,14 +282,19 @@ const ContestMonitoringBasecamp = () => {
             onCancel={() => setMsgOpen(false)}
             onConfirm={() => setMsgOpen(false)}
           />
+          <Modal open={compareOpen} onClose={() => setCompareOpen(false)}>
+            <CompareSetting
+              stageInfo={currentStageInfo}
+              setClose={setCompareOpen}
+              gradeListId={currentContest.contests.contestGradesListId}
+              fullMatched={currentStageMatchedPlayers}
+            />
+          </Modal>
           <div className="flex w-full h-auto">
             <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-3">
               <div className="flex w-4/5 px-2 flex-col gap-y-2">
                 <h1 className="font-sans text-base font-semibold">
                   대회명 : {contestInfo.contestTitle}
-                </h1>
-                <h1 className="font-sans text-base font-semibold">
-                  채점표DB : {contestInfo.contestCollectionName}
                 </h1>
                 <h1 className="font-sans text-base font-semibold">
                   모니터링상태 :{" "}
@@ -316,75 +332,34 @@ const ContestMonitoringBasecamp = () => {
             </div>
           </div>
           <div className="flex flex-col w-full h-auto">
-            <div className="flex w-full h-auto justify-start items-center">
-              <button className="w-40 h-10 bg-blue-500 text-gray-100 rounded-t-lg">
-                현재 무대상황
-              </button>
-              <button className="w-40 h-10 bg-white text-gray-700 rounded-t-lg border-t border-r">
-                전체 무대목록
-              </button>
-            </div>
-            <div className="flex w-full h-auto justify-start items-center bg-blue-100 rounded-tr-lg rounded-b-lg p-2">
+            <div className="flex w-full h-auto justify-start items-center bg-blue-100 rounded-lg rounded-b-lg p-2">
               {currentRealtime && (
                 <div className="flex w-full flex-col h-auto gap-y-2">
                   <div className="flex bg-white p-2 w-full h-auto rounded-lg flex-col justify-center items-start">
-                    <div className="flex w-full h-10 justify-start items-center">
-                      <span className="font-bold text-lg">진행상황</span>
-                    </div>
-                    <div className="flex w-full h-10 justify-start items-center">
-                      <span className="font-semibold">
-                        {currentRealtime?.categoryTitle}(
-                        {currentRealtime?.gradeTitle})
-                      </span>
-                    </div>
-                    <div className="flex w-full h-auto flex-wrap box-border flex-col">
-                      {/* table Header */}
-                      <div className="flex w-full h-10 text-lg ">
-                        {currentRealtime?.judges &&
-                          currentRealtime.judges.map((judge, jIdx) => {
-                            const { seatIndex } = judge;
-
-                            return (
-                              <div
-                                className="h-full p-2 justify-center items-center flex last:border-l-0 border-blue-400 border-y border-r bg-blue-200 first:border-l w-full"
-                                style={{ maxWidth: "15%" }}
-                              >
-                                {seatIndex}
-                              </div>
-                            );
-                          })}
+                    <div className="flex w-full h-14 justify-start items-center px-2">
+                      <div className="flex w-2/3 justify-start items-center h-auto">
+                        <span className="font-bold text-lg">집계상황</span>
+                        <button
+                          className="ml-2 w-20 h-auto p-2 bg-blue-200 rounded-lg"
+                          onClick={() =>
+                            handleForceScoreTableRefresh(
+                              currentStageInfo.grades
+                            )
+                          }
+                        >
+                          새로고침
+                        </button>
                       </div>
-                      {/* 상황판 */}
-                      <div className="flex w-full h-auto text-lg bg-gray-100 items-start">
-                        {currentRealtime?.judges &&
-                          currentRealtime.judges.map((judge, jIdx) => {
-                            const { isEnd, isLogined } = judge;
-
-                            return (
-                              <div
-                                className="h-full p-2 justify-center items-start flex last:border-l-0 border-blue-400 border-y border-r border-t-0 text-sm first:border-l w-full"
-                                style={{ maxWidth: "15%" }}
-                              >
-                                {isEnd && isLogined && "심사종료"}
-                                {!isEnd && isLogined && "심사중"}
-                                {!isEnd && !isLogined && "로그인대기"}
-                              </div>
-                            );
-                          })}
+                      <div className="flex w-1/3 justify-end items-center h-full">
+                        <button
+                          className="w-full h-full bg-orange-600 rounded-lg"
+                          onClick={() => setCompareOpen(true)}
+                        >
+                          <span className=" text-lg text-white font-semibold">
+                            비교심사시작
+                          </span>
+                        </button>
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex bg-white p-2 w-full h-auto rounded-lg flex-col justify-center items-start">
-                    <div className="flex w-full h-10 justify-start items-center">
-                      <span className="font-bold text-lg">집계상황</span>
-                      <button
-                        className="ml-2"
-                        onClick={() =>
-                          handleForceScoreTableRefresh(currentStageInfo.grades)
-                        }
-                      >
-                        새로고침
-                      </button>
                     </div>
                     {currentStageInfo?.grades?.length > 0 &&
                       currentStageInfo.grades.map((grade, gIdx) => {
@@ -423,7 +398,7 @@ const ContestMonitoringBasecamp = () => {
                             </div>
                             {filterdPlayers.map((player, pIdx) => {
                               const { playerNumber } = player;
-                              console.log(currentStageInfo);
+
                               return (
                                 <div className="flex">
                                   <div
@@ -436,14 +411,12 @@ const ContestMonitoringBasecamp = () => {
                                     currentRealtime?.judges.map(
                                       (judge, jIdx) => {
                                         const { seatIndex } = judge;
-                                        console.log("first");
+
                                         const finded = normalScoreData.find(
                                           (f) =>
                                             f.playerNumber === playerNumber &&
                                             f.seatIndex === seatIndex
                                         );
-
-                                        console.log(finded);
 
                                         return (
                                           <div
@@ -564,4 +537,4 @@ const ContestMonitoringBasecamp = () => {
   );
 };
 
-export default ContestMonitoringBasecamp;
+export default ContestMonitoringJudgeHead;

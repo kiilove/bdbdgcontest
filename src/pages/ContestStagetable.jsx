@@ -106,7 +106,9 @@ const ContestStagetable = () => {
             } = grade;
 
             const matchedPlayers = playersArray.filter(
-              (player) => player.contestGradeId === gradeId
+              (player) =>
+                player.contestGradeId === gradeId &&
+                player.playerNoShow === false
             );
 
             if (matchedPlayers?.length === 0) {

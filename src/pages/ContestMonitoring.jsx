@@ -7,6 +7,7 @@ import { useContext } from "react";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 
 import ContestMonitoringBasecamp from "./ContestMonitoringBasecamp";
+import ContestMonitoringJudgeHead from "./ContestMonitoringJudgeHead";
 
 const ContestMonitoring = () => {
   const { currentContest } = useContext(CurrentContestContext);
@@ -76,6 +77,7 @@ const ContestMonitoring = () => {
                   ))}
                 </div>
                 {currentTab === 0 && <ContestMonitoringBasecamp />}
+                {currentTab === 1 && <ContestMonitoringJudgeHead />}
               </div>
             </div>
           </div>
