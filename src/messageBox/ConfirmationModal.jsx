@@ -38,20 +38,22 @@ const ConfirmationModal = ({ isOpen, onConfirm, onCancel, message }) => {
           </div>
           {message.isButton === true && (
             <div className="flex justify-center gap-x-5 mt-5">
-              {message.cancelButtonText && (
-                <button
-                  className="bg-gray-200 hover:bg-gray-300 rounded py-2 px-4 mr-4 text-sm"
-                  onClick={handleCancelClick}
-                >
-                  {message.cancelButtonText}
-                </button>
-              )}
               {message.confirmButtonText && (
                 <button
-                  className="bg-red-500 hover:bg-red-600 text-white rounded py-1 px-4 text-sm"
+                  className="bg-red-500 hover:bg-red-700 text-white rounded py-1 px-4 text-sm"
                   onClick={handleConfirmClick}
+                  style={{ minWidth: "100px" }}
                 >
                   {message.confirmButtonText}
+                </button>
+              )}
+              {message.cancelButtonText && (
+                <button
+                  className="bg-gray-300 hover:bg-gray-500 rounded py-2 px-4 mr-4 text-sm"
+                  onClick={handleCancelClick}
+                  style={{ minWidth: "100px" }}
+                >
+                  {message.cancelButtonText}
                 </button>
               )}
             </div>

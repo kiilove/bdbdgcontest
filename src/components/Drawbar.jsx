@@ -7,7 +7,7 @@ import { MenuArray } from "./Menus";
 const Drawbar = ({ setOpen }) => {
   const navigate = useNavigate();
   const [menuVisible, setMenuVisible] = useState({
-    menuIndex: -1,
+    menuIndex: 0,
     isHidden: true,
   });
 
@@ -18,8 +18,14 @@ const Drawbar = ({ setOpen }) => {
         isHidden: !prevState.isHidden || prevState.menuIndex !== idx,
       }));
     } else {
-      setOpen(); // subMenus를 클릭해서 페이지 이동 시 창 닫기
       navigate(MenuArray[idx].link);
+      // subMenus가 없을 때만 메뉴 상태를 업데이트합니다.
+      if (!MenuArray[idx].subMenus) {
+        setMenuVisible((prevState) => ({
+          menuIndex: idx,
+          isHidden: false,
+        }));
+      }
     }
   };
 
@@ -68,19 +74,22 @@ const Drawbar = ({ setOpen }) => {
               <div className="flex flex-col text-gray-200 text-base bg-sky-700 w-full">
                 {menu.subMenus
                   .filter((sub) => sub.isActive === true)
-                  .map((subMenus, sIdx) => (
+                  .map((subMenu, sIdx) => (
                     <div className="flex w-full">
-                      <div className="flex w-full h-12" key={subMenus.id}>
+                      <div className="flex w-full h-12" key={subMenu.id}>
                         <button
                           className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
-                          onClick={() => handleSubMenuClick(idx, sIdx)}
+                          onClick={() => {
+                            navigate(subMenu?.link);
+                            setOpen();
+                          }}
                         >
                           <div className="flex justify-start items-center">
                             <span className="text-base text-white mr-2">
-                              {subMenus?.icon}
+                              {subMenu?.icon}
                             </span>
                             <span className="text-sm text-white">
-                              {subMenus.title}
+                              {subMenu.title}
                             </span>
                           </div>
                         </button>

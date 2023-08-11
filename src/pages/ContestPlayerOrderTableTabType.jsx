@@ -78,28 +78,35 @@ const ContestPlayerOrderTable = () => {
         "contest_entrys_list",
         condition
       );
-      setEntrysArray([...returnEntrys]);
 
       const returnPlayersAssign = await fetchPlayersAssignDocument.getDocument(
         currentContest.contests.contestPlayersAssignId
       );
 
-      setPlayersAssign({ ...returnPlayersAssign });
-      setPlayersArray([...returnPlayersAssign?.players]);
-
       const returnPlayersFinal = await fetchPlayersFinalDocument.getDocument(
         currentContest.contests.contestPlayersFinalId
       );
 
-      setPlayersFinal({ ...returnPlayersFinal });
+      const promises = [
+        setEntrysArray([...returnEntrys]),
+        setPlayersAssign({ ...returnPlayersAssign }),
+        setPlayersArray([...returnPlayersAssign?.players]),
+        setPlayersFinal({ ...returnPlayersFinal }),
+      ];
+
+      Promise.all(promises).then(() => console.log("상태값 설정완료"));
     }
   };
 
-  const initEntryList = () => {
-    setIsLoading(true);
-    setEntryTitle(() => "초기명단/계측명단 출력불가능");
+  const initEntryList = async () => {
     let dummy = [];
     let playerNumber = 0;
+
+    const condition = [where("contestId", "==", currentContest.contests.id)];
+
+    await fetchEntry
+      .getDocuments("contest_entrys_list", condition)
+      .then((data) => setEntrysArray(() => [...data]));
 
     categorysArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
@@ -116,14 +123,10 @@ const ContestPlayerOrderTable = () => {
             const matchedPlayers = entrysArray.filter(
               (entry) => entry.contestGradeId === grade.contestGradeId
             );
-            // .sort((a, b) => {
-            //   const dateA = new Date(a.invoiceCreateAt);
-            //   const dateB = new Date(b.invoiceCreateAt);
-            //   return dateA.getTime() - dateB.getTime();
-            // });
 
             matchedPlayers.map((player, pIdx) => {
               playerNumber++;
+
               const newPlayer = {
                 ...player,
                 playerNumber,
@@ -143,63 +146,8 @@ const ContestPlayerOrderTable = () => {
           });
       });
 
-    setMatchedArray([...dummy]);
-    setIsLoading(false);
-  };
-
-  const fetchEntryList = () => {
-    setIsLoading(true);
-    let dummy = [];
-    setEntryTitle(() => "저장된명단/계측명단 출력가능");
-
-    categorysArray
-      .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
-      .map((category, cIdx) => {
-        const matchedGrades = gradesArray.filter(
-          (grade) => grade.refCategoryId === category.contestCategoryId
-        );
-        const matchedGradesLength = matchedGrades.length;
-
-        matchedGrades
-          .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
-          .map((grade, gIdx) => {
-            const matchedPlayerWithPlayerNumber = [];
-            const matchedPlayers = playersArray.filter(
-              (entry) => entry.contestGradeId === grade.contestGradeId
-            );
-            // .sort((a, b) => {
-            //   const dateA = new Date(a.invoiceCreateAt);
-            //   const dateB = new Date(b.invoiceCreateAt);
-            //   return dateA.getTime() - dateB.getTime();
-            // });
-
-            matchedPlayers
-              .sort((a, b) => a.playerIndex - b.playerIndex)
-              .map((player, pIdx) => {
-                const { playerNumber } = player;
-
-                const newPlayer = {
-                  ...player,
-                  playerNumber,
-                  playerNoShow: false,
-                  playerIndex: playerNumber,
-                };
-                matchedPlayerWithPlayerNumber.push({ ...newPlayer });
-              });
-
-            const matchedInfo = {
-              ...category,
-              ...grade,
-              matchedPlayers: matchedPlayerWithPlayerNumber,
-              matchedGradesLength,
-            };
-            dummy.push({ ...matchedInfo });
-          });
-      });
-
-    setMatchedArray([...dummy]);
-
-    setIsLoading(false);
+    const promises = [setMatchedArray([...dummy]), setIsLoading(false)];
+    Promise.all(promises).then(() => console.log("초기화됨"));
   };
 
   const handleUpdatePlayersAssign = async (assignId, finalId) => {
@@ -267,9 +215,7 @@ const ContestPlayerOrderTable = () => {
   }, [currentContest]);
 
   useEffect(() => {
-    if (categorysArray.length > 0 && playersArray?.length > 0) {
-      fetchEntryList();
-    } else if (categorysArray.length > 0 && playersArray?.length === 0) {
+    if (categorysArray.length > 0 && playersArray?.length === 0) {
       initEntryList();
     }
   }, [categorysArray, gradesArray, entrysArray, playersArray]);
@@ -294,20 +240,6 @@ const ContestPlayerOrderTable = () => {
             <div className="flex w-full justify-start items-center">
               <div className="flex w-full h-full justify-start lg:px-2 lg:pt-2 flex-col bg-gray-100 rounded-lg gap-y-2">
                 <div className="flex w-full gap-x-5">
-                  <button
-                    className="w-full h-12 bg-gradient-to-l from-green-300 to-green-200 rounded-lg"
-                    onClick={() => {
-                      initEntryList();
-                      setMessage({
-                        body: "초기화되었습니다.",
-                        isButton: true,
-                        confirmButtonText: "확인",
-                      });
-                      setMsgOpen(true);
-                    }}
-                  >
-                    초기화(신규등록선수 있을경우)
-                  </button>
                   <button
                     className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-200 rounded-lg"
                     onClick={() =>
@@ -336,6 +268,7 @@ const ContestPlayerOrderTable = () => {
                         matchedPlayers,
                         matchedGradesLength: gradeLength,
                       } = matched;
+                      // console.log(matchedArray);
 
                       if (matchedPlayers.length === 0) {
                         return null;
@@ -343,7 +276,6 @@ const ContestPlayerOrderTable = () => {
                         dummyArray.push(...matchedPlayers);
                       }
 
-                      let categoryNumber = 0;
                       return (
                         <div
                           className="flex w-full h-auto bg-blue-300 flex-col rounded-lg"
@@ -360,8 +292,12 @@ const ContestPlayerOrderTable = () => {
                                   <div className="flex w-full border-b border-gray-300 h-8 items-center text-sm lg:px-2">
                                     <div className="flex w-1/6">순번</div>
                                     <div className="flex w-1/6">선수번호</div>
-                                    <div className="flex w-1/6">이름</div>
-                                    <div className="flex w-1/6">소속</div>
+                                    <div className="flex w-2/6 lg:w-1/6">
+                                      이름
+                                    </div>
+                                    <div className="flex w-2/6 lg:w-1/6">
+                                      소속
+                                    </div>
                                     <div className="hidden lg:flex w-1/6">
                                       신청일
                                     </div>
@@ -411,32 +347,34 @@ const ContestPlayerOrderTable = () => {
                                                       {...provided.dragHandleProps}
                                                       {...provided.draggableProps}
                                                     >
-                                                      <div className="flex w-1/6">
+                                                      <div className="flex w-1/6 lg:text-base">
                                                         {pIdx + 1}
                                                       </div>
-                                                      <div className="flex w-1/6">
+                                                      <div className="flex w-1/6 lg:text-base">
                                                         {playerNumber}
                                                       </div>
-                                                      <div className="flex w-1/6 justify-start items-center gap-x-2">
+                                                      <div className="flex w-2/6 lg:w-1/6 justify-start items-center gap-x-2 lg:text-base">
                                                         {playerName}{" "}
                                                         {createBy ===
                                                           "manual" && (
-                                                          <span className="text-green-600 text-lg">
+                                                          <span className="text-green-600 text-lg lg:text-base">
                                                             <TfiWrite />
                                                           </span>
                                                         )}
-                                                        {createBy ===
-                                                          undefined && (
+                                                        {(createBy ===
+                                                          undefined ||
+                                                          createBy ===
+                                                            "web") && (
                                                           <span className="text-blue-600 text-lg">
                                                             <TbWorldWww />
                                                           </span>
                                                         )}
                                                       </div>
-                                                      <div className="flex w-1/6">
+                                                      <div className="flex w-2/6 lg:w-1/6 lg:text-base">
                                                         {playerGym}
                                                       </div>
 
-                                                      <div className="hidden lg:flex w-1/6">
+                                                      <div className="hidden lg:flex w-1/6 lg:text-base">
                                                         {invoiceCreateAt}
                                                       </div>
                                                     </div>

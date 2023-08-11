@@ -220,7 +220,7 @@ const ContestMonitoringBasecamp = () => {
     setCurrentRealtime(fetchRealTimeCurrentStage);
     setCurrentStageInfo({
       ...stagesArray.find(
-        (f) => f.stageId === fetchRealTimeCurrentStage.stageId
+        (f) => f.stageId === fetchRealTimeCurrentStage?.stageId
       ),
     });
   }, [fetchRealTimeCurrentStage]);
@@ -436,14 +436,11 @@ const ContestMonitoringBasecamp = () => {
                                     currentRealtime?.judges.map(
                                       (judge, jIdx) => {
                                         const { seatIndex } = judge;
-                                        console.log("first");
                                         const finded = normalScoreData.find(
                                           (f) =>
                                             f.playerNumber === playerNumber &&
                                             f.seatIndex === seatIndex
                                         );
-
-                                        console.log(finded);
 
                                         return (
                                           <div

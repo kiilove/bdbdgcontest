@@ -179,12 +179,11 @@ export function useFirebaseRealtimeUpdateData() {
 export function useFirebaseRealtimeDeleteData() {
   const [data, setData] = useState(null);
 
-  const deleteData = async (collectionInfo, id) => {
+  const deleteData = async (collectionInfo) => {
     try {
-      const dataRef = ref(database, `${collectionInfo}/${id}`);
+      const dataRef = ref(database, `${collectionInfo}`);
       await remove(dataRef);
 
-      setData(id);
       return true;
     } catch (error) {
       console.error(error);

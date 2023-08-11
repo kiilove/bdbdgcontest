@@ -12,6 +12,7 @@ import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { useEffect } from "react";
 import {
   useFirebaseRealtimeAddData,
+  useFirebaseRealtimeDeleteData,
   useFirebaseRealtimeGetDocument,
   useFirebaseRealtimeQuery,
   useFirebaseRealtimeUpdateData,
@@ -26,6 +27,13 @@ import CompareSetting from "../modals/CompareSetting";
 const ContestMonitoringJudgeHead = () => {
   const navigate = useNavigate();
   const { currentContest } = useContext(CurrentContestContext);
+  const [compareMode, setCompareMode] = useState({
+    isCompare: false,
+    compareStart: false,
+    compareEnd: false,
+    compareCancel: false,
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [isHolding, setIsHolding] = useState(false);
   const [contestInfo, setContestInfo] = useState({});
@@ -34,7 +42,10 @@ const ContestMonitoringJudgeHead = () => {
   const [message, setMessage] = useState({});
 
   const [compareOpen, setCompareOpen] = useState(false);
-
+  const [votedInfo, setVotedInfo] = useState({
+    playerLength: undefined,
+    scoreMode: undefined,
+  });
   const [stagesArray, setStagesArray] = useState([]);
   const [playersArray, setPlayersArray] = useState([]);
   const [currentStageMatchedPlayers, setCurrentStageMatchedPlayers] = useState(
@@ -58,6 +69,7 @@ const ContestMonitoringJudgeHead = () => {
 
   const addCurrentStage = useFirebaseRealtimeAddData();
   const updateCurrentStage = useFirebaseRealtimeUpdateData();
+  const deleteCurrentStage = useFirebaseRealtimeDeleteData();
 
   const fetchPool = async (noticeId, stageAssignId, playerFinalId) => {
     try {
@@ -206,6 +218,34 @@ const ContestMonitoringJudgeHead = () => {
     });
   };
 
+  const handleCompareAdd = async (contestId, data, comparesData) => {};
+  const handleCompareCancel = async (contestId, data) => {
+    const collectionInfoByIsCompared = `currentStage/${contestId}`;
+    const collectionInfoByCompares = `currentStage/${contestId}/compares`;
+
+    try {
+      await updateCurrentStage
+        .updateData(collectionInfoByIsCompared, {
+          ...data,
+          isCompared: false,
+        })
+        .then((data) => console.log(data));
+      await deleteCurrentStage
+        .deleteData(collectionInfoByCompares)
+        .then((data) => console.log(data))
+        .then(() =>
+          setCompareMode(() => ({
+            isCompare: false,
+            compareStart: false,
+            compareEnd: false,
+            compareCancel: true,
+          }))
+        );
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     if (
       currentContest?.contests?.contestNoticeId &&
@@ -224,7 +264,7 @@ const ContestMonitoringJudgeHead = () => {
     setCurrentRealtime(fetchRealTimeCurrentStage);
     setCurrentStageInfo({
       ...stagesArray.find(
-        (f) => f.stageId === fetchRealTimeCurrentStage.stageId
+        (f) => f.stageId === fetchRealTimeCurrentStage?.stageId
       ),
     });
   }, [fetchRealTimeCurrentStage]);
@@ -233,10 +273,7 @@ const ContestMonitoringJudgeHead = () => {
     if (!isHolding && currentContest?.contests?.id) {
       const debouncedGetDocument = debounce(
         () =>
-          currentStageFunction(
-            `currentStage/${currentContest.contests.id}`,
-            currentContest.contests.id
-          ),
+          currentStageFunction(`currentStage/${currentContest.contests.id}`),
         2000
       );
       debouncedGetDocument();
@@ -267,6 +304,26 @@ const ContestMonitoringJudgeHead = () => {
     currentStageInfo,
   ]);
 
+  useEffect(() => {
+    if (compareMode.isCompare) {
+      setCompareOpen(true);
+    }
+  }, [compareMode]);
+
+  useEffect(() => {
+    if (
+      votedInfo.playerLength !== undefined &&
+      votedInfo.scoreMode !== undefined
+    ) {
+      setCompareMode(() => ({
+        isCompare: true,
+        compareStart: true,
+        compareEnd: false,
+        compareCancel: false,
+      }));
+    }
+  }, [votedInfo]);
+
   return (
     <>
       {isLoading && (
@@ -288,6 +345,8 @@ const ContestMonitoringJudgeHead = () => {
               setClose={setCompareOpen}
               gradeListId={currentContest.contests.contestGradesListId}
               fullMatched={currentStageMatchedPlayers}
+              setState={setVotedInfo}
+              setState2={setCompareMode}
             />
           </Modal>
           <div className="flex w-full h-auto">
@@ -320,124 +379,184 @@ const ContestMonitoringJudgeHead = () => {
                     모니터링 시작
                   </button>
                 )}
-                {!currentRealtime?.stageId && !isHolding && (
-                  <button
-                    className="bg-blue-400 w-full h-full text-white text-lg rounded-lg"
-                    onClick={() => handleAddCurrentStage()}
-                  >
-                    대회시작
-                  </button>
-                )}
               </div>
             </div>
           </div>
           <div className="flex flex-col w-full h-auto">
             <div className="flex w-full h-auto justify-start items-center bg-blue-100 rounded-lg rounded-b-lg p-2">
-              {currentRealtime && (
-                <div className="flex w-full flex-col h-auto gap-y-2">
-                  <div className="flex bg-white p-2 w-full h-auto rounded-lg flex-col justify-center items-start">
-                    <div className="flex w-full h-14 justify-start items-center px-2">
-                      <div className="flex w-2/3 justify-start items-center h-auto">
-                        <span className="font-bold text-lg">집계상황</span>
-                        <button
-                          className="ml-2 w-20 h-auto p-2 bg-blue-200 rounded-lg"
-                          onClick={() =>
-                            handleForceScoreTableRefresh(
-                              currentStageInfo.grades
-                            )
-                          }
-                        >
-                          새로고침
-                        </button>
-                      </div>
-                      <div className="flex w-1/3 justify-end items-center h-full">
-                        <button
-                          className="w-full h-full bg-orange-600 rounded-lg"
-                          onClick={() => setCompareOpen(true)}
-                        >
-                          <span className=" text-lg text-white font-semibold">
-                            비교심사시작
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                    {currentStageInfo?.grades?.length > 0 &&
-                      currentStageInfo.grades.map((grade, gIdx) => {
-                        const { categoryTitle, gradeTitle, gradeId } = grade;
-                        const filterdPlayers = playersArray
-                          .filter(
-                            (f) =>
-                              f.contestGradeId === gradeId &&
-                              f.playerNoShow === false
-                          )
-                          .sort((a, b) => a.playerIndex - b.playerIndex);
-                        return (
-                          <div className="flex w-full h-auto p-2 flex-col">
-                            <div className="flex w-full h-10 justify-start items-center">
-                              {categoryTitle}({gradeTitle})
+              <div className="flex w-full h-auto gap-y-2 flex-col">
+                {currentRealtime && (
+                  <div
+                    className="flex bg-gray-100 p-2 w-full h-auto rounded-lg flex-col justify-center items-start"
+                    style={{ minHeight: "100px" }}
+                  >
+                    {!compareMode.isCompare && (
+                      <button
+                        className="bg-blue-400 w-full h-full p-2 rounded-lg text-gray-100 text-lg font-semibold"
+                        style={{ minHeight: "80px" }}
+                        onClick={() =>
+                          setCompareMode(() => ({
+                            ...compareMode,
+                            isCompare: true,
+                          }))
+                        }
+                      >
+                        비교심사시작
+                      </button>
+                    )}
+                    {compareMode.isCompare &&
+                      (votedInfo.playerLength === undefined ||
+                        votedInfo.scoreMode === undefined) && (
+                        <div className="flex w-full h-auto p-2 justify-start items-start flex-col ">
+                          <div className="flex w-full h-10">
+                            <div className="flex w-full h-auto justify-center items-center">
+                              비교 심사설정이 완료되지 않았습니다.
                             </div>
-                            <div className="flex w-full h-10 justify-start items-center">
-                              <div
-                                className="h-full p-2 justify-center items-start flex w-full border border-gray-400 border-b-2"
-                                style={{ maxWidth: "15%" }}
-                              >
-                                구분
+                          </div>
+                          <div className="flex w-full h-10 justify-center items-center gap-x-2">
+                            <button
+                              className="bg-blue-200 w-28 h-full rounded-lg p-2"
+                              onClick={() => setCompareOpen(true)}
+                            >
+                              설정화면이동
+                            </button>
+                            <button
+                              className="bg-red-200 w-28 h-full rounded-lg p-2"
+                              onClick={() =>
+                                handleCompareCancel(
+                                  currentContest.contests.id,
+                                  currentRealtime
+                                )
+                              }
+                            >
+                              비교심사취소
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    {compareMode.isCompare && compareMode.compareStart && (
+                      <div className="flex w-full h-auto p-2 justify-start items-start flex-col ">
+                        <div className="flex w-full h-10">
+                          <div className="flex w-full h-auto justify-center items-center">
+                            심사대상 인원 : {votedInfo?.playerLength} / 채점모드
+                            : {votedInfo?.scoreMode}
+                          </div>
+                        </div>
+                        <div className="flex w-full h-10 justify-center items-center gap-x-2">
+                          <button
+                            className="bg-red-200 w-28 h-full rounded-lg p-2"
+                            onClick={() =>
+                              handleCompareCancel(
+                                currentContest.contests.id,
+                                currentRealtime
+                              )
+                            }
+                          >
+                            비교심사취소
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {currentRealtime && (
+                  <div className="flex w-full flex-col h-auto gap-y-2">
+                    <div className="flex bg-white p-2 w-full h-auto rounded-lg flex-col justify-center items-start">
+                      <div className="flex w-full h-14 justify-start items-center px-2">
+                        <div className="flex w-2/3 justify-start items-center h-auto">
+                          <span className="font-bold text-lg">집계상황</span>
+                          <button
+                            className="ml-2 w-20 h-auto p-2 bg-blue-200 rounded-lg"
+                            onClick={() =>
+                              handleForceScoreTableRefresh(
+                                currentStageInfo.grades
+                              )
+                            }
+                          >
+                            새로고침
+                          </button>
+                        </div>
+                      </div>
+
+                      {currentStageInfo?.grades?.length > 0 &&
+                        currentStageInfo.grades.map((grade, gIdx) => {
+                          const { categoryTitle, gradeTitle, gradeId } = grade;
+                          const filterdPlayers = playersArray
+                            .filter(
+                              (f) =>
+                                f.contestGradeId === gradeId &&
+                                f.playerNoShow === false
+                            )
+                            .sort((a, b) => a.playerIndex - b.playerIndex);
+                          return (
+                            <div className="flex w-full h-auto p-2 flex-col">
+                              <div className="flex w-full h-10 justify-start items-center">
+                                {categoryTitle}({gradeTitle})
                               </div>
-                              {currentRealtime?.judges &&
-                                currentRealtime.judges.map((judge, jIdx) => {
-                                  const { seatIndex } = judge;
-                                  return (
+                              <div className="flex w-full h-10 justify-start items-center">
+                                <div
+                                  className="h-full p-2 justify-center items-start flex w-full border border-gray-400 border-b-2"
+                                  style={{ maxWidth: "15%" }}
+                                >
+                                  구분
+                                </div>
+                                {currentRealtime?.judges &&
+                                  currentRealtime.judges.map((judge, jIdx) => {
+                                    const { seatIndex } = judge;
+                                    return (
+                                      <div
+                                        className="h-full p-2 justify-center items-start flex w-full border-t border-b-2 border-r border-gray-400 "
+                                        style={{ maxWidth: "15%" }}
+                                      >
+                                        {seatIndex}
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                              {filterdPlayers.map((player, pIdx) => {
+                                const { playerNumber } = player;
+
+                                return (
+                                  <div className="flex">
                                     <div
-                                      className="h-full p-2 justify-center items-start flex w-full border-t border-b-2 border-r border-gray-400 "
+                                      className="h-full p-2 justify-center items-start flex w-full border-l border-b border-r  border-gray-400 "
                                       style={{ maxWidth: "15%" }}
                                     >
-                                      {seatIndex}
+                                      {playerNumber}
                                     </div>
-                                  );
-                                })}
-                            </div>
-                            {filterdPlayers.map((player, pIdx) => {
-                              const { playerNumber } = player;
+                                    {currentRealtime?.judges?.length > 0 &&
+                                      currentRealtime?.judges.map(
+                                        (judge, jIdx) => {
+                                          const { seatIndex } = judge;
 
-                              return (
-                                <div className="flex">
-                                  <div
-                                    className="h-full p-2 justify-center items-start flex w-full border-l border-b border-r  border-gray-400 "
-                                    style={{ maxWidth: "15%" }}
-                                  >
-                                    {playerNumber}
+                                          const finded = normalScoreData.find(
+                                            (f) =>
+                                              f.playerNumber === playerNumber &&
+                                              f.seatIndex === seatIndex
+                                          );
+
+                                          return (
+                                            <div
+                                              className="h-auto p-2 justify-center items-start flex w-full  border-r border-b border-gray-400 "
+                                              style={{ maxWidth: "15%" }}
+                                            >
+                                              {finded?.playerScore || ""}
+                                            </div>
+                                          );
+                                        }
+                                      )}
                                   </div>
-                                  {currentRealtime?.judges?.length > 0 &&
-                                    currentRealtime?.judges.map(
-                                      (judge, jIdx) => {
-                                        const { seatIndex } = judge;
-
-                                        const finded = normalScoreData.find(
-                                          (f) =>
-                                            f.playerNumber === playerNumber &&
-                                            f.seatIndex === seatIndex
-                                        );
-
-                                        return (
-                                          <div
-                                            className="h-auto p-2 justify-center items-start flex w-full  border-r border-b border-gray-400 "
-                                            style={{ maxWidth: "15%" }}
-                                          >
-                                            {finded?.playerScore || ""}
-                                          </div>
-                                        );
-                                      }
-                                    )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>{" "}
+                )}
+              </div>
+            </div>
           </div>
 
           {/* <div className="flex w-full h-auto">

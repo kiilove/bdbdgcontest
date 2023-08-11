@@ -257,7 +257,7 @@ const ContestInvoiceTable = () => {
             playerTel,
             playerText,
             invoiceCreateAt,
-            createBy,
+            createBy: createBy || "web",
             contestCategoryTitle,
             contestCategoryId,
             contestGradeTitle,
@@ -397,7 +397,7 @@ const ContestInvoiceTable = () => {
                             />
                           )}
                         </td>
-                        <td className="text-left w-1/12 text-sm  lg:text-base">
+                        <td className="text-left w-1/12 text-sm lg:text-lg">
                           <div className="flex flex-col">
                             <span
                               onClick={() => handleInvoiceModal(id, filtered)}
@@ -419,16 +419,16 @@ const ContestInvoiceTable = () => {
                             )}
                           </div>
                         </td>
-                        <td className="text-left w-2/12 text-sm  lg:text-base">
+                        <td className="text-left w-2/12 text-sm  lg:text-lg">
                           {playerTel}
                         </td>
-                        <td className="text-left w-2/12 hidden lg:table-cell text-sm  lg:text-base">
+                        <td className="text-left w-2/12 hidden lg:table-cell text-sm  lg:text-lg">
                           {playerBirth}
                         </td>
-                        <td className="text-left w-2/12 hidden lg:table-cell">
+                        <td className="text-left w-2/12 hidden lg:table-cell text-sm  lg:text-lg">
                           {playerGym}
                         </td>
-                        <td className="text-left w-2/12 hidden lg:table-cell">
+                        <td className="text-left w-2/12 hidden lg:table-cell text-sm ">
                           {joins?.length > 0 &&
                             joins.map((join, jIdx) => {
                               const {
@@ -437,7 +437,7 @@ const ContestInvoiceTable = () => {
                               } = join;
 
                               return (
-                                <div className="flex w-full h-10 justify-start items-center">
+                                <div className="flex w-full h-8 justify-start items-center">
                                   {contestCategoryTitle +
                                     "(" +
                                     contestGradeTitle +
@@ -446,7 +446,7 @@ const ContestInvoiceTable = () => {
                               );
                             })}
                         </td>
-                        <td className="text-left w-1/12  text-sm  lg:text-base">
+                        <td className="text-left w-1/12  text-sm  lg:text-lg">
                           {contestPriceSum &&
                             parseInt(contestPriceSum).toLocaleString()}
                         </td>
