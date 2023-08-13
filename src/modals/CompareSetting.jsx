@@ -784,12 +784,8 @@ const CompareSetting = ({
                         <div className="flex w-full h-auto px-5 py-2">
                           <button
                             className="w-full h-auto px-5 py-2 bg-blue-500 rounded-lg text-gray-100 text-xl font-semibold"
-                            onClick={() =>
-                              handleAdd(
-                                currentContest.contests.id,
-                                currentContest.contests.contestComparesListId
-                              )
-                            }
+                            //  여기에서 finalPlayers를 받아서 topResult에 있는 선수번호 명단만 따로 추리고 나머지 명단을 또 따로 추려서
+                            // playoff와 normal로 분기시켜서 autoScore쪽으로 넘겨줘야한다.
                           >
                             선수명단 확정
                           </button>
