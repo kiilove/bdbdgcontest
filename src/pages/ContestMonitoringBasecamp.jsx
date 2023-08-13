@@ -73,14 +73,15 @@ const ContestMonitoringBasecamp = () => {
               (a, b) => a.playerIndex - b.playerIndex
             )
           ),
+          setIsLoading(false),
         ];
 
         Promise.all(promises);
 
         // 1초 후에 setIsLoading을 false로 설정
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 2000);
+        // setTimeout(() => {
+        //   setIsLoading(false);
+        // }, 2000);
       }
     } catch (error) {
       setMessage({
@@ -93,7 +94,6 @@ const ContestMonitoringBasecamp = () => {
   };
 
   const fetchScoreTable = async (grades) => {
-    setIsLoading(true);
     const allData = [];
 
     for (let grade of grades) {

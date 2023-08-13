@@ -43,7 +43,6 @@ const CompareSetting = ({
   });
 
   const [compareMode, setCompareMode] = useState({
-    isCompare: false,
     compareStart: false,
     compareEnd: false,
     compareCancel: false,
@@ -52,6 +51,9 @@ const CompareSetting = ({
   const [isVotedPlayerLengthInput, setIsVotedPlayerLengthInput] =
     useState(false);
 
+  const [votedResult, setVotedResult] = useState([]);
+  const [topResult, setTopResult] = useState([]);
+  const [votedValidate, setVotedValidate] = useState(true);
   const { data: currentRealTime, getDocument: currentRealTimeFunction } =
     useFirebaseRealtimeGetDocument();
   const updateRealtimeCompare = useFirebaseRealtimeUpdateData();
@@ -90,7 +92,11 @@ const CompareSetting = ({
       await fetchCompare
         .getDocument(compareId)
         .then((data) => setCompareList({ ...data }))
-        .then(() => setCompareArray([...compareList.compares]));
+        .then(
+          () =>
+            compareList?.compares?.length > 0 &&
+            setCompareArray([...compareList.compares])
+        );
     } catch (error) {
       console.log(error);
     }
@@ -113,7 +119,6 @@ const CompareSetting = ({
     try {
       await updateRealtimeCompare.updateData(collectionInfo, data).then(() =>
         setCompareMode(() => ({
-          isCompare: true,
           compareStart: true,
           compareEnd: false,
           compareCancel: false,
@@ -126,6 +131,8 @@ const CompareSetting = ({
 
   const handleCompareCancel = async (contestId) => {
     const collectionInfoByCompares = `currentStage/${contestId}/compares`;
+    const newCompareArray = [...compareArray];
+    newCompareArray.splice(compareArray?.length - 1, 1);
 
     try {
       await deleteRealtimeCompare
@@ -133,15 +140,27 @@ const CompareSetting = ({
         .then((data) => console.log(data))
         .then(() =>
           setCompareMode(() => ({
-            isCompare: false,
             compareStart: false,
             compareEnd: false,
             compareCancel: true,
           }))
         )
+        .then(async () => {
+          await updateCompare.updateData(compareList.id, {
+            ...compareList,
+            compares: [...newCompareArray],
+          });
+        })
+        .then(() => {
+          setCompareList(() => ({
+            ...compareList,
+            compares: [...newCompareArray],
+          }));
+          setCompareArray(() => [...newCompareArray]);
+        })
+
         .then(() =>
           setState2(() => ({
-            isCompare: false,
             compareStart: false,
             compareEnd: false,
             compareCancel: true,
@@ -176,6 +195,14 @@ const CompareSetting = ({
 
       return { playerNumber, votedJudges: [], votedCount: 0 };
     });
+
+    const newCompareMode = {
+      compareStart: true,
+      compareEnd: false,
+      compareCancel: false,
+    };
+
+    //firestore Update
     const compareInfo = {
       compareId: generateUUID(),
       contestId,
@@ -186,19 +213,19 @@ const CompareSetting = ({
       compareIndex,
       comparePlayerLength: parseInt(votedInfo.playerLength),
       compareScoreMode: votedInfo.scoreMode,
-      comparePlayerLength: parseInt(votedInfo.playerLength),
-      compareScoreMode: votedInfo.scoreMode,
       compareVoted: initVotedArray,
     };
 
+    //상황판
     const judgeMessageInfo = judgesAssignArray.map((assign, aIdx) => {
       const { seatIndex, judgeUid } = assign;
       return { judgeUid, seatIndex, messageStatus: "확인전" };
     });
+
+    //realtime Update
     const realtimeCompareInfo = {
       compareIndex,
-      isCompared: true,
-      status: "start",
+      status: { ...newCompareMode },
       playerLength: votedInfo.playerLength,
       scoreMode: votedInfo.scoreMode,
       judges: [...judgeMessageInfo],
@@ -207,7 +234,7 @@ const CompareSetting = ({
     try {
       const newCompares = [...compareArray];
       newCompares.push({ ...compareInfo });
-      const updatedCompare = await updateCompare
+      await updateCompare
         .updateData(compareId, {
           ...compareList,
           compares: [...newCompares],
@@ -231,6 +258,59 @@ const CompareSetting = ({
     }
   };
 
+  const handleGetTopPlayers = (players, playerLength) => {
+    if (!players || players.length === 0) {
+      return [];
+    }
+
+    // votedCount 기준으로 내림차순 정렬
+    const sortedPlayers = players.sort((a, b) => b.votedCount - a.votedCount);
+
+    // playerLength만큼 상위 선수 추출
+    let topPlayers = sortedPlayers.slice(0, playerLength);
+
+    // 만약 playerLength번째 선수와 같은 투표수를 가진 다른 선수가 있다면 그들도 포함
+    const lastVotedCount = topPlayers[topPlayers.length - 1].votedCount;
+    let i = playerLength;
+    while (sortedPlayers[i] && sortedPlayers[i].votedCount === lastVotedCount) {
+      topPlayers.push(sortedPlayers[i]);
+      i++;
+    }
+
+    return topPlayers;
+  };
+  const handleCountPlayerVotes = (data) => {
+    const voteCounts = {};
+
+    if (data?.length > 0) {
+      data.forEach((entry) => {
+        // votedPlayerNumber가 존재하고, 배열이며, 그 길이가 0보다 클 경우에만 처리
+        if (
+          entry.votedPlayerNumber &&
+          Array.isArray(entry.votedPlayerNumber) &&
+          entry.votedPlayerNumber.length > 0
+        ) {
+          entry.votedPlayerNumber.forEach((vote) => {
+            voteCounts[vote.playerNumber] =
+              (voteCounts[vote.playerNumber] || 0) + 1;
+          });
+        }
+      });
+    }
+
+    // 결과 객체 배열 생성
+    const result = [];
+    for (let playerNumber in voteCounts) {
+      const newVoted = {
+        playerNumber: parseInt(playerNumber),
+        votedCount: voteCounts[playerNumber],
+      };
+      result.push(newVoted);
+    }
+
+    return result;
+  };
+
   useEffect(() => {
     setState(() => ({ ...votedInfo }));
   }, [votedInfo]);
@@ -252,6 +332,27 @@ const CompareSetting = ({
     stageInfo.grades[0].gradeId,
     currentContest.contests.contestComparesListId,
   ]);
+
+  useEffect(() => {
+    if (currentRealTime?.compares?.judges?.length > 0) {
+      setVotedResult(handleCountPlayerVotes(currentRealTime?.compares?.judges));
+      const validatedMessages = currentRealTime.compares.judges.some(
+        (s) => s.messageStatus !== "투표완료"
+      );
+      setVotedValidate(validatedMessages);
+    }
+  }, [currentRealTime?.compares?.judges]);
+
+  useEffect(() => {
+    if (votedResult?.length > 0) {
+      setTopResult(
+        handleGetTopPlayers(
+          votedResult,
+          currentRealTime?.compares?.playerLength
+        )
+      );
+    }
+  }, [votedResult]);
 
   useEffect(() => {
     if (currentContest?.contests?.id) {
@@ -321,7 +422,7 @@ const CompareSetting = ({
                 </div>
               </div>
               <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col text-xl">
-                {currentRealTime?.compares?.isCompared ? (
+                {currentRealTime?.compares?.status?.compareStart ? (
                   <div className="flex w-full h-auto px-5 py-2">
                     <div
                       className="flex h-auto justify-start items-center"
@@ -347,60 +448,67 @@ const CompareSetting = ({
                       심사대상 인원수 설정
                     </div>
                     <div className="flex h-auto justify-center items-center gap-2 text-lg flex-wrap box-border">
-                      <button
-                        value={3}
-                        onClick={(e) => {
-                          setVotedInfo(() => ({
-                            ...votedInfo,
-                            playerLength: parseInt(e.target.value),
-                          }));
-                          setIsVotedPlayerLengthInput(false);
-                        }}
-                        className={`${
-                          votedInfo.playerLength === 3
-                            ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
-                            : "bg-white p-2 rounded-lg border border-blue-200"
-                        }`}
-                        style={{ minWidth: "80px" }}
-                      >
-                        TOP 3
-                      </button>
-                      <button
-                        value={5}
-                        onClick={(e) => {
-                          setVotedInfo(() => ({
-                            ...votedInfo,
-                            playerLength: parseInt(e.target.value),
-                          }));
-                          setIsVotedPlayerLengthInput(false);
-                        }}
-                        className={`${
-                          votedInfo.playerLength === 5
-                            ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
-                            : "bg-white p-2 rounded-lg border border-blue-200"
-                        }`}
-                        style={{ minWidth: "80px" }}
-                      >
-                        TOP 5
-                      </button>
-                      <button
-                        value={7}
-                        onClick={(e) => {
-                          setVotedInfo(() => ({
-                            ...votedInfo,
-                            playerLength: parseInt(e.target.value),
-                          }));
-                          setIsVotedPlayerLengthInput(false);
-                        }}
-                        className={`${
-                          votedInfo.playerLength === 7
-                            ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
-                            : "bg-white p-2 rounded-lg border border-blue-200"
-                        }`}
-                        style={{ minWidth: "80px" }}
-                      >
-                        TOP 7
-                      </button>
+                      {fullMatched?.length >= 3 && (
+                        <button
+                          value={3}
+                          onClick={(e) => {
+                            setVotedInfo(() => ({
+                              ...votedInfo,
+                              playerLength: parseInt(e.target.value),
+                            }));
+                            setIsVotedPlayerLengthInput(false);
+                          }}
+                          className={`${
+                            votedInfo.playerLength === 3
+                              ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
+                              : "bg-white p-2 rounded-lg border border-blue-200"
+                          }`}
+                          style={{ minWidth: "80px" }}
+                        >
+                          TOP 3
+                        </button>
+                      )}
+                      {fullMatched?.length >= 5 && (
+                        <button
+                          value={5}
+                          onClick={(e) => {
+                            setVotedInfo(() => ({
+                              ...votedInfo,
+                              playerLength: parseInt(e.target.value),
+                            }));
+                            setIsVotedPlayerLengthInput(false);
+                          }}
+                          className={`${
+                            votedInfo.playerLength === 5
+                              ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
+                              : "bg-white p-2 rounded-lg border border-blue-200"
+                          }`}
+                          style={{ minWidth: "80px" }}
+                        >
+                          TOP 5
+                        </button>
+                      )}
+                      {fullMatched?.length >= 7 && (
+                        <button
+                          value={7}
+                          onClick={(e) => {
+                            setVotedInfo(() => ({
+                              ...votedInfo,
+                              playerLength: parseInt(e.target.value),
+                            }));
+                            setIsVotedPlayerLengthInput(false);
+                          }}
+                          className={`${
+                            votedInfo.playerLength === 7
+                              ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
+                              : "bg-white p-2 rounded-lg border border-blue-200"
+                          }`}
+                          style={{ minWidth: "80px" }}
+                        >
+                          TOP 7
+                        </button>
+                      )}
+
                       <button
                         className={`${
                           isVotedPlayerLengthInput
@@ -446,7 +554,7 @@ const CompareSetting = ({
                     채점모드 설정
                   </div>
                   <div className="flex w-full flex-col gap-y-1">
-                    {currentRealTime?.compares?.isCompared ? (
+                    {currentRealTime?.compares?.status?.compareStart ? (
                       <>
                         <div className="flex h-auto justify-start items-center gap-2 text-lg">
                           <button
@@ -522,7 +630,7 @@ const CompareSetting = ({
                     )}
                   </div>
                 </div>
-                {currentRealTime?.compares?.isCompared ? (
+                {currentRealTime?.compares?.status?.compareStart ? (
                   <div className="flex w-full h-auto px-5 py-2 justify-center items-center">
                     {votedInfo.playerLength !== undefined &&
                       votedInfo.scoreMode !== undefined && (
@@ -550,6 +658,147 @@ const CompareSetting = ({
                   </div>
                 )}
               </div>
+              {currentRealTime?.compares?.status?.compareStart && (
+                <div className="flex w-full h-auto flex-col gap-y-2">
+                  <div className="flex w-full bg-blue-100 rounded-lg py-3 flex-col">
+                    <div className="flex w-full justify-center items-center">
+                      비교심사 득표 및 투표현황
+                    </div>
+                  </div>
+                  <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col">
+                    <div className="flex w-full justify-start items-center px-7">
+                      <div
+                        className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                        style={{ maxWidth: "15%" }}
+                      >
+                        선수번호
+                      </div>
+                      {fullMatched.map((player, pIdx) => {
+                        const { playerNumber } = player;
+                        return (
+                          <div
+                            className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                            style={{ maxWidth: "15%" }}
+                          >
+                            {playerNumber}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex w-full justify-start items-center px-7">
+                      <div
+                        className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                        style={{ maxWidth: "15%" }}
+                      >
+                        득표수
+                      </div>
+                      {fullMatched.map((player, pIdx) => {
+                        const { playerNumber } = player;
+
+                        return (
+                          <div
+                            className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                            style={{ maxWidth: "15%" }}
+                          >
+                            {(votedResult?.length > 0 &&
+                              votedResult.find(
+                                (f) => f.playerNumber === playerNumber
+                              )?.votedCount) ||
+                              0}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col p-2">
+                      <div className="flex w-full h-20 justify-start items-center px-5">
+                        <div
+                          className="h-full p-2 justify-center items-center flex w-full border first:border-l border-l-0 border-gray-400 "
+                          style={{ maxWidth: "15%" }}
+                        >
+                          TOP {currentRealTime?.compares?.playerLength}
+                        </div>
+                        <div className="h-full p-2 justify-start items-center flex w-full border first:border-l border-l-0 border-gray-400 gap-2">
+                          {topResult?.length > 0 &&
+                            topResult?.map((top, tIdx) => {
+                              const { playerNumber } = top;
+                              return (
+                                <div className="w-14 h-14 p-2 bg-blue-400 text-gray-100 rounded-lg justify-center items-center flex">
+                                  {playerNumber}
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col text-base font-normal p-2">
+                      <div className="flex w-full justify-center items-center px-5">
+                        <div
+                          className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                          style={{ maxWidth: "10%" }}
+                        >
+                          심판번호
+                        </div>
+                        {currentRealTime?.judges.map((judge, pIdx) => {
+                          const { seatIndex } = judge;
+                          return (
+                            <div
+                              className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                              style={{ maxWidth: "10%" }}
+                            >
+                              {seatIndex}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex w-full justify-center items-center px-5">
+                        <div
+                          className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                          style={{ maxWidth: "10%" }}
+                        >
+                          투표상황
+                        </div>
+                        {currentRealTime?.compares?.judges.map(
+                          (judge, pIdx) => {
+                            const { messageStatus } = judge;
+
+                            return (
+                              <div
+                                className="h-full p-2 justify-center items-start flex w-full border first:border-l border-l-0 border-gray-400 "
+                                style={{ maxWidth: "10%" }}
+                              >
+                                {messageStatus}
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                      {votedValidate ? (
+                        <div className="flex w-full h-auto px-5 py-2 justify-center items-center ">
+                          {votedValidate && (
+                            <div className="flex justify-center items-center w-full h-auto px-5 py-2 bg-gray-500 rounded-lg text-gray-100 cursor-not-allowed  text-xl font-semibold">
+                              투표중
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex w-full h-auto px-5 py-2">
+                          <button
+                            className="w-full h-auto px-5 py-2 bg-blue-500 rounded-lg text-gray-100 text-xl font-semibold"
+                            onClick={() =>
+                              handleAdd(
+                                currentContest.contests.id,
+                                currentContest.contests.contestComparesListId
+                              )
+                            }
+                          >
+                            선수명단 확정
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
