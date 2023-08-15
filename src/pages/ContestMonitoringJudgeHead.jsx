@@ -390,7 +390,7 @@ const ContestMonitoringJudgeHead = () => {
                     className="flex bg-gray-100 p-2 w-full h-auto rounded-lg flex-col justify-center items-start"
                     style={{ minHeight: "100px" }}
                   >
-                    {!compareMode.isCompare && (
+                    {!currentRealtime.compares.status.compareStart && (
                       <button
                         className="bg-blue-400 w-full h-full p-2 rounded-lg text-gray-100 text-lg font-semibold"
                         style={{ minHeight: "80px" }}
@@ -404,37 +404,37 @@ const ContestMonitoringJudgeHead = () => {
                         비교심사시작
                       </button>
                     )}
-                    {compareMode.isCompare &&
-                      (votedInfo.playerLength === undefined ||
-                        votedInfo.scoreMode === undefined) && (
-                        <div className="flex w-full h-auto p-2 justify-start items-start flex-col ">
-                          <div className="flex w-full h-10">
-                            <div className="flex w-full h-auto justify-center items-center">
-                              비교 심사설정이 완료되지 않았습니다.
-                            </div>
-                          </div>
-                          <div className="flex w-full h-10 justify-center items-center gap-x-2">
-                            <button
-                              className="bg-blue-200 w-28 h-full rounded-lg p-2"
-                              onClick={() => setCompareOpen(true)}
-                            >
-                              설정화면이동
-                            </button>
-                            <button
-                              className="bg-red-200 w-28 h-full rounded-lg p-2"
-                              onClick={() =>
-                                handleCompareCancel(
-                                  currentContest.contests.id,
-                                  currentRealtime
-                                )
-                              }
-                            >
-                              비교심사취소
-                            </button>
+                    {currentRealtime.compares.status.compareStart && (
+                      <div className="flex w-full h-auto p-2 justify-start items-start flex-col ">
+                        <div className="flex w-full h-10">
+                          <div className="flex w-full h-auto justify-center items-center">
+                            비교 심사설정이 완료되지 않았습니다.
                           </div>
                         </div>
-                      )}
-                    {compareMode.isCompare && compareMode.compareStart && (
+                        <div className="flex w-full h-10 justify-center items-center gap-x-2">
+                          <button
+                            className="bg-blue-200 w-28 h-full rounded-lg p-2"
+                            onClick={() => {
+                              setCompareOpen(true);
+                            }}
+                          >
+                            설정화면이동
+                          </button>
+                          <button
+                            className="bg-red-200 w-28 h-full rounded-lg p-2"
+                            onClick={() =>
+                              handleCompareCancel(
+                                currentContest.contests.id,
+                                currentRealtime
+                              )
+                            }
+                          >
+                            비교심사취소
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* {currentRealtime.compares.status.compareStart && (
                       <div className="flex w-full h-auto p-2 justify-start items-start flex-col ">
                         <div className="flex w-full h-10">
                           <div className="flex w-full h-auto justify-center items-center">
@@ -456,7 +456,7 @@ const ContestMonitoringJudgeHead = () => {
                           </button>
                         </div>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 )}
 
@@ -541,7 +541,14 @@ const ContestMonitoringJudgeHead = () => {
                                               className="h-auto p-2 justify-center items-start flex w-full  border-r border-b border-gray-400 "
                                               style={{ maxWidth: "15%" }}
                                             >
-                                              {finded?.playerScore || ""}
+                                              {finded?.playerScore !== 0 &&
+                                              finded?.playerScore !==
+                                                undefined &&
+                                              finded?.playerScore !== 1000
+                                                ? finded.playerScore
+                                                : ""}
+                                              {finded?.playerScore === 1000 &&
+                                                "순위제외"}
                                             </div>
                                           );
                                         }

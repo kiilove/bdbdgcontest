@@ -87,6 +87,8 @@ const ContestStagetable = () => {
           contestCategoryId: categoryId,
           contestCategoryTitle: categoryTitle,
           contestCategoryIndex: categoryIndex,
+          contestCategoryIsOverall: categoryIsOverall,
+          contestCategoryJudgeType: categoryJudgeType,
           contestCategoryJudgeCount: categoryJudgeCount,
         } = category;
         const matchedGrades = gradesArray.filter(
@@ -122,6 +124,8 @@ const ContestStagetable = () => {
               categoryJudgeCount,
               categoryId,
               categoryTitle,
+              categoryIsOverall,
+              categoryJudgeType,
               grades: [
                 {
                   categoryId,

@@ -46,6 +46,7 @@ const CompareSetting = ({
     compareStart: false,
     compareEnd: false,
     compareCancel: false,
+    compareIng: false,
   });
 
   const [isVotedPlayerLengthInput, setIsVotedPlayerLengthInput] =
@@ -122,6 +123,7 @@ const CompareSetting = ({
           compareStart: true,
           compareEnd: false,
           compareCancel: false,
+          compareIng: false,
         }))
       );
     } catch (error) {
@@ -135,14 +137,22 @@ const CompareSetting = ({
     newCompareArray.splice(compareArray?.length - 1, 1);
 
     try {
-      await deleteRealtimeCompare
-        .deleteData(collectionInfoByCompares)
+      await updateRealtimeCompare
+        .updateData(collectionInfoByCompares, {
+          status: {
+            compareStart: false,
+            compareEnd: false,
+            compareCancel: false,
+            compareIng: false,
+          },
+        })
         .then((data) => console.log(data))
         .then(() =>
           setCompareMode(() => ({
             compareStart: false,
             compareEnd: false,
             compareCancel: true,
+            compareIng: false,
           }))
         )
         .then(async () => {
@@ -164,6 +174,7 @@ const CompareSetting = ({
             compareStart: false,
             compareEnd: false,
             compareCancel: true,
+            compareIng: false,
           }))
         )
         .then(() => setClose(false));
@@ -190,16 +201,11 @@ const CompareSetting = ({
       return;
     }
 
-    const initVotedArray = fullMatched.map((player, pIdx) => {
-      const { playerIndex, playerUid, playerNumber } = player;
-
-      return { playerNumber, votedJudges: [], votedCount: 0 };
-    });
-
     const newCompareMode = {
       compareStart: true,
       compareEnd: false,
       compareCancel: false,
+      compareIng: false,
     };
 
     //firestore Update
@@ -213,7 +219,6 @@ const CompareSetting = ({
       compareIndex,
       comparePlayerLength: parseInt(votedInfo.playerLength),
       compareScoreMode: votedInfo.scoreMode,
-      compareVoted: initVotedArray,
     };
 
     //상황판
@@ -258,6 +263,61 @@ const CompareSetting = ({
     }
   };
 
+  const handleUpdateComparePlayers = async (
+    playerTopResult,
+    playerVoteResult,
+    contestId,
+    compareId
+  ) => {
+    try {
+      const collectionInfoCompares = `currentStage/${contestId}/compares`;
+
+      const newStatus = {
+        compareStart: false,
+        compareEnd: false,
+        compareCancel: false,
+        compareIng: true,
+      };
+      const newCompares = [...compareArray];
+      const findCompare = newCompares.find(
+        (compare) => compare.compareIndex === compareArray?.length + 1
+      );
+      const findIndexCompare = newCompares.findIndex(
+        (compare) => compare.compareIndex === compareArray?.length + 1
+      );
+      const compareInfo = {
+        ...findCompare,
+        compareVoted: [...playerVoteResult],
+        comparedTopPlayrs: [...playerTopResult],
+      };
+
+      newCompares.splice(findIndexCompare, 1, { ...compareInfo });
+      await updateRealtimeCompare
+        .updateData(collectionInfoCompares, {
+          ...currentRealTime.compares,
+          status: { ...newStatus },
+          players: [...playerTopResult],
+        })
+        .then(
+          async () =>
+            await updateCompare.updateData(compareId, {
+              ...compareList,
+              compares: [...newCompares],
+            })
+        )
+        .then(() => setCompareArray(() => [...newCompares]))
+        .then(() =>
+          setCompareList(() => ({
+            ...compareList,
+            compares: [...newCompares],
+          }))
+        )
+        .then(() => setClose(false));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleGetTopPlayers = (players, playerLength) => {
     if (!players || players.length === 0) {
       return [];
@@ -291,8 +351,15 @@ const CompareSetting = ({
           entry.votedPlayerNumber.length > 0
         ) {
           entry.votedPlayerNumber.forEach((vote) => {
-            voteCounts[vote.playerNumber] =
-              (voteCounts[vote.playerNumber] || 0) + 1;
+            const key = `${vote.playerNumber}-${vote.playerUid}`;
+            if (!voteCounts[key]) {
+              voteCounts[key] = {
+                playerNumber: vote.playerNumber,
+                playerUid: vote.playerUid,
+                votedCount: 0,
+              };
+            }
+            voteCounts[key].votedCount += 1;
           });
         }
       });
@@ -300,12 +367,8 @@ const CompareSetting = ({
 
     // 결과 객체 배열 생성
     const result = [];
-    for (let playerNumber in voteCounts) {
-      const newVoted = {
-        playerNumber: parseInt(playerNumber),
-        votedCount: voteCounts[playerNumber],
-      };
-      result.push(newVoted);
+    for (let key in voteCounts) {
+      result.push(voteCounts[key]);
     }
 
     return result;
@@ -334,6 +397,15 @@ const CompareSetting = ({
   ]);
 
   useEffect(() => {
+    if (currentRealTime?.compares?.status?.compareStart) {
+      setVotedInfo(() => ({
+        playerLength: currentRealTime.compares.playerLength,
+        scoreMode: currentRealTime.compares.scoreMode,
+      }));
+    }
+  }, [currentRealTime?.compares]);
+
+  useEffect(() => {
     if (currentRealTime?.compares?.judges?.length > 0) {
       setVotedResult(handleCountPlayerVotes(currentRealTime?.compares?.judges));
       const validatedMessages = currentRealTime.compares.judges.some(
@@ -352,6 +424,8 @@ const CompareSetting = ({
         )
       );
     }
+
+    console.log(topResult);
   }, [votedResult]);
 
   useEffect(() => {
@@ -417,6 +491,14 @@ const CompareSetting = ({
                       }}
                     >
                       비교심사취소
+                    </button>
+                    <button
+                      className="w-full text-base font-normal bg-red-400 p-2 rounded-lg text-gray-100"
+                      onClick={() => {
+                        setClose(false);
+                      }}
+                    >
+                      닫기
                     </button>
                   </div>
                 </div>
@@ -663,6 +745,21 @@ const CompareSetting = ({
                   <div className="flex w-full bg-blue-100 rounded-lg py-3 flex-col">
                     <div className="flex w-full justify-center items-center">
                       비교심사 득표 및 투표현황
+                    </div>
+                  </div>
+                  <div className="flex w-full bg-blue-100 rounded-lg py-3 flex-col">
+                    <div
+                      className="flex w-full justify-center items-center"
+                      onClick={() =>
+                        handleUpdateComparePlayers(
+                          topResult,
+                          votedResult,
+                          currentContest.contests.id,
+                          currentContest.contests.contestComparesListId
+                        )
+                      }
+                    >
+                      명단확정(임시버튼)
                     </div>
                   </div>
                   <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col">
