@@ -22,6 +22,8 @@ import { debounce } from "lodash";
 import ConfirmationModal from "../messageBox/ConfirmationModal";
 import { where } from "firebase/firestore";
 import { PiSpinner, PiSpinnerThin } from "react-icons/pi";
+import { Modal } from "@mui/material";
+import ScoreCardRankForm from "./ScoreCardRankForm";
 
 const ContestMonitoringBasecamp = () => {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ const ContestMonitoringBasecamp = () => {
   const [currentSubTab, setCurrentSubTab] = useState("0");
 
   const [msgOpen, setMsgOpen] = useState(false);
+  const [scoreCardOpen, setScoreCardOpen] = useState(false);
   const [message, setMessage] = useState({});
 
   const [stagesArray, setStagesArray] = useState([]);
@@ -347,6 +350,9 @@ const ContestMonitoringBasecamp = () => {
             onCancel={() => setMsgOpen(false)}
             onConfirm={() => setMsgOpen(false)}
           />
+          <Modal open={scoreCardOpen}>
+            <ScoreCardRankForm setClose={setScoreCardOpen} />
+          </Modal>
           <div className="flex w-full h-auto">
             <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-3">
               <div className="flex w-4/5 px-2 flex-col gap-y-2">
@@ -422,6 +428,14 @@ const ContestMonitoringBasecamp = () => {
                       <div className="flex w-full h-14 justify-between items-center gap-x-2 px-2">
                         <div className="flex w-full justify-start items-center gap-x-2">
                           <span className="font-bold text-lg">진행상황</span>
+                        </div>
+                        <div className="flex w-full justify-end items-center gap-x-2">
+                          <button
+                            className="w-24 h-10 bg-blue-900 rounded-lg text-gray-100"
+                            onClick={() => setScoreCardOpen(true)}
+                          >
+                            채점표출력
+                          </button>
                         </div>
                         {!judgesIsEndValidated && (
                           <div className="flex w-full justify-end items-center gap-x-2">
