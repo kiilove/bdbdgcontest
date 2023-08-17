@@ -38,7 +38,6 @@ const ContestMonitoringBasecamp = () => {
   const [stagesArray, setStagesArray] = useState([]);
   const [playersArray, setPlayersArray] = useState([]);
   const [currentStageInfo, setCurrentStageInfo] = useState({ stageId: null });
-  const [currentRealtime, setCurrentRealtime] = useState({});
 
   const [normalScoreData, setNormalScoreData] = useState([]);
   const [normalScoreTable, setNormalScoreTable] = useState([]);
@@ -50,7 +49,7 @@ const ContestMonitoringBasecamp = () => {
   const fetchFinalPlayers = useFirestoreGetDocument("contest_players_final");
   const fetchScoreCardQuery = useFirestoreQuery();
 
-  const { data: fetchRealTimeCurrentStage, getDocument: currentStageFunction } =
+  const { data: realtimeData, getDocument: currentStageFunction } =
     useFirebaseRealtimeGetDocument();
 
   const addCurrentStage = useFirebaseRealtimeAddData();
@@ -73,9 +72,9 @@ const ContestMonitoringBasecamp = () => {
           ),
           setContestInfo({ ...returnNotice }),
           setPlayersArray(
-            returnPlayersFinal.players.sort(
-              (a, b) => a.playerIndex - b.playerIndex
-            )
+            returnPlayersFinal.players
+              .sort((a, b) => a.playerIndex - b.playerIndex)
+              .filter((f) => f.playerNoShow === false)
           ),
           setIsLoading(false),
         ];
@@ -128,9 +127,7 @@ const ContestMonitoringBasecamp = () => {
   };
 
   const handleScoreTableByJudge = (grades) => {
-    if (
-      !_.isEqual(currentRealtime?.judges, fetchRealTimeCurrentStage?.judges)
-    ) {
+    if (!_.isEqual(realtimeData?.judges, realtimeData?.judges)) {
       fetchScoreTable(grades);
     }
   };
@@ -223,31 +220,29 @@ const ContestMonitoringBasecamp = () => {
     switch (actionType) {
       case "add":
         try {
-          await addCurrentStage
-            .addData(
-              "currentStage",
-              newCurrentStateInfo,
-              currentContest.contests.id
-            )
-            .then((data) => setCurrentRealtime({ ...data }));
+          await addCurrentStage.addData(
+            "currentStage",
+            newCurrentStateInfo,
+            currentContest.contests.id
+          );
         } catch (error) {
           console.log(error);
         }
         break;
       case "next":
         try {
-          await updateCurrentStage
-            .updateData(collectionInfo, { ...newCurrentStateInfo })
-            .then((data) => setCurrentRealtime({ ...data }));
+          await updateCurrentStage.updateData(collectionInfo, {
+            ...newCurrentStateInfo,
+          });
         } catch (error) {
           console.log(error);
         }
 
       case "force":
         try {
-          await updateCurrentStage
-            .updateData(collectionInfo, { ...newCurrentStateInfo })
-            .then((data) => setCurrentRealtime({ ...data }));
+          await updateCurrentStage.updateData(collectionInfo, {
+            ...newCurrentStateInfo,
+          });
         } catch (error) {
           console.log(error);
         }
@@ -256,13 +251,11 @@ const ContestMonitoringBasecamp = () => {
         break;
     }
     try {
-      await addCurrentStage
-        .addData(
-          "currentStage",
-          newCurrentStateInfo,
-          currentContest.contests.id
-        )
-        .then((data) => setCurrentRealtime({ ...data }));
+      await addCurrentStage.addData(
+        "currentStage",
+        newCurrentStateInfo,
+        currentContest.contests.id
+      );
     } catch (error) {
       console.log(error);
     }
@@ -298,18 +291,15 @@ const ContestMonitoringBasecamp = () => {
   }, [currentContest]);
 
   useEffect(() => {
-    setCurrentRealtime(fetchRealTimeCurrentStage);
     setCurrentStageInfo({
-      ...stagesArray.find(
-        (f) => f.stageId === fetchRealTimeCurrentStage?.stageId
-      ),
+      ...stagesArray.find((f) => f.stageId === realtimeData?.stageId),
     });
-    if (fetchRealTimeCurrentStage?.judges?.length > 0) {
+    if (realtimeData?.judges?.length > 0) {
       setJudgesIsEndValidated(() =>
-        handleJudgeIsEndValidated(fetchRealTimeCurrentStage?.judges)
+        handleJudgeIsEndValidated(realtimeData?.judges)
       );
     }
-  }, [fetchRealTimeCurrentStage]);
+  }, [realtimeData]);
 
   useEffect(() => {
     if (!isHolding && currentContest?.contests?.id) {
@@ -329,15 +319,15 @@ const ContestMonitoringBasecamp = () => {
 
   useEffect(() => {
     if (
-      fetchRealTimeCurrentStage?.stageJudgeCount &&
+      realtimeData?.stageJudgeCount &&
       currentStageInfo?.grades?.length > 0 &&
       playersArray?.length > 0
     ) {
       handleScoreTableByJudge(currentStageInfo.grades);
     }
   }, [
-    fetchRealTimeCurrentStage?.stageJudgeCount,
-    fetchRealTimeCurrentStage?.judges,
+    realtimeData?.stageJudgeCount,
+    realtimeData?.judges,
     playersArray,
     currentStageInfo,
   ]);
@@ -368,13 +358,13 @@ const ContestMonitoringBasecamp = () => {
                 </h1>
                 <h1 className="font-sans text-base font-semibold">
                   모니터링상태 :{" "}
-                  {currentRealtime?.stageId && !isHolding && "실시간모니터링중"}
-                  {currentRealtime?.stageId && isHolding && "모니터링 일시정지"}
-                  {!currentRealtime?.stageId && !isHolding && "대회시작전"}
+                  {realtimeData?.stageId && !isHolding && "실시간모니터링중"}
+                  {realtimeData?.stageId && isHolding && "모니터링 일시정지"}
+                  {!realtimeData?.stageId && !isHolding && "대회시작전"}
                 </h1>
               </div>
               <div className="flex w-1/5 h-full">
-                {currentRealtime?.stageId && !isHolding && (
+                {realtimeData?.stageId && !isHolding && (
                   <button
                     className="bg-gray-400 w-full h-full text-white text-lg rounded-lg"
                     onClick={() => setIsHolding(true)}
@@ -382,7 +372,7 @@ const ContestMonitoringBasecamp = () => {
                     일시정지
                   </button>
                 )}
-                {currentRealtime?.stageId && isHolding && (
+                {realtimeData?.stageId && isHolding && (
                   <button
                     className="bg-blue-600 w-full h-full text-white text-lg rounded-lg"
                     onClick={() => setIsHolding(false)}
@@ -390,7 +380,7 @@ const ContestMonitoringBasecamp = () => {
                     모니터링 시작
                   </button>
                 )}
-                {!currentRealtime?.stageId && !isHolding && (
+                {!realtimeData?.stageId && !isHolding && (
                   <button
                     className="bg-blue-400 w-full h-full text-white text-lg rounded-lg"
                     onClick={() => handleUpdateCurrentStage(0, "add")}
@@ -426,7 +416,7 @@ const ContestMonitoringBasecamp = () => {
             </div>
             {currentSubTab === "0" && (
               <div className="flex w-full h-auto justify-start items-center bg-blue-100 rounded-tr-lg rounded-b-lg p-2">
-                {currentRealtime && (
+                {realtimeData && (
                   <div className="flex w-full flex-col h-auto gap-y-2">
                     <div className="flex bg-white p-2 w-full h-auto rounded-lg flex-col justify-center items-start">
                       <div className="flex w-full h-14 justify-between items-center gap-x-2 px-2">
@@ -439,7 +429,7 @@ const ContestMonitoringBasecamp = () => {
                               className="w-24 h-10 bg-blue-500 rounded-lg text-gray-100"
                               onClick={() =>
                                 handleUpdateCurrentStage(
-                                  currentRealtime.stageNumber,
+                                  realtimeData.stageNumber,
                                   "next"
                                 )
                               }
@@ -454,15 +444,15 @@ const ContestMonitoringBasecamp = () => {
                       </div>
                       <div className="flex w-full h-10 justify-start items-center px-2">
                         <span className="font-semibold">
-                          {currentRealtime?.categoryTitle}(
-                          {currentRealtime?.gradeTitle})
+                          {realtimeData?.categoryTitle}(
+                          {realtimeData?.gradeTitle})
                         </span>
                       </div>
                       <div className="flex w-full h-auto flex-wrap box-border flex-col px-2">
                         {/* table Header */}
                         <div className="flex w-full h-10 text-lg ">
-                          {currentRealtime?.judges &&
-                            currentRealtime.judges.map((judge, jIdx) => {
+                          {realtimeData?.judges &&
+                            realtimeData.judges.map((judge, jIdx) => {
                               const { seatIndex } = judge;
 
                               return (
@@ -477,8 +467,8 @@ const ContestMonitoringBasecamp = () => {
                         </div>
                         {/* 상황판 */}
                         <div className="flex w-full h-auto text-lg bg-gray-100 items-start">
-                          {currentRealtime?.judges &&
-                            currentRealtime.judges.map((judge, jIdx) => {
+                          {realtimeData?.judges &&
+                            realtimeData.judges.map((judge, jIdx) => {
                               const { isEnd, isLogined } = judge;
 
                               return (
@@ -495,8 +485,8 @@ const ContestMonitoringBasecamp = () => {
                         </div>
                         {/* 강제전환 */}
                         <div className="flex w-full h-auto text-lg bg-gray-100 items-start">
-                          {currentRealtime?.judges &&
-                            currentRealtime.judges.map((judge, jIdx) => {
+                          {realtimeData?.judges &&
+                            realtimeData.judges.map((judge, jIdx) => {
                               const { isEnd, isLogined } = judge;
 
                               return (
@@ -557,8 +547,8 @@ const ContestMonitoringBasecamp = () => {
                                 >
                                   구분
                                 </div>
-                                {currentRealtime?.judges &&
-                                  currentRealtime.judges.map((judge, jIdx) => {
+                                {realtimeData?.judges &&
+                                  realtimeData.judges.map((judge, jIdx) => {
                                     const { seatIndex } = judge;
                                     return (
                                       <div
@@ -581,8 +571,8 @@ const ContestMonitoringBasecamp = () => {
                                     >
                                       {playerNumber}
                                     </div>
-                                    {currentRealtime?.judges?.length > 0 &&
-                                      currentRealtime?.judges.map(
+                                    {realtimeData?.judges?.length > 0 &&
+                                      realtimeData?.judges.map(
                                         (judge, jIdx) => {
                                           const { seatIndex } = judge;
                                           const finded = normalScoreData.find(
@@ -622,7 +612,7 @@ const ContestMonitoringBasecamp = () => {
 
             {currentSubTab === "1" && (
               <div className="flex w-full h-auto justify-start items-center bg-blue-100 rounded-tr-lg rounded-b-lg p-2">
-                {currentRealtime && stagesArray?.length > 0 && (
+                {realtimeData && stagesArray?.length > 0 && (
                   <div className="flex w-full flex-col h-auto gap-y-2">
                     <div className="flex bg-white p-2 w-full h-auto rounded-lg flex-col justify-center items-start">
                       <div className="flex w-full h-14 justify-between items-center gap-x-2 px-2">
@@ -650,7 +640,7 @@ const ContestMonitoringBasecamp = () => {
                             return (
                               <div
                                 className={`${
-                                  currentRealtime.stageId === stageId
+                                  realtimeData.stageId === stageId
                                     ? "flex w-full h-16 justify-start items-center px-5 bg-blue-400 rounded-lg text-gray-100"
                                     : "flex w-full h-10 justify-start items-center px-5 bg-blue-100 rounded-lg"
                                 }`}
@@ -671,7 +661,7 @@ const ContestMonitoringBasecamp = () => {
                                     <span className="font-semibold">
                                       ({gradeTitle})
                                     </span>
-                                    {currentRealtime.stageId === stageId && (
+                                    {realtimeData.stageId === stageId && (
                                       <div className="flex w-auto px-2">
                                         <PiSpinner
                                           className="animate-spin w-8 h-8 "
@@ -692,7 +682,7 @@ const ContestMonitoringBasecamp = () => {
                                   <div className="flex w-full gap-x-2 justify-end items-center">
                                     <button
                                       className={`${
-                                        currentRealtime.stageId === stageId
+                                        realtimeData.stageId === stageId
                                           ? "flex w-24 justify-center items-center  bg-blue-100 rounded-lg p-2 text-gray-900"
                                           : "flex w-24 justify-center items-center  bg-blue-400 rounded-lg p-2 text-gray-100"
                                       }`}
@@ -704,12 +694,12 @@ const ContestMonitoringBasecamp = () => {
                                         handleUpdateCurrentStage(sIdx, "force")
                                       }
                                       className={`${
-                                        currentRealtime.stageId === stageId
+                                        realtimeData.stageId === stageId
                                           ? "flex w-24 justify-center items-center  bg-blue-100 rounded-lg p-2 text-gray-900"
                                           : "flex w-24 justify-center items-center  bg-blue-400 rounded-lg p-2 text-gray-100"
                                       }`}
                                     >
-                                      {currentRealtime.stageId === stageId
+                                      {realtimeData.stageId === stageId
                                         ? "강제 재시작"
                                         : "강제시작"}
                                     </button>

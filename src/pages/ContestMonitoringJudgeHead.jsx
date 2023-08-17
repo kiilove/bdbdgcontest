@@ -6,6 +6,7 @@ import { TbHeartRateMonitor } from "react-icons/tb";
 import {
   useFirestoreGetDocument,
   useFirestoreQuery,
+  useFirestoreUpdateData,
 } from "../hooks/useFirestores";
 import { useContext } from "react";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
@@ -38,22 +39,31 @@ const ContestMonitoringJudgeHead = () => {
   const [isHolding, setIsHolding] = useState(false);
   const [contestInfo, setContestInfo] = useState({});
 
+  const [parentRefresh, setParentRefresh] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
+  const [compareCancelMsgOpen, setCompareCancelMsgOpen] = useState(false);
+
   const [message, setMessage] = useState({});
 
   const [compareOpen, setCompareOpen] = useState(false);
-  const [votedInfo, setVotedInfo] = useState({
+  const [compareInfo, setCompareInfo] = useState({
     playerLength: undefined,
     scoreMode: undefined,
   });
   const [stagesArray, setStagesArray] = useState([]);
   const [playersArray, setPlayersArray] = useState([]);
-  const [currentStageMatchedPlayers, setCurrentStageMatchedPlayers] = useState(
-    []
-  );
+  const [comparesList, setComparesList] = useState({});
+  const [comparesArray, setComparesArray] = useState([]);
+  const [currentCompareInfo, setCurrentCompareInfo] = useState({});
+  const [matchedOriginalPlayers, setMatchedOriginalPlayers] = useState([]);
   const [currentStageInfo, setCurrentStageInfo] = useState({ stageId: null });
-  const [currentRealtime, setCurrentRealtime] = useState({});
-
+  const [realtimeData, setrealtimeData] = useState({});
+  const [compareStatus, setCompareStatus] = useState({
+    compareStart: false,
+    compareEnd: false,
+    compareCancel: false,
+    compareIng: false,
+  });
   const [normalScoreData, setNormalScoreData] = useState([]);
   const [normalScoreTable, setNormalScoreTable] = useState([]);
 
@@ -62,22 +72,29 @@ const ContestMonitoringJudgeHead = () => {
   const fetchNotice = useFirestoreGetDocument("contest_notice");
   const fetchStages = useFirestoreGetDocument("contest_stages_assign");
   const fetchFinalPlayers = useFirestoreGetDocument("contest_players_final");
+  const fetchCompares = useFirestoreGetDocument("contest_compares_list");
+  const updateCompare = useFirestoreUpdateData("contest_compares_list");
   const fetchScoreCardQuery = useFirestoreQuery();
 
   const { data: fetchRealTimeCurrentStage, getDocument: currentStageFunction } =
     useFirebaseRealtimeGetDocument();
 
   const addCurrentStage = useFirebaseRealtimeAddData();
-  const updateCurrentStage = useFirebaseRealtimeUpdateData();
-  const deleteCurrentStage = useFirebaseRealtimeDeleteData();
+  const updateRealtimeCompare = useFirebaseRealtimeUpdateData();
 
-  const fetchPool = async (noticeId, stageAssignId, playerFinalId) => {
+  const fetchPool = async (
+    noticeId,
+    stageAssignId,
+    playerFinalId,
+    compareListId
+  ) => {
     try {
       const returnNotice = await fetchNotice.getDocument(noticeId);
       const returnContestStage = await fetchStages.getDocument(stageAssignId);
       const returnPlayersFinal = await fetchFinalPlayers.getDocument(
         playerFinalId
       );
+      const returnCompareList = await fetchCompares.getDocument(compareListId);
 
       if (returnNotice && returnContestStage) {
         const promises = [
@@ -88,15 +105,31 @@ const ContestMonitoringJudgeHead = () => {
           ),
           setContestInfo({ ...returnNotice }),
           setPlayersArray(
-            returnPlayersFinal.players.sort(
-              (a, b) => a.playerIndex - b.playerIndex
-            )
+            returnPlayersFinal.players
+              .sort((a, b) => a.playerIndex - b.playerIndex)
+              .filter((f) => f.playerNoShow === false)
           ),
         ];
 
         Promise.all(promises);
 
         setIsLoading(false);
+      }
+
+      if (returnCompareList) {
+        setComparesList({ ...returnCompareList });
+        setComparesArray([...returnCompareList.compares]);
+
+        if (returnCompareList.compares.length === 0) {
+          setCurrentCompareInfo({});
+        }
+        if (returnCompareList.compares.length > 0) {
+          setCurrentCompareInfo({
+            ...returnCompareList.compares[
+              returnCompareList.compares.length - 1
+            ],
+          });
+        }
       }
     } catch (error) {
       setMessage({
@@ -130,6 +163,15 @@ const ContestMonitoringJudgeHead = () => {
     setIsLoading(false);
   };
 
+  const handleJudgeIsLoginedValidated = (judgesArray) => {
+    if (judgesArray?.length <= 0) {
+      return;
+    }
+    // console.log(judgesArray);
+    const validate = judgesArray.some((s) => s.isLogined === false);
+    //console.log(validate);
+    return validate;
+  };
   const handleForceScoreTableRefresh = (grades) => {
     console.log(grades);
     if (grades?.length <= 0) {
@@ -140,9 +182,7 @@ const ContestMonitoringJudgeHead = () => {
   };
 
   const handleScoreTableByJudge = (grades) => {
-    if (
-      !_.isEqual(currentRealtime?.judges, fetchRealTimeCurrentStage?.judges)
-    ) {
+    if (!_.isEqual(realtimeData?.judges, fetchRealTimeCurrentStage?.judges)) {
       fetchScoreTable(grades);
     }
   };
@@ -206,7 +246,7 @@ const ContestMonitoringJudgeHead = () => {
           newCurrentStateInfo,
           currentContest.contests.id
         )
-        .then((data) => setCurrentRealtime({ ...data }));
+        .then((data) => setrealtimeData({ ...data }));
     } catch (error) {
       console.log(error);
     }
@@ -219,28 +259,45 @@ const ContestMonitoringJudgeHead = () => {
   };
 
   const handleCompareAdd = async (contestId, data, comparesData) => {};
-  const handleCompareCancel = async (contestId, data) => {
-    const collectionInfoByIsCompared = `currentStage/${contestId}`;
+  const handleCompareCancel = async (contestId) => {
     const collectionInfoByCompares = `currentStage/${contestId}/compares`;
+    const newCompareArray = [...comparesArray];
+    newCompareArray.splice(comparesArray?.length - 1, 1);
 
     try {
-      await updateCurrentStage
-        .updateData(collectionInfoByIsCompared, {
-          ...data,
-          isCompared: false,
+      await updateRealtimeCompare
+        .updateData(collectionInfoByCompares, {
+          status: {
+            compareStart: false,
+            compareEnd: false,
+            compareCancel: false,
+            compareIng: false,
+          },
         })
-        .then((data) => console.log(data));
-      await deleteCurrentStage
-        .deleteData(collectionInfoByCompares)
         .then((data) => console.log(data))
         .then(() =>
-          setCompareMode(() => ({
-            isCompare: false,
+          setCompareStatus(() => ({
             compareStart: false,
             compareEnd: false,
             compareCancel: true,
+            compareIng: false,
           }))
-        );
+        )
+        .then(async () => {
+          await updateCompare.updateData(comparesList.id, {
+            ...comparesList,
+            compares: [...newCompareArray],
+          });
+        })
+        .then(() => {
+          setComparesList(() => ({
+            ...comparesList,
+            compares: [...newCompareArray],
+          }));
+          setComparesArray(() => [...newCompareArray]);
+        })
+        .then(() => setParentRefresh(true))
+        .then(() => setCompareCancelMsgOpen(false));
     } catch (error) {
       console.log(error);
     }
@@ -250,18 +307,33 @@ const ContestMonitoringJudgeHead = () => {
     if (
       currentContest?.contests?.contestNoticeId &&
       currentContest?.contests?.contestStagesAssignId &&
-      currentContest?.contests?.contestPlayersFinalId
+      currentContest?.contests?.contestPlayersFinalId &&
+      currentContest?.contests?.contestComparesListId
     ) {
       fetchPool(
         currentContest.contests.contestNoticeId,
         currentContest.contests.contestStagesAssignId,
-        currentContest?.contests?.contestPlayersFinalId
+        currentContest?.contests?.contestPlayersFinalId,
+        currentContest?.contests?.contestComparesListId
       );
     }
   }, [currentContest]);
 
   useEffect(() => {
-    setCurrentRealtime(fetchRealTimeCurrentStage);
+    if (parentRefresh) {
+      setIsLoading(true);
+      fetchPool(
+        currentContest.contests.contestNoticeId,
+        currentContest.contests.contestStagesAssignId,
+        currentContest?.contests?.contestPlayersFinalId,
+        currentContest?.contests?.contestComparesListId
+      );
+      setParentRefresh(false);
+    }
+  }, [parentRefresh]);
+
+  useEffect(() => {
+    setrealtimeData(fetchRealTimeCurrentStage);
     setCurrentStageInfo({
       ...stagesArray.find(
         (f) => f.stageId === fetchRealTimeCurrentStage?.stageId
@@ -289,7 +361,7 @@ const ContestMonitoringJudgeHead = () => {
       playersArray?.length > 0
     ) {
       handleScoreTableByJudge(currentStageInfo.grades);
-      setCurrentStageMatchedPlayers(
+      setMatchedOriginalPlayers(
         playersArray
           .filter(
             (f) => f.contestGradeId === currentStageInfo.grades[0].gradeId
@@ -305,24 +377,24 @@ const ContestMonitoringJudgeHead = () => {
   ]);
 
   useEffect(() => {
-    if (compareMode.isCompare) {
+    if (compareMode.compareStart) {
       setCompareOpen(true);
     }
   }, [compareMode]);
 
   useEffect(() => {
     if (
-      votedInfo.playerLength !== undefined &&
-      votedInfo.scoreMode !== undefined
+      compareInfo.playerLength !== undefined &&
+      compareInfo.scoreMode !== undefined
     ) {
       setCompareMode(() => ({
-        isCompare: true,
+        compareIng: true,
         compareStart: true,
         compareEnd: false,
         compareCancel: false,
       }));
     }
-  }, [votedInfo]);
+  }, [compareInfo]);
 
   return (
     <>
@@ -339,14 +411,19 @@ const ContestMonitoringJudgeHead = () => {
             onCancel={() => setMsgOpen(false)}
             onConfirm={() => setMsgOpen(false)}
           />
+          <ConfirmationModal
+            isOpen={compareCancelMsgOpen}
+            message={message}
+            onCancel={() => setCompareCancelMsgOpen(false)}
+            onConfirm={() => handleCompareCancel(currentContest.contests.id)}
+          />
           <Modal open={compareOpen} onClose={() => setCompareOpen(false)}>
             <CompareSetting
               stageInfo={currentStageInfo}
               setClose={setCompareOpen}
-              gradeListId={currentContest.contests.contestGradesListId}
-              fullMatched={currentStageMatchedPlayers}
-              setState={setVotedInfo}
-              setState2={setCompareMode}
+              matchedOriginalPlayers={matchedOriginalPlayers}
+              setRefresh={setParentRefresh}
+              propCompareIndex={comparesArray?.length + 1}
             />
           </Modal>
           <div className="flex w-full h-auto">
@@ -357,13 +434,13 @@ const ContestMonitoringJudgeHead = () => {
                 </h1>
                 <h1 className="font-sans text-base font-semibold">
                   모니터링상태 :{" "}
-                  {currentRealtime?.stageId && !isHolding && "실시간모니터링중"}
-                  {currentRealtime?.stageId && isHolding && "모니터링 일시정지"}
-                  {!currentRealtime?.stageId && !isHolding && "대회시작전"}
+                  {realtimeData?.stageId && !isHolding && "실시간모니터링중"}
+                  {realtimeData?.stageId && isHolding && "모니터링 일시정지"}
+                  {!realtimeData?.stageId && !isHolding && "대회시작전"}
                 </h1>
               </div>
               <div className="flex w-1/5 h-full">
-                {currentRealtime?.stageId && !isHolding && (
+                {realtimeData?.stageId && !isHolding && (
                   <button
                     className="bg-gray-400 w-full h-full text-white text-lg rounded-lg"
                     onClick={() => setIsHolding(true)}
@@ -371,7 +448,7 @@ const ContestMonitoringJudgeHead = () => {
                     일시정지
                   </button>
                 )}
-                {currentRealtime?.stageId && isHolding && (
+                {realtimeData?.stageId && isHolding && (
                   <button
                     className="bg-blue-600 w-full h-full text-white text-lg rounded-lg"
                     onClick={() => setIsHolding(false)}
@@ -385,82 +462,96 @@ const ContestMonitoringJudgeHead = () => {
           <div className="flex flex-col w-full h-auto">
             <div className="flex w-full h-auto justify-start items-center bg-blue-100 rounded-lg rounded-b-lg p-2">
               <div className="flex w-full h-auto gap-y-2 flex-col">
-                {currentRealtime && (
+                {realtimeData && (
                   <div
-                    className="flex bg-gray-100 p-2 w-full h-auto rounded-lg flex-col justify-center items-start"
-                    style={{ minHeight: "100px" }}
+                    className="flex bg-gray-100 p-2 w-full h-auto rounded-lg flex-col justify-start items-center"
+                    style={{ minHeight: "70px" }}
                   >
-                    {!currentRealtime.compares.status.compareStart && (
-                      <button
-                        className="bg-blue-400 w-full h-full p-2 rounded-lg text-gray-100 text-lg font-semibold"
-                        style={{ minHeight: "80px" }}
-                        onClick={() =>
-                          setCompareMode(() => ({
-                            ...compareMode,
-                            isCompare: true,
-                          }))
-                        }
-                      >
-                        비교심사시작
-                      </button>
-                    )}
-                    {currentRealtime.compares.status.compareStart && (
-                      <div className="flex w-full h-auto p-2 justify-start items-start flex-col ">
-                        <div className="flex w-full h-10">
-                          <div className="flex w-full h-auto justify-center items-center">
-                            비교 심사설정이 완료되지 않았습니다.
-                          </div>
-                        </div>
-                        <div className="flex w-full h-10 justify-center items-center gap-x-2">
+                    {!handleJudgeIsLoginedValidated(realtimeData.judges) &&
+                      comparesArray && (
+                        <div className="flex w-full h-auto justify-center items-center">
                           <button
-                            className="bg-blue-200 w-28 h-full rounded-lg p-2"
-                            onClick={() => {
-                              setCompareOpen(true);
-                            }}
-                          >
-                            설정화면이동
-                          </button>
-                          <button
-                            className="bg-red-200 w-28 h-full rounded-lg p-2"
+                            className="bg-blue-400 w-full h-full p-2 rounded-lg text-gray-100 text-lg font-semibold"
+                            style={{ minHeight: "50px" }}
                             onClick={() =>
-                              handleCompareCancel(
-                                currentContest.contests.id,
-                                currentRealtime
-                              )
+                              setCompareMode(() => ({
+                                ...compareMode,
+                                compareStart: true,
+                              }))
                             }
                           >
-                            비교심사취소
+                            {comparesArray.length + 1}차 비교심사시작
                           </button>
+                        </div>
+                      )}
+                    {currentCompareInfo?.compareId && (
+                      <div className="flex w-full h-auto justify-start items-start border flex-col">
+                        <div className="flex w-full justify-start items-center h-auto p-2">
+                          <div className="flex w-1/3 justify-center items-center h-10  border border-gray-400">
+                            {currentCompareInfo?.compareIndex}차 비교심사
+                          </div>
+                          <div className="flex w-1/3 justify-center items-center h-10 border border-gray-400 border-l-0">
+                            <div className="flex w-full justify-center items-center">
+                              <span className="mx-2">선발인원 : </span>
+                              <span>
+                                {currentCompareInfo?.comparePlayerLength}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex w-1/3 justify-center items-center h-10 border border-gray-400 border-l-0">
+                            <div className="flex w-full justify-center items-center">
+                              <span className="mx-2">채점모드 : </span>
+                              <span>
+                                {currentCompareInfo?.compareScoreMode ===
+                                "compare"
+                                  ? "대상자만 채점"
+                                  : "전체 채점"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex w-full justify-start items-center h-auto p-2">
+                          <div className="flex w-full justify-start items-center gap-x-2 p-2 border border-gray-400 rounded-lg">
+                            {currentCompareInfo?.comparedTopPlayrs?.map(
+                              (top, tIdx) => (
+                                <div className="flex w-10 h-10 rounded-lg bg-blue-500 justify-center items-center font-semibold border-2 border-blue-800 flex-col text-xl text-gray-100">
+                                  {top.playerNumber}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex w-full justify-start items-center h-auto p-2">
+                          <div className="flex w-full justify-start items-center gap-x-2">
+                            <button
+                              className="h-10 w-auto py-2 px-5 bg-red-500 text-gray-100 rounded-lg"
+                              onClick={() => {
+                                setMessage({
+                                  body: "비교심사를 취소하시겠습니까?",
+                                  isButton: true,
+                                  cancelButtonText: "아니오",
+                                  confirmButtonText: "예",
+                                });
+                                setCompareCancelMsgOpen(true);
+                              }}
+                            >
+                              {currentCompareInfo?.compareIndex}차 비교심사 취소
+                            </button>
+                            {/* <button
+                              className="h-10 w-auto py-2 px-5 bg-sky-800 text-gray-100 rounded-lg"
+                              onClick={() => setCompareOpen(true)}
+                            >
+                              {currentCompareInfo?.compareIndex}차 비교심사
+                              설정창 다시 보기
+                            </button> */}
+                          </div>
                         </div>
                       </div>
                     )}
-                    {/* {currentRealtime.compares.status.compareStart && (
-                      <div className="flex w-full h-auto p-2 justify-start items-start flex-col ">
-                        <div className="flex w-full h-10">
-                          <div className="flex w-full h-auto justify-center items-center">
-                            심사대상 인원 : {votedInfo?.playerLength} / 채점모드
-                            : {votedInfo?.scoreMode}
-                          </div>
-                        </div>
-                        <div className="flex w-full h-10 justify-center items-center gap-x-2">
-                          <button
-                            className="bg-red-200 w-28 h-full rounded-lg p-2"
-                            onClick={() =>
-                              handleCompareCancel(
-                                currentContest.contests.id,
-                                currentRealtime
-                              )
-                            }
-                          >
-                            비교심사취소
-                          </button>
-                        </div>
-                      </div>
-                    )} */}
                   </div>
                 )}
 
-                {currentRealtime && (
+                {realtimeData && (
                   <div className="flex w-full flex-col h-auto gap-y-2">
                     <div className="flex bg-white p-2 w-full h-auto rounded-lg flex-col justify-center items-start">
                       <div className="flex w-full h-14 justify-start items-center px-2">
@@ -501,8 +592,8 @@ const ContestMonitoringJudgeHead = () => {
                                 >
                                   구분
                                 </div>
-                                {currentRealtime?.judges &&
-                                  currentRealtime.judges.map((judge, jIdx) => {
+                                {realtimeData?.judges &&
+                                  realtimeData.judges.map((judge, jIdx) => {
                                     const { seatIndex } = judge;
                                     return (
                                       <div
@@ -525,8 +616,8 @@ const ContestMonitoringJudgeHead = () => {
                                     >
                                       {playerNumber}
                                     </div>
-                                    {currentRealtime?.judges?.length > 0 &&
-                                      currentRealtime?.judges.map(
+                                    {realtimeData?.judges?.length > 0 &&
+                                      realtimeData?.judges.map(
                                         (judge, jIdx) => {
                                           const { seatIndex } = judge;
 
@@ -565,98 +656,6 @@ const ContestMonitoringJudgeHead = () => {
               </div>
             </div>
           </div>
-
-          {/* <div className="flex w-full h-auto">
-            <div className="flex w-full h-auto bg-gray-100 justify-start items-center rounded-lg px-3">
-              <div className="flex w-full h-full justify-start items-center gap-y-2 flex-col py-3">
-                {stagesArray?.length > 0 &&
-                  stagesArray.map((schedule, sIdx) => {
-                    const {
-                      categoryTitle,
-                      categoryId,
-                      grades,
-                      stageId,
-                      stageNumber,
-                    } = schedule;
-
-                    const gradeTitle = handleGradeInfo(grades).gradeTitle;
-
-                    const findIndex = stagesArray.findIndex(
-                      (f) => f.stageId === stageId
-                    );
-                    return (
-                      <div className="flex flex-col w-full h-auto">
-                        <div
-                          className={`${
-                            stageId === currentStage?.stageId
-                              ? "flex w-full bg-blue-200 rounded-lg h-10 p-2"
-                              : "flex w-full bg-white rounded-lg h-10 p-2"
-                          }`}
-                        >
-                          <div className="flex w-4/6">
-                            {categoryTitle} ({gradeTitle})
-                          </div>
-                          <div className="flex w-1/6">
-                            {stageId === currentStage?.stageId && (
-                              <button
-                                onClick={() =>
-                                  handleUpdateMonitoring(
-                                    "currentStage",
-                                    currentStage.id,
-                                    findIndex
-                                  )
-                                }
-                              >
-                                완료
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex w-1/6">
-                            <button
-                              onClick={() =>
-                                handleGotoSummary(
-                                  categoryId,
-                                  categoryTitle,
-                                  grades
-                                )
-                              }
-                            >
-                              집계표
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex w-full h-auto">
-                          {stageId === currentStage?.stageId && (
-                            <div className="flex justify-start items-center h-20 w-full">
-                              {currentStage.judges.map((judge, jIdx) => {
-                                const { isEnd, isLogined, seatIndex } = judge;
-
-                                return (
-                                  <div className="flex w-32 h-20 justify-center items-center flex-col">
-                                    <div className="flex w-full h-10 justify-center items-center">
-                                      {seatIndex}
-                                    </div>
-                                    <div className="flex w-full h-10 justify-center items-center">
-                                      {isLogined === false &&
-                                        isEnd === false && <span>준비중</span>}
-                                      {isLogined === true &&
-                                        isEnd === false && <span>심사중</span>}
-                                      {isLogined === true && isEnd === true && (
-                                        <span>완료</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          </div> */}
         </div>
       )}
     </>
