@@ -355,6 +355,10 @@ const ContestMonitoringJudgeHead = () => {
   }, [currentStageFunction]);
 
   useEffect(() => {
+    if (fetchRealTimeCurrentStage?.judgex) {
+      setrealtimeData(() => ({ ...fetchRealTimeCurrentStage }));
+    }
+
     if (
       fetchRealTimeCurrentStage?.stageJudgeCount &&
       currentStageInfo?.grades?.length > 0 &&

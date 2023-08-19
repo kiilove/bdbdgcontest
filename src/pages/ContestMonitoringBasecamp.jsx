@@ -2,8 +2,7 @@ import React from "react";
 import { useState } from "react";
 import _ from "lodash";
 import LoadingPage from "./LoadingPage";
-import { TbHeartRateMonitor } from "react-icons/tb";
-import { CgSpinnerTwo } from "react-icons/cg";
+
 import {
   useFirestoreGetDocument,
   useFirestoreQuery,
@@ -14,7 +13,6 @@ import { useEffect } from "react";
 import {
   useFirebaseRealtimeAddData,
   useFirebaseRealtimeGetDocument,
-  useFirebaseRealtimeQuery,
   useFirebaseRealtimeUpdateData,
 } from "../hooks/useFirebaseRealtime";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +22,7 @@ import { where } from "firebase/firestore";
 import { PiSpinner, PiSpinnerThin } from "react-icons/pi";
 import { Modal } from "@mui/material";
 import ScoreCardRankForm from "./ScoreCardRankForm";
+import ContestRankSummaryModal from "../modals/ContestRankSummaryModal";
 
 const ContestMonitoringBasecamp = () => {
   const navigate = useNavigate();
@@ -38,9 +37,14 @@ const ContestMonitoringBasecamp = () => {
   const [scoreCardOpen, setScoreCardOpen] = useState(false);
   const [message, setMessage] = useState({});
 
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryProp, setSummaryProp] = useState({});
+  const [rankResultOpen, setRankResultOpen] = useState(false);
+
   const [stagesArray, setStagesArray] = useState([]);
   const [playersArray, setPlayersArray] = useState([]);
   const [currentStageInfo, setCurrentStageInfo] = useState({ stageId: null });
+  const [prevRealtimeData, setPrevRealtimeData] = useState({});
 
   const [normalScoreData, setNormalScoreData] = useState([]);
   const [normalScoreTable, setNormalScoreTable] = useState([]);
@@ -130,7 +134,7 @@ const ContestMonitoringBasecamp = () => {
   };
 
   const handleScoreTableByJudge = (grades) => {
-    if (!_.isEqual(realtimeData?.judges, realtimeData?.judges)) {
+    if (!_.isEqual(realtimeData?.judges, prevRealtimeData?.judges)) {
       fetchScoreTable(grades);
     }
   };
@@ -274,7 +278,8 @@ const ContestMonitoringBasecamp = () => {
     if (judgesArray?.length <= 0) {
       return;
     }
-    console.log(judgesArray);
+    handleScoreTableByJudge(currentStageInfo.grades);
+
     const validate = judgesArray.some((s) => s.isEnd === false);
     return validate;
   };
@@ -321,6 +326,9 @@ const ContestMonitoringBasecamp = () => {
   }, [currentStageFunction]);
 
   useEffect(() => {
+    if (realtimeData?.judges) {
+      setPrevRealtimeData(() => ({ ...realtimeData }));
+    }
     if (
       realtimeData?.stageJudgeCount &&
       currentStageInfo?.grades?.length > 0 &&
@@ -352,6 +360,14 @@ const ContestMonitoringBasecamp = () => {
           />
           <Modal open={scoreCardOpen}>
             <ScoreCardRankForm setClose={setScoreCardOpen} />
+          </Modal>
+          <Modal open={summaryOpen}>
+            <ContestRankSummaryModal
+              categoryId={summaryProp?.categoryId}
+              gradeId={summaryProp?.gradeId}
+              tableType={summaryProp?.tableType}
+              setClose={setSummaryOpen}
+            />
           </Modal>
           <div className="flex w-full h-auto">
             <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-3">
@@ -450,9 +466,6 @@ const ContestMonitoringBasecamp = () => {
                             >
                               다음진행
                             </button>
-                            <button className="w-24 h-10 bg-blue-800 rounded-lg text-gray-100">
-                              집계표출력
-                            </button>
                           </div>
                         )}
                       </div>
@@ -541,7 +554,12 @@ const ContestMonitoringBasecamp = () => {
                       </div>
                       {currentStageInfo?.grades?.length > 0 &&
                         currentStageInfo.grades.map((grade, gIdx) => {
-                          const { categoryTitle, gradeTitle, gradeId } = grade;
+                          const {
+                            categoryTitle,
+                            categoryId,
+                            gradeTitle,
+                            gradeId,
+                          } = grade;
                           const filterdPlayers = playersArray
                             .filter(
                               (f) =>
@@ -552,7 +570,39 @@ const ContestMonitoringBasecamp = () => {
                           return (
                             <div className="flex w-full h-auto p-2 flex-col">
                               <div className="flex w-full h-10 justify-start items-center">
-                                {categoryTitle}({gradeTitle})
+                                <div className="flex">
+                                  {categoryTitle}({gradeTitle})
+                                </div>
+                                <div className="flex">
+                                  <button
+                                    className="w-24 h-10  text-gray-800"
+                                    onClick={() => {
+                                      setSummaryProp({
+                                        categoryId,
+                                        gradeId,
+                                        tableType: "summaryboard",
+                                      });
+                                      setSummaryOpen(true);
+                                    }}
+                                  >
+                                    집계표출력
+                                  </button>
+                                </div>
+                                <div className="flex">
+                                  <button
+                                    className="w-24 h-10  text-gray-800"
+                                    onClick={() => {
+                                      setSummaryProp({
+                                        categoryId,
+                                        gradeId,
+                                        tableType: "rankboard",
+                                      });
+                                      setSummaryOpen(true);
+                                    }}
+                                  >
+                                    순위표출력
+                                  </button>
+                                </div>
                               </div>
                               <div className="flex w-full h-10 justify-start items-center">
                                 <div
@@ -576,7 +626,7 @@ const ContestMonitoringBasecamp = () => {
                               </div>
                               {filterdPlayers.map((player, pIdx) => {
                                 const { playerNumber } = player;
-                                console.log(currentStageInfo);
+
                                 return (
                                   <div className="flex">
                                     <div
@@ -643,6 +693,7 @@ const ContestMonitoringBasecamp = () => {
                               stageNumber,
                               stageId,
                               categoryTitle,
+                              categoryId,
                             } = stage;
                             const gradeTitle =
                               handleGradeInfo(grades).gradeTitle;
@@ -694,15 +745,23 @@ const ContestMonitoringBasecamp = () => {
                                 </div>
                                 <div className="flex w-1/2 justify-end items-center flex-wrap py-2">
                                   <div className="flex w-full gap-x-2 justify-end items-center">
-                                    <button
+                                    {/* <button
                                       className={`${
                                         realtimeData.stageId === stageId
                                           ? "flex w-24 justify-center items-center  bg-blue-100 rounded-lg p-2 text-gray-900"
                                           : "flex w-24 justify-center items-center  bg-blue-400 rounded-lg p-2 text-gray-100"
                                       }`}
+                                      onClick={() => {
+                                        setSummaryProp({
+                                          categoryId,
+                                          gradeId,
+                                          tableType: "summaryboard",
+                                        });
+                                        setSummaryOpen(true);
+                                      }}
                                     >
                                       집계표출력
-                                    </button>
+                                    </button> */}
                                     <button
                                       onClick={() =>
                                         handleUpdateCurrentStage(sIdx, "force")
