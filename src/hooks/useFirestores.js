@@ -133,7 +133,7 @@ export function useFirestoreUpdateData(collectionName) {
 
   const updateData = async (id, newData, callback) => {
     // console.log(id);
-    // console.log(newData);
+    console.log(newData);
     try {
       setLoading(true);
       await updateDoc(doc(db, collectionName, id), newData);

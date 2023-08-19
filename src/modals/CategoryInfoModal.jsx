@@ -6,6 +6,7 @@ import {
   useFirestoreGetDocument,
   useFirestoreUpdateData,
 } from "../hooks/useFirestores";
+import ConfirmationModal from "../messageBox/ConfirmationModal";
 
 const initCategoryInfo = {
   contestCategoryId: "",
@@ -16,10 +17,12 @@ const initCategoryInfo = {
   contestCategoryPriceType: "기본참가비",
   contestCategroyIsOverall: "off",
   contestCategoryType: "",
-  contestCategoryJudgeType: "랭킹형(짜찝표)",
+  contestCategoryJudgeType: "ranking",
 };
 
-const CategoryInfoModal = ({ setClose, propState, setState }) => {
+const CategoryInfoModal = ({ setClose, propState, setState, setRefresh }) => {
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [message, setmessage] = useState({});
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
@@ -128,10 +131,19 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
 
   const handleSaveCategorys = async (data) => {
     try {
-      await contestCategoryUpdate.updateData(
-        currentContest.contests.contestCategorysListId,
-        { ...categorysList, categorys: [...data] }
-      );
+      await contestCategoryUpdate
+        .updateData(currentContest.contests.contestCategorysListId, {
+          ...categorysList,
+          categorys: [...data],
+        })
+        .then(() => {
+          setmessage({
+            body: "저장되었습니다.",
+            isButton: true,
+            confirmButtonText: "확인",
+          });
+          setMsgOpen(true);
+        });
     } catch (error) {
       console.log(error);
     }
@@ -172,6 +184,18 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
 
   return (
     <div className="flex w-full flex-col gap-y-2 h-auto">
+      <ConfirmationModal
+        isOpen={msgOpen}
+        message={message}
+        onCancel={() => {
+          setRefresh(true);
+          setClose();
+        }}
+        onConfirm={() => {
+          setRefresh(true);
+          setClose();
+        }}
+      />
       <div className="flex w-full h-14">
         <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
           <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
@@ -360,8 +384,20 @@ const CategoryInfoModal = ({ setClose, propState, setState }) => {
                   }
                   className="w-full h-full pl-2"
                 >
-                  <option>랭킹형(짜찝표)</option>
-                  <option>점수형</option>
+                  <option
+                    value="ranking"
+                    selected={
+                      categoryInfo.contestCategoryJudgeType === "ranking"
+                    }
+                  >
+                    랭킹형
+                  </option>
+                  <option
+                    value="point"
+                    selected={categoryInfo.contestCategoryJudgeType === "point"}
+                  >
+                    점수형
+                  </option>
                 </select>
               </div>
             </div>

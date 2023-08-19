@@ -25,6 +25,7 @@ const ContestCategoryOrderTable = () => {
     gradeId: "",
   });
 
+  const [isRefresh, setIsRefresh] = useState(false);
   const { currentContest } = useContext(CurrentContestContext);
   const fetchCategroyDocument = useFirestoreGetDocument(
     "contest_categorys_list"
@@ -120,7 +121,11 @@ const ContestCategoryOrderTable = () => {
       fetchPool();
     }
   }, [currentContest]);
-
+  useEffect(() => {
+    if (isRefresh) {
+      fetchPool();
+    }
+  }, [isRefresh]);
   return (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
       <Modal open={isOpen.category} onClose={handleCategoryClose}>
@@ -134,6 +139,7 @@ const ContestCategoryOrderTable = () => {
             setClose={handleCategoryClose}
             propState={isOpen}
             setState={setCategoriesArray}
+            setRefresh={setIsRefresh}
           />
         </div>
       </Modal>
@@ -148,6 +154,7 @@ const ContestCategoryOrderTable = () => {
             setClose={handleGradeClose}
             propState={isOpen}
             setState={setGradesArray}
+            setRefresh={setIsRefresh}
           />
         </div>
       </Modal>
@@ -197,6 +204,8 @@ const ContestCategoryOrderTable = () => {
                                 contestCategoryIndex: categoryIndex,
                                 contestCategoryTitle: categoryTitle,
                                 contestCategoryJudgeCount: judgeCount,
+                                contestCategorySection: categorySection,
+                                contestCategoryJudgeType: categoryJudgeType,
                               } = category;
 
                               const matchedGrades = gradesArray
@@ -228,17 +237,23 @@ const ContestCategoryOrderTable = () => {
                                       {...provided.draggableProps}
                                     >
                                       <div className="h-auto w-full flex items-center flex-col lg:flex-row">
-                                        <div className="flex w-full h-auto justify-start items-center">
-                                          <div className="w-1/6 h-14 flex justify-start items-center pl-4">
+                                        <div className="flex w-full lg:w-2/3 h-auto justify-start items-center ">
+                                          <div className="w-1/12 h-14 flex justify-start items-center pl-4">
                                             {categoryIndex}
                                           </div>
-                                          <div className="w-4/6 h-14 flex justify-start items-center">
+                                          <div className="w-4/6 h-14 flex justify-start items-center gap-x-2">
                                             {categoryTitle}
-                                            {judgeCount &&
-                                              `(${judgeCount}심제)`}
+                                            <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 flex justify-center items-center text-sm">
+                                              {categorySection}
+                                            </span>
+                                            <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 hidden lg:flex justify-center items-center text-sm">
+                                              {categoryJudgeType === "ranking"
+                                                ? "랭킹"
+                                                : "점수"}
+                                            </span>
                                           </div>
                                         </div>
-                                        <div className="flex w-full h-auto justify-end items-center">
+                                        <div className="flex w-full lg:w-1/3 h-auto justify-end items-center">
                                           <div className="w-1/6 h-14 flex justify-end items-center pr-2">
                                             <div className="flex w-full justify-end items-center h-14 gap-x-2">
                                               <button
