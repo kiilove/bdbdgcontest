@@ -23,6 +23,7 @@ import { PiSpinner, PiSpinnerThin } from "react-icons/pi";
 import { Modal } from "@mui/material";
 import ScoreCardRankForm from "./ScoreCardRankForm";
 import ContestRankSummaryModal from "../modals/ContestRankSummaryModal";
+import StandingTableType1 from "./StandingTableType1";
 
 const ContestMonitoringBasecamp = () => {
   const navigate = useNavigate();
@@ -673,7 +674,6 @@ const ContestMonitoringBasecamp = () => {
                 )}
               </div>
             )}
-
             {currentSubTab === "1" && (
               <div className="flex w-full h-auto justify-start items-center bg-blue-100 rounded-tr-lg rounded-b-lg p-2">
                 {realtimeData && stagesArray?.length > 0 && (

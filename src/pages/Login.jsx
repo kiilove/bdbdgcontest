@@ -1,6 +1,6 @@
 import React from "react";
-import LoginBg from "../assets/img/loginbg.png";
-import LoginBg2 from "../assets/img/loginbg2.png";
+import LoginBg3 from "../assets/img/loginbg3.jpg";
+import LoginBg4 from "../assets/img/loginbg4.jpg";
 import { FaUser, FaKey } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -13,7 +13,7 @@ const Login = () => {
           className="rounded-lg shadow-lg flex w-full lg:w-3/4 lg:h-3/4"
           style={{
             backgroundColor: "#f9f9f9",
-            backgroundImage: `url(${LoginBg2})`,
+            backgroundImage: `url(${LoginBg4})`,
             backgroundSize: "90% 100%",
             backgroundRepeat: "no-repeat",
           }}
@@ -88,7 +88,7 @@ const Login = () => {
         className="flex md:hidden h-full p-5 flex-col justify-start"
         style={{
           backgroundColor: "#f9f9f9",
-          backgroundImage: `url(${LoginBg})`,
+          backgroundImage: `url(${LoginBg3})`,
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
         }}

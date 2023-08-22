@@ -204,6 +204,9 @@ const ContestRankSummary = () => {
         </div>
         {data.map((player, pIdx) => {
           const { playerNumber, totalScore, playerRank, score } = player;
+          if (totalScore >= 1000) {
+            return null;
+          }
           return (
             <div
               key={playerNumber}

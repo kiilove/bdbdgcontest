@@ -63,7 +63,7 @@ const CompareSetting = ({
 
   const { currentContest } = useContext(CurrentContestContext);
 
-  const fetchPool = async (gradeId, compareId) => {
+  const fetchPool = async (gradeId, compareListId) => {
     if (gradeId === undefined || compareId === undefined) {
       setMessage({
         body: "데이터 로드에 문제가 발생했습니다.",
@@ -77,13 +77,17 @@ const CompareSetting = ({
 
     try {
       await fetchCompare
-        .getDocument(compareId)
-        .then((data) => setCompareList({ ...data }))
-        .then(
-          () =>
-            compareList?.compares?.length > 0 &&
-            setCompareArray([...compareList.compares])
-        );
+        .getDocument(compareListId)
+        .then((data) => {
+          console.log(data);
+          setCompareList({ ...data });
+          return data;
+        })
+        .then((data) => {
+          console.log(data.compares);
+          data?.compares?.length > 0 &&
+            setCompareArray([...compareList.compares]);
+        });
     } catch (error) {
       console.log(error);
     }
@@ -92,6 +96,7 @@ const CompareSetting = ({
   const handleCompareModeStart = async (contestId, data) => {
     const collectionInfo = `currentStage/${contestId}/compares`;
     try {
+      setVotedInfo({});
       await updateRealtimeCompare.updateData(collectionInfo, data).then(() =>
         setCompareStatus(() => ({
           compareStart: true,
@@ -168,19 +173,6 @@ const CompareSetting = ({
       compareIng: false,
     };
 
-    //firestore Update
-    const compareInfo = {
-      compareId: generateUUID(),
-      contestId,
-      categoryId: stageInfo.categoryId,
-      gradeId: stageInfo.grades[0].gradeId,
-      categoryTitle: stageInfo.categoryTitle,
-      gradeTitle: stageInfo.grades[0].gradeTitle,
-      compareIndex: propCompareIndex,
-      comparePlayerLength: parseInt(votedInfo.playerLength),
-      compareScoreMode: votedInfo.scoreMode,
-    };
-
     //상황판
     const judgeMessageInfo = realtimeData?.judges.map((judge, sIdx) => {
       const { seatIndex } = judge;
@@ -197,28 +189,10 @@ const CompareSetting = ({
     };
 
     try {
-      const newCompares = [...compareArray];
-      newCompares.push({ ...compareInfo });
-      await updateCompare
-        .updateData(compareId, {
-          ...compareList,
-          compares: [...newCompares],
-        })
-        .then(() => {
-          const promises = [
-            setCompareList({ ...compareList, compares: [...newCompares] }),
-            setCompareArray([...newCompares]),
-            setCompareId(() => compareInfo.compareId),
-          ];
-
-          Promise.all(promises);
-        })
-        .then(() => {
-          handleCompareModeStart(
-            currentContest.contests.id,
-            realtimeCompareInfo
-          );
-        });
+      await handleCompareModeStart(
+        currentContest.contests.id,
+        realtimeCompareInfo
+      );
     } catch (error) {
       console.log(error);
     }
@@ -228,19 +202,24 @@ const CompareSetting = ({
     playerTopResult,
     playerVoteResult,
     contestId,
-    compareId,
-    compareArrayId
+    compareListId
   ) => {
     //console.log(playerVoteResult);
-    if (!compareArrayId) {
-      setMessage({
-        body: "비교심사 데이터 로드에 문제가 발생했습니다.",
-        isButton: true,
-        isCancelButtonText: "다시시도",
-      });
-      setMsgOpen(true);
-      return;
-    }
+
+    //firestore Update
+    const compareInfo = {
+      contestId,
+      categoryId: stageInfo.categoryId,
+      gradeId: stageInfo.grades[0].gradeId,
+      categoryTitle: stageInfo.categoryTitle,
+      gradeTitle: stageInfo.grades[0].gradeTitle,
+      compareIndex: propCompareIndex,
+      comparePlayerLength: parseInt(votedInfo.playerLength),
+      compareScoreMode: votedInfo.scoreMode,
+      players: [...playerTopResult],
+      votedResult: [...playerVoteResult],
+    };
+
     try {
       const collectionInfoCompares = `currentStage/${contestId}/compares`;
 
@@ -251,19 +230,8 @@ const CompareSetting = ({
         compareIng: true,
       };
       const newCompares = [...compareArray];
-      const findCompare = newCompares.find(
-        (compare) => compare.compareId === compareArrayId
-      );
-      const findIndexCompare = newCompares.findIndex(
-        (compare) => compare.compareId === compareArrayId
-      );
-      const compareInfo = {
-        ...findCompare,
-        compareVoted: [...playerVoteResult],
-        comparedTopPlayrs: [...playerTopResult],
-      };
+      newCompares.push({ ...compareInfo });
 
-      newCompares.splice(findIndexCompare, 1, { ...compareInfo });
       await updateRealtimeCompare
         .updateData(collectionInfoCompares, {
           ...realtimeData.compares,
@@ -272,7 +240,7 @@ const CompareSetting = ({
         })
         .then(
           async () =>
-            await updateCompare.updateData(compareId, {
+            await updateCompare.updateData(compareListId, {
               ...compareList,
               compares: [...newCompares],
             })
@@ -411,7 +379,7 @@ const CompareSetting = ({
 
   return (
     <>
-      <div className="flex w-full h-full flex-col bg-white justify-start items-center p-5 gap-y-2">
+      <div className="flex w-full h-full flex-col bg-white justify-start items-center p-5 gap-y-2 overflow-y-auto">
         {!isLoading && (
           <>
             <div className="flex text-2xl font-bold  bg-blue-300 rounded-lg w-full h-auto justify-center items-center text-gray-700 flex-col p-2 gap-y-2">
@@ -722,8 +690,7 @@ const CompareSetting = ({
                           topResult,
                           votedResult,
                           currentContest.contests.id,
-                          currentContest.contests.contestComparesListId,
-                          compareId
+                          currentContest.contests.contestComparesListId
                         )
                       }
                     >
@@ -774,13 +741,41 @@ const CompareSetting = ({
                         );
                       })}
                     </div>
+                    {compareArray?.length > 0 && (
+                      <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col p-2">
+                        <div className="flex w-full h-20 justify-start items-center px-5">
+                          <div
+                            className="h-full p-2 justify-center items-center flex w-full border first:border-l border-l-0 border-gray-400 "
+                            style={{ maxWidth: "200px" }}
+                          >
+                            {compareArray?.length}차 TOP{" "}
+                            {
+                              compareArray[compareArray?.length - 1]
+                                ?.comparePlayerLength
+                            }
+                          </div>
+                          <div className="h-full p-2 justify-start items-center flex w-full border first:border-l border-l-0 border-gray-400 gap-2">
+                            {compareArray[
+                              compareArray?.length - 1
+                            ]?.players?.map((top, tIdx) => {
+                              const { playerNumber } = top;
+                              return (
+                                <div className="w-14 h-14 p-2 bg-blue-400 text-gray-100 rounded-lg justify-center items-center flex">
+                                  {playerNumber}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col p-2">
                       <div className="flex w-full h-20 justify-start items-center px-5">
                         <div
                           className="h-full p-2 justify-center items-center flex w-full border first:border-l border-l-0 border-gray-400 "
                           style={{ maxWidth: "200px" }}
                         >
-                          TOP {realtimeData?.compares?.playerLength}
+                          현재 TOP {realtimeData?.compares?.playerLength}
                         </div>
                         <div className="h-full p-2 justify-start items-center flex w-full border first:border-l border-l-0 border-gray-400 gap-2">
                           {topResult?.length > 0 &&

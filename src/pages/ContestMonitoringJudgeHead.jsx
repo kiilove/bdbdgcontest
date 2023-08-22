@@ -120,10 +120,13 @@ const ContestMonitoringJudgeHead = () => {
         setComparesList({ ...returnCompareList });
         setComparesArray([...returnCompareList.compares]);
 
-        if (returnCompareList.compares.length === 0) {
+        if (returnCompareList?.compares?.length === 0) {
           setCurrentCompareInfo({});
         }
         if (returnCompareList.compares.length > 0) {
+          console.log(
+            returnCompareList.compares[returnCompareList.compares.length - 1]
+          );
           setCurrentCompareInfo({
             ...returnCompareList.compares[
               returnCompareList.compares.length - 1
@@ -258,21 +261,39 @@ const ContestMonitoringJudgeHead = () => {
     });
   };
 
-  const handleCompareAdd = async (contestId, data, comparesData) => {};
-  const handleCompareCancel = async (contestId) => {
+  const handleCompareCancel = async (contestId, compareIndex) => {
     const collectionInfoByCompares = `currentStage/${contestId}/compares`;
     const newCompareArray = [...comparesArray];
-    newCompareArray.splice(comparesArray?.length - 1, 1);
+    newCompareArray.splice(compareIndex, 1);
+    let newRealtimeInfo = {
+      status: {
+        compareStart: false,
+        compareEnd: false,
+        compareCancel: false,
+        compareIng: false,
+      },
+    };
+    let newRealtimePlayers = [];
+
+    if (compareIndex > 0) {
+      newRealtimeInfo = {
+        compareIndex: comparesArray[compareIndex - 1].compareIndex,
+        status: {
+          compareStart: false,
+          compareEnd: false,
+          compareCancel: false,
+          compareIng: true,
+        },
+        playerLength: comparesArray[compareIndex - 1].comparePlayerLength,
+        scoreMode: comparesArray[compareIndex - 1].compareScoreMode,
+        player: [...comparesArray[compareIndex - 1].players],
+      };
+    }
 
     try {
       await updateRealtimeCompare
         .updateData(collectionInfoByCompares, {
-          status: {
-            compareStart: false,
-            compareEnd: false,
-            compareCancel: false,
-            compareIng: false,
-          },
+          ...newRealtimeInfo,
         })
         .then((data) => console.log(data))
         .then(() =>
@@ -419,7 +440,12 @@ const ContestMonitoringJudgeHead = () => {
             isOpen={compareCancelMsgOpen}
             message={message}
             onCancel={() => setCompareCancelMsgOpen(false)}
-            onConfirm={() => handleCompareCancel(currentContest.contests.id)}
+            onConfirm={() =>
+              handleCompareCancel(
+                currentContest.contests.id,
+                comparesArray?.length - 1
+              )
+            }
           />
           <Modal open={compareOpen} onClose={() => setCompareOpen(false)}>
             <CompareSetting
@@ -471,7 +497,7 @@ const ContestMonitoringJudgeHead = () => {
                     className="flex bg-gray-100 p-2 w-full h-auto rounded-lg flex-col justify-start items-center"
                     style={{ minHeight: "70px" }}
                   >
-                    {!handleJudgeIsLoginedValidated(realtimeData.judges) &&
+                    {/* {!handleJudgeIsLoginedValidated(realtimeData.judges) &&
                       comparesArray && (
                         <div className="flex w-full h-auto justify-center items-center">
                           <button
@@ -487,8 +513,24 @@ const ContestMonitoringJudgeHead = () => {
                             {comparesArray.length + 1}차 비교심사시작
                           </button>
                         </div>
-                      )}
-                    {currentCompareInfo?.compareId && (
+                      )} */}
+                    {realtimeData.judges && comparesArray && (
+                      <div className="flex w-full h-auto justify-center items-center">
+                        <button
+                          className="bg-blue-400 w-full h-full p-2 rounded-lg text-gray-100 text-lg font-semibold"
+                          style={{ minHeight: "50px" }}
+                          onClick={() =>
+                            setCompareMode(() => ({
+                              ...compareMode,
+                              compareStart: true,
+                            }))
+                          }
+                        >
+                          {comparesArray.length + 1}차 비교심사시작
+                        </button>
+                      </div>
+                    )}
+                    {currentCompareInfo?.players?.length > 0 && (
                       <div className="flex w-full h-auto justify-start items-start border flex-col">
                         <div className="flex w-full justify-start items-center h-auto p-2">
                           <div className="flex w-1/3 justify-center items-center h-10  border border-gray-400">
@@ -514,42 +556,42 @@ const ContestMonitoringJudgeHead = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex w-full justify-start items-center h-auto p-2">
-                          <div className="flex w-full justify-start items-center gap-x-2 p-2 border border-gray-400 rounded-lg">
-                            {currentCompareInfo?.comparedTopPlayrs?.map(
-                              (top, tIdx) => (
-                                <div className="flex w-10 h-10 rounded-lg bg-blue-500 justify-center items-center font-semibold border-2 border-blue-800 flex-col text-xl text-gray-100">
-                                  {top.playerNumber}
+                        {comparesArray?.length > 0 &&
+                          comparesArray.map((compare, cIdx) => {
+                            const { players, compareIndex } = compare;
+
+                            return (
+                              <div className="flex w-full justify-start items-center h-auto p-2">
+                                <div className="flex w-2/3 justify-start items-center gap-x-2 p-2 border border-gray-400 rounded-lg">
+                                  {players?.map((top, tIdx) => (
+                                    <div className="flex w-10 h-10 rounded-lg bg-blue-500 justify-center items-center font-semibold border-2 border-blue-800 flex-col text-xl text-gray-100">
+                                      {top.playerNumber}
+                                    </div>
+                                  ))}
                                 </div>
-                              )
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex w-full justify-start items-center h-auto p-2">
-                          <div className="flex w-full justify-start items-center gap-x-2">
-                            <button
-                              className="h-10 w-auto py-2 px-5 bg-red-500 text-gray-100 rounded-lg"
-                              onClick={() => {
-                                setMessage({
-                                  body: "비교심사를 취소하시겠습니까?",
-                                  isButton: true,
-                                  cancelButtonText: "아니오",
-                                  confirmButtonText: "예",
-                                });
-                                setCompareCancelMsgOpen(true);
-                              }}
-                            >
-                              {currentCompareInfo?.compareIndex}차 비교심사 취소
-                            </button>
-                            {/* <button
-                              className="h-10 w-auto py-2 px-5 bg-sky-800 text-gray-100 rounded-lg"
-                              onClick={() => setCompareOpen(true)}
-                            >
-                              {currentCompareInfo?.compareIndex}차 비교심사
-                              설정창 다시 보기
-                            </button> */}
-                          </div>
-                        </div>
+                                {compareIndex >= comparesArray?.length && (
+                                  <div className="flex w-1/3 justify-end items-center gap-x-2">
+                                    <button
+                                      className="h-10 w-auto py-2 px-5 bg-red-500 text-gray-100 rounded-lg"
+                                      onClick={() => {
+                                        setMessage({
+                                          body: "비교심사를 취소하시겠습니까?",
+                                          isButton: true,
+                                          cancelButtonText: "아니오",
+                                          confirmButtonText: "예",
+                                        });
+                                        setCompareCancelMsgOpen(true);
+                                      }}
+                                    >
+                                      {compareIndex}차 비교심사 취소
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                        <div className="flex w-full justify-start items-center h-auto p-2"></div>
                       </div>
                     )}
                   </div>

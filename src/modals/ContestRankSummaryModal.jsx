@@ -214,6 +214,9 @@ const ContestRankSummaryModal = ({
         </div>
         {data.map((player, pIdx) => {
           const { playerNumber, totalScore, playerRank, score } = player;
+          if (totalScore >= 1000) {
+            return null;
+          }
           return (
             <div
               key={playerNumber}
@@ -233,18 +236,18 @@ const ContestRankSummaryModal = ({
                     key={seatIndex}
                   >
                     {isMin && (
-                      <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-300">
-                        {playerScore}
+                      <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-400">
+                        {playerScore >= 1000 ? "제외" : playerScore}
                       </span>
                     )}
                     {isMax && (
-                      <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-300">
-                        {playerScore}
+                      <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-500">
+                        {playerScore >= 1000 ? "제외" : playerScore}
                       </span>
                     )}
                     {!isMax && !isMin && (
                       <span className="w-auto h-auto p-3 rounded-lg ">
-                        {playerScore}
+                        {playerScore >= 1000 ? "제외" : playerScore}
                       </span>
                     )}
                   </div>
@@ -286,6 +289,9 @@ const ContestRankSummaryModal = ({
         </div>
         {data.map((player, pIdx) => {
           const { playerNumber, totalScore, playerRank, score } = player;
+          if (totalScore >= 1000) {
+            return null;
+          }
           return (
             <div
               key={playerNumber}
@@ -307,18 +313,18 @@ const ContestRankSummaryModal = ({
                       key={seatIndex}
                     >
                       {isMin && (
-                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-300">
-                          {playerScore}
+                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-400">
+                          {playerScore >= 1000 ? "제외" : playerScore}
                         </span>
                       )}
                       {isMax && (
-                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-300">
-                          {playerScore}
+                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-500">
+                          {playerScore >= 1000 ? "제외" : playerScore}
                         </span>
                       )}
                       {!isMax && !isMin && (
                         <span className="w-auto h-auto p-3 rounded-lg ">
-                          {playerScore}
+                          {playerScore >= 1000 ? "제외" : playerScore}
                         </span>
                       )}
                     </div>
