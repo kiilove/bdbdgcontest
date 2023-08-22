@@ -26,7 +26,7 @@ const CompareSetting = ({
   setRefresh,
   propCompareIndex,
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [compareList, setCompareList] = useState({});
   const [compareArray, setCompareArray] = useState([]);
 
@@ -37,6 +37,7 @@ const CompareSetting = ({
   const [votedInfo, setVotedInfo] = useState({
     playerLength: undefined,
     scoreMode: undefined,
+    voteRange: undefined,
   });
 
   const [compareStatus, setCompareStatus] = useState({
@@ -85,11 +86,13 @@ const CompareSetting = ({
         })
         .then((data) => {
           console.log(data.compares);
-          data?.compares?.length > 0 &&
-            setCompareArray([...compareList.compares]);
+          console.log(data.compares.length);
+          data?.compares?.length > 0 && setCompareArray([...data.compares]);
         });
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -165,6 +168,7 @@ const CompareSetting = ({
 
   const handleAdd = async (contestId, compareId) => {
     const collection = `currentStage/${contestId}/compare`;
+    setTopResult({});
 
     const newCompareMode = {
       compareStart: true,
@@ -337,6 +341,7 @@ const CompareSetting = ({
       setVotedInfo(() => ({
         playerLength: realtimeData.compares.playerLength,
         scoreMode: realtimeData.compares.scoreMode,
+        voteRange: realtimeData.compares.voteRange,
       }));
     }
   }, [realtimeData?.compares]);
@@ -380,6 +385,7 @@ const CompareSetting = ({
   return (
     <>
       <div className="flex w-full h-full flex-col bg-white justify-start items-center p-5 gap-y-2 overflow-y-auto">
+        {isLoading && <LoadingPage />}
         {!isLoading && (
           <>
             <div className="flex text-2xl font-bold  bg-blue-300 rounded-lg w-full h-auto justify-center items-center text-gray-700 flex-col p-2 gap-y-2">
@@ -439,6 +445,81 @@ const CompareSetting = ({
                 </div>
               </div>
               <div className="flex w-full bg-gray-100 rounded-lg py-3 flex-col text-xl">
+                {propCompareIndex > 1 && (
+                  <>
+                    {realtimeData?.compares?.status?.compareStart ? (
+                      <div className="flex w-full h-auto px-5 py-2">
+                        <div
+                          className="flex h-auto justify-start items-center"
+                          style={{ width: "10%", minWidth: "230px" }}
+                        >
+                          투표대상 설정
+                        </div>
+                        <div className="flex h-auto justify-center items-center gap-2 text-lg flex-wrap box-border">
+                          {votedInfo?.voteRange === "all" ? (
+                            <button
+                              className="bg-gray-500 p-2 rounded-lg border border-gray-600 text-gray-100"
+                              style={{ minWidth: "80px" }}
+                            >
+                              해당체급 전체
+                            </button>
+                          ) : (
+                            <button
+                              className="bg-gray-500 p-2 rounded-lg border border-gray-600 text-gray-100"
+                              style={{ minWidth: "80px" }}
+                            >
+                              {propCompareIndex - 1}차 선발인원만
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex w-full h-auto px-5 py-2">
+                        <div
+                          className="flex h-auto justify-start items-center"
+                          style={{ width: "10%", minWidth: "230px" }}
+                        >
+                          투표대상 설정
+                        </div>
+                        <div className="flex h-auto justify-center items-center gap-2 text-lg flex-wrap box-border">
+                          <button
+                            className={`${
+                              votedInfo.voteRange === "all"
+                                ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
+                                : "bg-white p-2 rounded-lg border border-blue-200"
+                            }`}
+                            style={{ minWidth: "80px" }}
+                            onClick={() => {
+                              setVotedInfo(() => ({
+                                ...votedInfo,
+                                voteRange: "all",
+                              }));
+                            }}
+                          >
+                            해당체급 전체
+                          </button>
+                          <button
+                            className={`${
+                              votedInfo.voteRange === "voted"
+                                ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
+                                : "bg-white p-2 rounded-lg border border-blue-200"
+                            }`}
+                            style={{ minWidth: "80px" }}
+                            onClick={() => {
+                              setVotedInfo(() => ({
+                                ...votedInfo,
+                                voteRange: "voted",
+                              }));
+                            }}
+                          >
+                            {propCompareIndex - 1}차 선발인원만
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
                 {realtimeData?.compares?.status?.compareStart ? (
                   <div className="flex w-full h-auto px-5 py-2">
                     <div
@@ -578,7 +659,10 @@ const CompareSetting = ({
                             className="bg-gray-500 p-2 rounded-lg border border-gray-600 text-gray-100"
                             style={{ minWidth: "80px" }}
                           >
-                            {votedInfo.scoreMode === "all" ? "전체" : "대상자"}
+                            {votedInfo.scoreMode === "all" && "전체"}
+                            {votedInfo.scoreMode === "topOnly" && "대상자"}
+                            {votedInfo.scoreMode === "topWithSub" &&
+                              `${propCompareIndex - 1}차 전체`}
                           </button>
                         </div>
                       </>
@@ -602,8 +686,28 @@ const CompareSetting = ({
                           >
                             전체
                           </button>
+                          {propCompareIndex > 1 && (
+                            <button
+                              value="topWithSub"
+                              onClick={(e) => {
+                                setVotedInfo(() => ({
+                                  ...votedInfo,
+                                  scoreMode: e.target.value,
+                                }));
+                              }}
+                              className={`${
+                                votedInfo.scoreMode === "topWithSub"
+                                  ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
+                                  : "bg-white p-2 rounded-lg border border-blue-200"
+                              }`}
+                              style={{ minWidth: "80px" }}
+                            >
+                              {propCompareIndex - 1}차 전체
+                            </button>
+                          )}
+
                           <button
-                            value="compare"
+                            value="topOnly"
                             onClick={(e) => {
                               setVotedInfo(() => ({
                                 ...votedInfo,
@@ -611,7 +715,7 @@ const CompareSetting = ({
                               }));
                             }}
                             className={`${
-                              votedInfo.scoreMode === "compare"
+                              votedInfo.scoreMode === "topOnly"
                                 ? "bg-blue-500 p-2 rounded-lg border border-blue-600 text-gray-100"
                                 : "bg-white p-2 rounded-lg border border-blue-200"
                             }`}
@@ -631,7 +735,7 @@ const CompareSetting = ({
                               </span>
                             </div>
                           )}
-                          {votedInfo.scoreMode === "compare" && (
+                          {votedInfo.scoreMode === "topOnly" && (
                             <div className="flex justify-start items-center gap-x-2 ml-2">
                               <span className="text-lg text-blue-700">
                                 <MdLiveHelp />
@@ -639,6 +743,16 @@ const CompareSetting = ({
                               <span className="text-base font-semibold">
                                 비교심사 대상만 채점합니다. 나머지 선수는 순위외
                                 처리됩니다.
+                              </span>
+                            </div>
+                          )}
+                          {votedInfo.scoreMode === "topWithSub" && (
+                            <div className="flex justify-start items-center gap-x-2 ml-2">
+                              <span className="text-lg text-blue-700">
+                                <MdLiveHelp />
+                              </span>
+                              <span className="text-base font-semibold">
+                                이전 차수 비교심사 대상 전체를 채점합니다.
                               </span>
                             </div>
                           )}

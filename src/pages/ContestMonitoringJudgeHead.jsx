@@ -286,7 +286,7 @@ const ContestMonitoringJudgeHead = () => {
         },
         playerLength: comparesArray[compareIndex - 1].comparePlayerLength,
         scoreMode: comparesArray[compareIndex - 1].compareScoreMode,
-        player: [...comparesArray[compareIndex - 1].players],
+        players: [...comparesArray[compareIndex - 1].players],
       };
     }
 
