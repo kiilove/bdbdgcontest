@@ -24,6 +24,8 @@ import { Modal } from "@mui/material";
 import ScoreCardRankForm from "./ScoreCardRankForm";
 import ContestRankSummaryModal from "../modals/ContestRankSummaryModal";
 import StandingTableType1 from "./StandingTableType1";
+import ContestRankingSummary from "../modals/ContestRankingSummary";
+import ContestRankingSummaryPrintAll from "../modals/ContestRankingSummaryPrintAll";
 
 const ContestMonitoringBasecamp = () => {
   const navigate = useNavigate();
@@ -38,6 +40,7 @@ const ContestMonitoringBasecamp = () => {
   const [scoreCardOpen, setScoreCardOpen] = useState(false);
   const [message, setMessage] = useState({});
 
+  const [summaryPrintPreviewOpen, setSummaryPrintPreviewOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryProp, setSummaryProp] = useState({});
   const [rankResultOpen, setRankResultOpen] = useState(false);
@@ -362,11 +365,17 @@ const ContestMonitoringBasecamp = () => {
           <Modal open={scoreCardOpen}>
             <ScoreCardRankForm setClose={setScoreCardOpen} />
           </Modal>
+          <Modal open={summaryPrintPreviewOpen}>
+            <ContestRankingSummaryPrintAll
+              props={summaryProp}
+              setClose={setSummaryPrintPreviewOpen}
+            />
+          </Modal>
           <Modal open={summaryOpen}>
-            <ContestRankSummaryModal
+            <ContestRankingSummary
               categoryId={summaryProp?.categoryId}
               gradeId={summaryProp?.gradeId}
-              tableType={summaryProp?.tableType}
+              stageId={realtimeData?.stageId}
               setClose={setSummaryOpen}
             />
           </Modal>
@@ -446,14 +455,7 @@ const ContestMonitoringBasecamp = () => {
                         <div className="flex w-full justify-start items-center gap-x-2">
                           <span className="font-bold text-lg">진행상황</span>
                         </div>
-                        <div className="flex w-full justify-end items-center gap-x-2">
-                          <button
-                            className="w-24 h-10 bg-blue-900 rounded-lg text-gray-100"
-                            onClick={() => setScoreCardOpen(true)}
-                          >
-                            채점표출력
-                          </button>
-                        </div>
+
                         {!judgesIsEndValidated && (
                           <div className="flex w-full justify-end items-center gap-x-2">
                             <button
@@ -556,6 +558,7 @@ const ContestMonitoringBasecamp = () => {
                       {currentStageInfo?.grades?.length > 0 &&
                         currentStageInfo.grades.map((grade, gIdx) => {
                           const {
+                            contestId,
                             categoryTitle,
                             categoryId,
                             gradeTitle,
@@ -570,38 +573,24 @@ const ContestMonitoringBasecamp = () => {
                             .sort((a, b) => a.playerIndex - b.playerIndex);
                           return (
                             <div className="flex w-full h-auto p-2 flex-col">
-                              <div className="flex w-full h-10 justify-start items-center">
-                                <div className="flex">
+                              <div className="flex w-full h-20 justify-start items-center">
+                                <div className="flex w-1/2">
                                   {categoryTitle}({gradeTitle})
                                 </div>
-                                <div className="flex">
+                                <div className="flex w-1/2 justify-end items-center gap-x-2">
                                   <button
-                                    className="w-24 h-10  text-gray-800"
+                                    className="w-auto h-10 bg-blue-900 rounded-lg text-gray-100 px-5"
                                     onClick={() => {
-                                      setSummaryProp({
-                                        categoryId,
+                                      setSummaryProp(() => ({
+                                        contestId: currentContest.contests.id,
                                         gradeId,
-                                        tableType: "summaryboard",
-                                      });
-                                      setSummaryOpen(true);
+                                        categoryTitle,
+                                        gradeTitle,
+                                      }));
+                                      setSummaryPrintPreviewOpen(true);
                                     }}
                                   >
-                                    집계표출력
-                                  </button>
-                                </div>
-                                <div className="flex">
-                                  <button
-                                    className="w-24 h-10  text-gray-800"
-                                    onClick={() => {
-                                      setSummaryProp({
-                                        categoryId,
-                                        gradeId,
-                                        tableType: "rankboard",
-                                      });
-                                      setSummaryOpen(true);
-                                    }}
-                                  >
-                                    순위표출력
+                                    집계/채점 통합 출력
                                   </button>
                                 </div>
                               </div>
@@ -745,23 +734,6 @@ const ContestMonitoringBasecamp = () => {
                                 </div>
                                 <div className="flex w-1/2 justify-end items-center flex-wrap py-2">
                                   <div className="flex w-full gap-x-2 justify-end items-center">
-                                    {/* <button
-                                      className={`${
-                                        realtimeData.stageId === stageId
-                                          ? "flex w-24 justify-center items-center  bg-blue-100 rounded-lg p-2 text-gray-900"
-                                          : "flex w-24 justify-center items-center  bg-blue-400 rounded-lg p-2 text-gray-100"
-                                      }`}
-                                      onClick={() => {
-                                        setSummaryProp({
-                                          categoryId,
-                                          gradeId,
-                                          tableType: "summaryboard",
-                                        });
-                                        setSummaryOpen(true);
-                                      }}
-                                    >
-                                      집계표출력
-                                    </button> */}
                                     <button
                                       onClick={() =>
                                         handleUpdateCurrentStage(sIdx, "force")
@@ -788,98 +760,6 @@ const ContestMonitoringBasecamp = () => {
               </div>
             )}
           </div>
-
-          {/* <div className="flex w-full h-auto">
-            <div className="flex w-full h-auto bg-gray-100 justify-start items-center rounded-lg px-3">
-              <div className="flex w-full h-full justify-start items-center gap-y-2 flex-col py-3">
-                {stagesArray?.length > 0 &&
-                  stagesArray.map((schedule, sIdx) => {
-                    const {
-                      categoryTitle,
-                      categoryId,
-                      grades,
-                      stageId,
-                      stageNumber,
-                    } = schedule;
-
-                    const gradeTitle = handleGradeInfo(grades).gradeTitle;
-
-                    const findIndex = stagesArray.findIndex(
-                      (f) => f.stageId === stageId
-                    );
-                    return (
-                      <div className="flex flex-col w-full h-auto">
-                        <div
-                          className={`${
-                            stageId === currentStage?.stageId
-                              ? "flex w-full bg-blue-200 rounded-lg h-10 p-2"
-                              : "flex w-full bg-white rounded-lg h-10 p-2"
-                          }`}
-                        >
-                          <div className="flex w-4/6">
-                            {categoryTitle} ({gradeTitle})
-                          </div>
-                          <div className="flex w-1/6">
-                            {stageId === currentStage?.stageId && (
-                              <button
-                                onClick={() =>
-                                  handleUpdateMonitoring(
-                                    "currentStage",
-                                    currentStage.id,
-                                    findIndex
-                                  )
-                                }
-                              >
-                                완료
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex w-1/6">
-                            <button
-                              onClick={() =>
-                                handleGotoSummary(
-                                  categoryId,
-                                  categoryTitle,
-                                  grades
-                                )
-                              }
-                            >
-                              집계표
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex w-full h-auto">
-                          {stageId === currentStage?.stageId && (
-                            <div className="flex justify-start items-center h-20 w-full">
-                              {currentStage.judges.map((judge, jIdx) => {
-                                const { isEnd, isLogined, seatIndex } = judge;
-
-                                return (
-                                  <div className="flex w-32 h-20 justify-center items-center flex-col">
-                                    <div className="flex w-full h-10 justify-center items-center">
-                                      {seatIndex}
-                                    </div>
-                                    <div className="flex w-full h-10 justify-center items-center">
-                                      {isLogined === false &&
-                                        isEnd === false && <span>준비중</span>}
-                                      {isLogined === true &&
-                                        isEnd === false && <span>심사중</span>}
-                                      {isLogined === true && isEnd === true && (
-                                        <span>완료</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          </div> */}
         </div>
       )}
     </>

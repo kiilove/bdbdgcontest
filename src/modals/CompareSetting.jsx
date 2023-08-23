@@ -37,7 +37,7 @@ const CompareSetting = ({
   const [votedInfo, setVotedInfo] = useState({
     playerLength: undefined,
     scoreMode: undefined,
-    voteRange: undefined,
+    voteRange: "all",
   });
 
   const [compareStatus, setCompareStatus] = useState({
@@ -189,6 +189,7 @@ const CompareSetting = ({
       status: { ...newCompareMode },
       playerLength: votedInfo.playerLength,
       scoreMode: votedInfo.scoreMode,
+      voteRange: votedInfo.voteRange,
       judges: [...judgeMessageInfo],
     };
 

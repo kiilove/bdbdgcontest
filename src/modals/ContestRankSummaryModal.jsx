@@ -94,27 +94,51 @@ const ContestRankSummaryModal = ({
     // Sorting
     groupedObj.sort((a, b) =>
       sortCriteria === "totalScore"
-        ? b.totalScore - a.totalScore
+        ? a.totalScore - b.totalScore
         : a.playerIndex - b.playerIndex
     );
 
     // Assign rankings
-    let rank = 1;
+    let rank = 0; // Start from rank 1
+    let prevScore = null; // To keep track of previous score
+    let sameRankCount = 0; // To keep track of how many players have the same rank
     for (let i = 0; i < groupedObj.length; i++) {
-      groupedObj[i].playerRank = rank;
-      if (
-        i < groupedObj.length - 1 &&
-        groupedObj[i].totalScore === groupedObj[i + 1].totalScore
-      ) {
-        rank--; // Same rank for next player with same score
+      groupedObj[i].isAlert = false; // Initially set isAlert to false for every player
+
+      if (groupedObj[i].totalScore > 1000) {
+        groupedObj[i].playerRank = 1000; // Set rank to 1000 for players with totalScore > 1000
+      } else {
+        if (prevScore === null || groupedObj[i].totalScore !== prevScore) {
+          if (sameRankCount >= 1) {
+            // Loop back and set isAlert for previous players with the same rank
+            for (let j = 0; j <= sameRankCount; j++) {
+              groupedObj[i - j - 1].isAlert = true;
+            }
+          }
+
+          rank += sameRankCount + 1; // Increment rank by the number of players with the same rank
+          sameRankCount = 0; // Reset the count
+        } else {
+          sameRankCount++;
+          groupedObj[i].isAlert = true; // If current score is the same as previous, set isAlert to true
+        }
+        groupedObj[i].playerRank = rank;
+        prevScore = groupedObj[i].totalScore;
       }
-      rank++;
     }
 
+    // Check after the loop to ensure the last set of players with the same rank also get the alert
+    if (sameRankCount >= 1) {
+      for (let j = 0; j <= sameRankCount; j++) {
+        groupedObj[groupedObj.length - 1 - j].isAlert = true;
+      }
+    }
+
+    console.log(groupedObj);
     return groupedObj;
   };
 
-  const groupByGrade = (arr) => {
+  const groupByGrade = (arr, sortType) => {
     return arr
       .reduce((acc, curr) => {
         let group = acc.find((g) => g.gradeId === curr.gradeId);
@@ -135,9 +159,13 @@ const ContestRankSummaryModal = ({
       }, [])
       .map((group) => {
         const gradeItems = arr.filter((item) => item.gradeId === group.gradeId);
-        group.result = groupedByPlayerNumber(gradeItems);
+        group.result = groupedByPlayerNumber(gradeItems, sortType);
         return group;
       });
+  };
+
+  const handleSummaryTable = (dataArray, e) => {
+    console.log(dataArray);
   };
 
   const fetchScoreRank = async () => {
@@ -164,8 +192,6 @@ const ContestRankSummaryModal = ({
 
     console.log(scoreData);
     console.log(groupByGrade(scoreData));
-    setSummaryTable(() => [...groupByGrade(scoreData)]);
-    setRankTable(() => [...groupByGrade(scoreData, "totalScore")]);
   };
 
   useEffect(() => {
@@ -181,7 +207,7 @@ const ContestRankSummaryModal = ({
 
   useEffect(() => {
     if (scoreData?.length > 0) {
-      setSummaryTable(() => [...groupByGrade(scoreData)]);
+      setSummaryTable(() => [...groupByGrade(scoreData, "totalScore")]);
       setRankTable(() => [...groupByGrade(scoreData, "totalScore")]);
     }
   }, [scoreData]);
@@ -212,53 +238,71 @@ const ContestRankSummaryModal = ({
             기표합산
           </div>
         </div>
-        {data.map((player, pIdx) => {
-          const { playerNumber, totalScore, playerRank, score } = player;
-          if (totalScore >= 1000) {
-            return null;
-          }
-          return (
-            <div
-              key={playerNumber}
-              className="flex w-full border-b border-b-gray-300"
-            >
-              <div className="flex w-full justify-center items-center p-2">
-                {playerNumber}
+        {data
+          .sort((a, b) => a.playerIndex - b.playerIndex)
+          .map((player, pIdx) => {
+            const { playerNumber, totalScore, playerRank, score, isAlert } =
+              player;
+            if (totalScore >= 1000) {
+              return null;
+            }
+            return (
+              <div
+                key={playerNumber}
+                className={
+                  isAlert
+                    ? "flex w-full border-b border-b-gray-300 bg-blue-200"
+                    : "flex w-full border-b border-b-gray-300"
+                }
+              >
+                <div className="flex w-full justify-center items-center p-2">
+                  {playerNumber}
+                </div>
+                <div className="flex w-full justify-center items-center p-2 bg-transparent">
+                  {playerRank}
+                  {isAlert && (
+                    <button
+                      className="flex w-10 h-10 bg-blue-800 justify-center items-center "
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("first");
+                      }}
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+                {score.map((score, sIdx) => {
+                  const { seatIndex, playerScore, isMin, isMax } = score;
+                  return (
+                    <div
+                      className="flex w-full justify-center items-center p-2"
+                      key={seatIndex}
+                    >
+                      {isMin && (
+                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-400">
+                          {playerScore >= 1000 ? "제외" : playerScore}
+                        </span>
+                      )}
+                      {isMax && (
+                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-500">
+                          {playerScore >= 1000 ? "제외" : playerScore}
+                        </span>
+                      )}
+                      {!isMax && !isMin && (
+                        <span className="w-auto h-auto p-3 rounded-lg ">
+                          {playerScore >= 1000 ? "제외" : playerScore}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="flex w-full justify-center items-center p-2">
+                  {totalScore}
+                </div>
               </div>
-              <div className="flex w-full justify-center items-center p-2">
-                {playerRank}
-              </div>
-              {score.map((score, sIdx) => {
-                const { seatIndex, playerScore, isMin, isMax } = score;
-                return (
-                  <div
-                    className="flex w-full justify-center items-center p-2"
-                    key={seatIndex}
-                  >
-                    {isMin && (
-                      <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-400">
-                        {playerScore >= 1000 ? "제외" : playerScore}
-                      </span>
-                    )}
-                    {isMax && (
-                      <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-500">
-                        {playerScore >= 1000 ? "제외" : playerScore}
-                      </span>
-                    )}
-                    {!isMax && !isMin && (
-                      <span className="w-auto h-auto p-3 rounded-lg ">
-                        {playerScore >= 1000 ? "제외" : playerScore}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-              <div className="flex w-full justify-center items-center p-2">
-                {totalScore}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     );
   };
@@ -287,55 +331,58 @@ const ContestRankSummaryModal = ({
             기표합산
           </div>
         </div>
-        {data.map((player, pIdx) => {
-          const { playerNumber, totalScore, playerRank, score } = player;
-          if (totalScore >= 1000) {
-            return null;
-          }
-          return (
-            <div
-              key={playerNumber}
-              className="flex w-full border-b border-b-gray-300"
-            >
-              <div className="flex w-full justify-center items-center p-2">
-                {playerNumber}
+        {data
+          .sort((a, b) => a.playerRank - b.playerRank)
+
+          .map((player, pIdx) => {
+            const { playerNumber, totalScore, playerRank, score } = player;
+            if (totalScore >= 1000) {
+              return null;
+            }
+            return (
+              <div
+                key={playerNumber}
+                className="flex w-full border-b border-b-gray-300"
+              >
+                <div className="flex w-full justify-center items-center p-2">
+                  {playerNumber}
+                </div>
+                <div className="flex w-full justify-center items-center p-2">
+                  {playerRank}
+                </div>
+                {score
+                  .sort((a, b) => a.randomIndex - b.randomIndex)
+                  .map((score, sIdx) => {
+                    const { seatIndex, playerScore, isMin, isMax } = score;
+                    return (
+                      <div
+                        className="flex w-full justify-center items-center p-2"
+                        key={seatIndex}
+                      >
+                        {isMin && (
+                          <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-400">
+                            {playerScore >= 1000 ? "제외" : playerScore}
+                          </span>
+                        )}
+                        {isMax && (
+                          <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-500">
+                            {playerScore >= 1000 ? "제외" : playerScore}
+                          </span>
+                        )}
+                        {!isMax && !isMin && (
+                          <span className="w-auto h-auto p-3 rounded-lg ">
+                            {playerScore >= 1000 ? "제외" : playerScore}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                <div className="flex w-full justify-center items-center p-2">
+                  {totalScore}
+                </div>
               </div>
-              <div className="flex w-full justify-center items-center p-2">
-                {playerRank}
-              </div>
-              {score
-                .sort((a, b) => a.randomIndex - b.randomIndex)
-                .map((score, sIdx) => {
-                  const { seatIndex, playerScore, isMin, isMax } = score;
-                  return (
-                    <div
-                      className="flex w-full justify-center items-center p-2"
-                      key={seatIndex}
-                    >
-                      {isMin && (
-                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-blue-400">
-                          {playerScore >= 1000 ? "제외" : playerScore}
-                        </span>
-                      )}
-                      {isMax && (
-                        <span className="w-auto h-auto p-3 px-5 rounded-lg bg-red-500">
-                          {playerScore >= 1000 ? "제외" : playerScore}
-                        </span>
-                      )}
-                      {!isMax && !isMin && (
-                        <span className="w-auto h-auto p-3 rounded-lg ">
-                          {playerScore >= 1000 ? "제외" : playerScore}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              <div className="flex w-full justify-center items-center p-2">
-                {totalScore}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     );
   };

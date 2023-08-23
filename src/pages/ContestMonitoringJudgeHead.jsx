@@ -24,6 +24,7 @@ import ConfirmationModal from "../messageBox/ConfirmationModal";
 import { where } from "firebase/firestore";
 import { Modal } from "@mui/material";
 import CompareSetting from "../modals/CompareSetting";
+import ContestRankingSummary from "../modals/ContestRankingSummary";
 
 const ContestMonitoringJudgeHead = () => {
   const navigate = useNavigate();
@@ -42,7 +43,8 @@ const ContestMonitoringJudgeHead = () => {
   const [parentRefresh, setParentRefresh] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
   const [compareCancelMsgOpen, setCompareCancelMsgOpen] = useState(false);
-
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryProp, setSummaryProp] = useState({});
   const [message, setMessage] = useState({});
 
   const [compareOpen, setCompareOpen] = useState(false);
@@ -456,6 +458,14 @@ const ContestMonitoringJudgeHead = () => {
               propCompareIndex={comparesArray?.length + 1}
             />
           </Modal>
+          <Modal open={summaryOpen}>
+            <ContestRankingSummary
+              categoryId={summaryProp?.categoryId}
+              gradeId={summaryProp?.gradeId}
+              stageId={realtimeData?.stageId}
+              setClose={setSummaryOpen}
+            />
+          </Modal>
           <div className="flex w-full h-auto">
             <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-3">
               <div className="flex w-4/5 px-2 flex-col gap-y-2">
@@ -618,7 +628,12 @@ const ContestMonitoringJudgeHead = () => {
 
                       {currentStageInfo?.grades?.length > 0 &&
                         currentStageInfo.grades.map((grade, gIdx) => {
-                          const { categoryTitle, gradeTitle, gradeId } = grade;
+                          const {
+                            categoryTitle,
+                            categoryId,
+                            gradeTitle,
+                            gradeId,
+                          } = grade;
                           const filterdPlayers = playersArray
                             .filter(
                               (f) =>
@@ -628,9 +643,27 @@ const ContestMonitoringJudgeHead = () => {
                             .sort((a, b) => a.playerIndex - b.playerIndex);
                           return (
                             <div className="flex w-full h-auto p-2 flex-col">
-                              <div className="flex w-full h-10 justify-start items-center">
-                                {categoryTitle}({gradeTitle})
+                              <div className="flex w-full h-20 justify-start items-center gap-x-2">
+                                <span>
+                                  {categoryTitle}({gradeTitle})
+                                </span>
+                                <div className="flex">
+                                  <button
+                                    className="w-auto h-10  text-gray-100 bg-blue-800 rounded-lg px-5 py-2"
+                                    onClick={() => {
+                                      setSummaryProp({
+                                        categoryId,
+                                        gradeId,
+                                        tableType: "summaryboard",
+                                      });
+                                      setSummaryOpen(true);
+                                    }}
+                                  >
+                                    집계및 순위확인
+                                  </button>
+                                </div>
                               </div>
+
                               <div className="flex w-full h-10 justify-start items-center">
                                 <div
                                   className="h-full p-2 justify-center items-start flex w-full border border-gray-400 border-b-2"
