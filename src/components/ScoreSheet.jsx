@@ -1,5 +1,6 @@
 import React from "react";
 import YbbfLogo from "../assets/img/ybbf_logo.png";
+import CanvasWithImageData from "./CanvasWithImageData";
 
 const ScoreSheet = ({
   contestId,
@@ -8,6 +9,7 @@ const ScoreSheet = ({
   categoryTitle,
   gradeTitle,
   scoreTable,
+  judgeHeadInfo,
 }) => {
   return (
     <div className="flex w-full h-auto flex-col">
@@ -121,18 +123,22 @@ const ScoreSheet = ({
                           <>
                             {isMax && (
                               <div
-                                className="flex h-full justify-center items-center border-r border-white text-sm font-normal bg-gray-600 text-white "
+                                className="flex h-full justify-center items-center border-r border-gray-400 text-sm font-normal p-1 "
                                 style={{ width: "8%" }}
                               >
-                                {playerScore}
+                                <span className="bg-gray-600 text-white w-full h-full flex justify-center items-center">
+                                  {playerScore}
+                                </span>
                               </div>
                             )}
                             {isMin && (
                               <div
-                                className="flex h-full justify-center items-center border-r border-white text-sm font-normal bg-gray-800 text-white "
+                                className="flex h-full justify-center items-center border-r border-gray-400 text-sm font-normal p-1 "
                                 style={{ width: "8%" }}
                               >
-                                {playerScore}
+                                <span className="bg-gray-400 text-white w-full h-full flex justify-center items-center">
+                                  {playerScore}
+                                </span>
                               </div>
                             )}
                             {!isMax && !isMin && (
@@ -158,8 +164,16 @@ const ScoreSheet = ({
             );
           })}
       </div>
-      <div className="flex h-auto w-full justify-start items-center py-1 px-8 flex-col mt-5">
-        <div className="flex w-full justify-start">심사위원장</div>
+      <div className="flex h-20 w-full justify-start items-center py-1 px-8 flex-col mt-10">
+        <div className="flex w-full h-full text-lg font-semibold justify-start items-center border-b border-gray-800">
+          <span className="mr-5">심사위원장 : </span>
+          <span className="text-xl" style={{ letterSpacing: "40px" }}>
+            {judgeHeadInfo?.judgeName}
+          </span>
+          <div className="flex">
+            <CanvasWithImageData imageData={judgeHeadInfo?.judgeSignature} />
+          </div>
+        </div>
       </div>
     </div>
   );

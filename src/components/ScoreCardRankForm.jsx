@@ -1,7 +1,7 @@
 import React from "react";
 import ybbf from "../assets/img/ybbf_logo.png";
 
-const ScoreCardRankForm = ({ setClose }) => {
+const ScoreCardRankForm = ({ seatIndex, score, categoryTitle, gradeTitle }) => {
   return (
     <div className="flex w-full h-full bg-white justify-center items-start">
       <div
@@ -20,7 +20,9 @@ const ScoreCardRankForm = ({ setClose }) => {
           <div className="flex w-1/3 justify-end">
             <div className="flex flex-col w-full h-full justify-center items-center">
               <div className="flex w-40 h-28 border-4 border-black justify-center items-center">
-                <span className="text-7xl font-semibold font-sans">4</span>
+                <span className="text-7xl font-semibold font-sans">
+                  {seatIndex}
+                </span>
               </div>
               <div className="flex justify-center items-start text-sm">
                 JUDGE`S NUMBER
@@ -48,9 +50,7 @@ const ScoreCardRankForm = ({ setClose }) => {
             <div className="flex justify-end" style={{ width: "90px" }}>
               CATEGORY :
             </div>
-            <div className="flex justify-start ml-2">
-              남자 장년부및 마스터즈 보디빌딩
-            </div>
+            <div className="flex justify-start ml-2">{categoryTitle}</div>
           </div>
           <div className="flex w-full h-auto text-xs">
             <div className="flex justify-end" style={{ width: "90px" }}>
@@ -237,9 +237,6 @@ const ScoreCardRankForm = ({ setClose }) => {
               <span>당신의 서명을 하십시오.</span>
             </div>
           </div>
-        </div>
-        <div className="flex">
-          <button onClick={() => setClose(false)}>닫기</button>
         </div>
       </div>
     </div>

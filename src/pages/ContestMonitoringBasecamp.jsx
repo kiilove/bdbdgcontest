@@ -21,7 +21,7 @@ import ConfirmationModal from "../messageBox/ConfirmationModal";
 import { where } from "firebase/firestore";
 import { PiSpinner, PiSpinnerThin } from "react-icons/pi";
 import { Modal } from "@mui/material";
-import ScoreCardRankForm from "./ScoreCardRankForm";
+
 import ContestRankSummaryModal from "../modals/ContestRankSummaryModal";
 import StandingTableType1 from "./StandingTableType1";
 import ContestRankingSummary from "../modals/ContestRankingSummary";
@@ -362,9 +362,7 @@ const ContestMonitoringBasecamp = () => {
             onCancel={() => setMsgOpen(false)}
             onConfirm={() => setMsgOpen(false)}
           />
-          <Modal open={scoreCardOpen}>
-            <ScoreCardRankForm setClose={setScoreCardOpen} />
-          </Modal>
+
           <Modal open={summaryPrintPreviewOpen}>
             <ContestRankingSummaryPrintAll
               props={summaryProp}
