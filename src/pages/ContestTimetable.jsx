@@ -1019,7 +1019,7 @@ const ContestTimetable = () => {
       </div>
       <div className="flex w-full h-full ">
         <div className="flex w-full justify-start items-center">
-          <div className="flex w-full h-full justify-start categoryIdart px-3 pt-3 flex-col bg-gray-100 rounded-lg">
+          <div className="flex w-full h-full justify-start  px-3 pt-3 flex-col bg-gray-100 rounded-lg">
             <div className="flex w-full">
               {tabArray.map((tab, tIdx) => (
                 <>

@@ -25,6 +25,7 @@ import { where } from "firebase/firestore";
 import { Modal } from "@mui/material";
 import CompareSetting from "../modals/CompareSetting";
 import ContestRankingSummary from "../modals/ContestRankingSummary";
+import ContestPointSummary from "../modals/ContestPointSummary";
 
 const ContestMonitoringJudgeHead = () => {
   const navigate = useNavigate();
@@ -43,8 +44,10 @@ const ContestMonitoringJudgeHead = () => {
   const [parentRefresh, setParentRefresh] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
   const [compareCancelMsgOpen, setCompareCancelMsgOpen] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(false);
-  const [summaryProp, setSummaryProp] = useState({});
+  const [rankingSummaryOpen, setRankingSummaryOpen] = useState(false);
+  const [rankingSummaryProp, setRankingSummaryProp] = useState({});
+  const [pointSummaryOpen, setPointSummaryOpen] = useState(false);
+  const [pointSummaryProp, setPointSummaryProp] = useState({});
   const [message, setMessage] = useState({});
 
   const [compareOpen, setCompareOpen] = useState(false);
@@ -458,12 +461,20 @@ const ContestMonitoringJudgeHead = () => {
               propCompareIndex={comparesArray?.length + 1}
             />
           </Modal>
-          <Modal open={summaryOpen}>
+          <Modal open={rankingSummaryOpen}>
             <ContestRankingSummary
-              categoryId={summaryProp?.categoryId}
-              gradeId={summaryProp?.gradeId}
+              categoryId={rankingSummaryProp?.categoryId}
+              gradeId={rankingSummaryProp?.gradeId}
               stageId={realtimeData?.stageId}
-              setClose={setSummaryOpen}
+              setClose={setRankingSummaryOpen}
+            />
+          </Modal>
+          <Modal open={pointSummaryOpen}>
+            <ContestPointSummary
+              categoryId={pointSummaryProp?.categoryId}
+              gradeId={pointSummaryProp?.gradeId}
+              stageId={realtimeData?.stageId}
+              setClose={setPointSummaryOpen}
             />
           </Modal>
           <div className="flex w-full h-auto">
@@ -634,6 +645,9 @@ const ContestMonitoringJudgeHead = () => {
                             gradeTitle,
                             gradeId,
                           } = grade;
+
+                          const { categoryJudgeType } = currentStageInfo;
+
                           const filterdPlayers = playersArray
                             .filter(
                               (f) =>
@@ -648,19 +662,35 @@ const ContestMonitoringJudgeHead = () => {
                                   {categoryTitle}({gradeTitle})
                                 </span>
                                 <div className="flex">
-                                  <button
-                                    className="w-auto h-10  text-gray-100 bg-blue-800 rounded-lg px-5 py-2"
-                                    onClick={() => {
-                                      setSummaryProp({
-                                        categoryId,
-                                        gradeId,
-                                        tableType: "summaryboard",
-                                      });
-                                      setSummaryOpen(true);
-                                    }}
-                                  >
-                                    집계및 순위확인
-                                  </button>
+                                  {categoryJudgeType === "point" ? (
+                                    <button
+                                      className="w-auto h-10  text-gray-100 bg-blue-800 rounded-lg px-5 py-2"
+                                      onClick={() => {
+                                        setPointSummaryProp({
+                                          categoryId,
+                                          gradeId,
+                                          categoryJudgeType,
+                                        });
+                                        setPointSummaryOpen(true);
+                                      }}
+                                    >
+                                      점수형 집계및 순위확인
+                                    </button>
+                                  ) : (
+                                    <button
+                                      className="w-auto h-10  text-gray-100 bg-blue-800 rounded-lg px-5 py-2"
+                                      onClick={() => {
+                                        setRankingSummaryProp({
+                                          categoryId,
+                                          gradeId,
+                                          categoryJudgeType,
+                                        });
+                                        setRankingSummaryOpen(true);
+                                      }}
+                                    >
+                                      랭킹형 집계및 순위확인
+                                    </button>
+                                  )}
                                 </div>
                               </div>
 

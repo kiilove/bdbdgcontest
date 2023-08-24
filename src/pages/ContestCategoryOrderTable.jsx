@@ -206,6 +206,7 @@ const ContestCategoryOrderTable = () => {
                                 contestCategoryJudgeCount: judgeCount,
                                 contestCategorySection: categorySection,
                                 contestCategoryJudgeType: categoryJudgeType,
+                                contestCategoryIsOverall: categoryIsOverall,
                               } = category;
 
                               const matchedGrades = gradesArray
@@ -251,6 +252,11 @@ const ContestCategoryOrderTable = () => {
                                                 ? "랭킹"
                                                 : "점수"}
                                             </span>
+                                            {categoryIsOverall && (
+                                              <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 hidden lg:flex justify-center items-center text-sm">
+                                                그랑프리
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
                                         <div className="flex w-full lg:w-1/3 h-auto justify-end items-center">

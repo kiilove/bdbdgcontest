@@ -2,7 +2,7 @@ import React from "react";
 import ybbf from "../assets/img/ybbf_logo.png";
 import CanvasWithImageData from "./CanvasWithImageData";
 
-const ScoreCardRankForm = ({
+const ScoreCardPointForm = ({
   seatIndex,
   categoryTitle,
   gradeTitle,
@@ -81,62 +81,6 @@ const ScoreCardRankForm = ({
           className="flex  w-full justify-center items-start p-2 gap-x-3 h-auto font-light text-sm"
           style={{ minHeight: "65%" }}
         >
-          <div className="flex flex-col w-1/4 text-xs gap-y-3">
-            <div className="flex justify-center">
-              <span>PROCEDURES</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">1. </span>
-              <span>
-                Enter your judge's number in the box provided in the upper
-                right-hand corner
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">2. </span>
-              <span>
-                Complete the top portion of the form by filling in the
-                competition, category, place, and date.
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">3. </span>
-              <span>
-                Enter ther competitors number in the numerical order, lowest to
-                highest, in the "competitor number" column.
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">4. </span>
-              <span>
-                Place the top5 competitors from 1 to 5 by entering their place
-                in the "place" column.
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">5. </span>
-              <span>Do not give two or more competitors the same place.</span>
-            </div>{" "}
-            <div className="flex justify-start">
-              <span className="mr-1">6. </span>
-              <span>All competitors must be placed.</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">7. </span>
-              <span>
-                If you make a mistake place an "X" through the mistake and write
-                the correct decision to ther right of this.
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">8. </span>
-              <span>Print your name and country.</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">9. </span>
-              <span>Write your signature.</span>
-            </div>
-          </div>
           <div className="flex w-1/2 justify-center">
             <div className="flex border-2 w-auto h-auto border-black flex-col items-start justify-center">
               <div className="flex w-auto">
@@ -148,17 +92,46 @@ const ScoreCardRankForm = ({
                   <span>NUMBER</span>
                 </div>
                 <div
-                  className="flex border-black justify-center items-center h-14 flex-col bg-gray-400"
+                  className="flex border-black justify-center items-center h-14 flex-col bg-gray-400 border-r-2 "
                   style={{ width: "100px" }}
                 >
-                  <span>PLACE</span>
+                  <span>TOTAL</span>
+                </div>
+                <div
+                  className="flex border-black justify-center items-center h-14 flex-col bg-gray-400"
+                  style={{ width: "500px" }}
+                >
+                  <div className="flex border-black border-b w-full justify-center items-center h-7">
+                    <span>JUDGING CRITERIA</span>
+                  </div>
+                  <div className="flex border-black w-full justify-center items-center h-7">
+                    <span className="border-r border-black  w-1/6 text-xs h-full flex justify-center items-center">
+                      근육발달/선명도
+                    </span>
+                    <span className="border-r border-black  w-1/6 text-xs h-full flex justify-center items-center">
+                      신체대칭/균형
+                    </span>
+                    <span className="border-r border-black  w-1/6 text-xs h-full flex justify-center items-center">
+                      무대포즈와 표현
+                    </span>
+                    <span className="border-r border-black  w-1/6 text-xs h-full flex justify-center items-center">
+                      규정준수
+                    </span>
+                    <span className="border-r border-black  w-1/6 text-xs h-full flex justify-center items-center">
+                      의상/스타일
+                    </span>
+                    <span className=" border-black  w-1/6 text-xs h-full flex justify-center items-center">
+                      비교평가
+                    </span>
+                  </div>
                 </div>
               </div>
               {players?.length > 0 &&
                 players
                   .sort((a, b) => a.playerIndex - b.playerIndex)
                   .map((player, pIdx) => {
-                    const { playerNumber, playerScore } = player;
+                    const { playerNumber, playerScore, playerPointArray } =
+                      player;
                     return (
                       <div className="flex w-auto border-t-2 border-black">
                         <div
@@ -170,64 +143,31 @@ const ScoreCardRankForm = ({
                           </span>
                         </div>
                         <div
-                          className="flex border-black justify-center items-center h-14 flex-col bg-white"
+                          className="flex border-black justify-center items-center h-14 flex-col bg-white border-r-2"
                           style={{ width: "100px" }}
                         >
                           <span className="text-4xl font-semibold font-sans">
                             {playerScore}
                           </span>
                         </div>
+                        <div
+                          className="flex border-black justify-center items-center h-14 bg-white"
+                          style={{ width: "500px" }}
+                        >
+                          {playerPointArray?.length > 0 &&
+                            playerPointArray.map((item, iIdx) => {
+                              const { point } = item;
+
+                              return (
+                                <div className="flex w-1/6 h-full justify-center items-center font-semibold font-sans text-xl border-r border-black last:border-r-0">
+                                  {point}
+                                </div>
+                              );
+                            })}
+                        </div>
                       </div>
                     );
                   })}
-            </div>
-          </div>
-          <div className="flex flex-col w-1/4 text-xs  gap-y-3">
-            <div className="flex justify-center w-full">
-              <span>절차</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">1. </span>
-              <span>
-                오른쪽 위에 있는 네모칸안에 심판의 번호를 기입하십시오
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">2. </span>
-              <span>대회명, 체급, 장소, 날짜를 정확하게 기입하십시오.</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">3. </span>
-              <span>
-                COMPETITOR NUMBER칸에 출전선수들이 번호를 순서대로 기입하십시오.
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">4. </span>
-              <span>PLACE칸에 선수들의 성적을 1위부터 기입하십시오.</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">5. </span>
-              <span>한 등위를 두명 이상의 선수에게 기입하면 안됩니다.</span>
-            </div>{" "}
-            <div className="flex justify-start">
-              <span className="mr-1">6. </span>
-              <span>모든 선수들의 성적을 기입해야 합니다.</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">7. </span>
-              <span>
-                만약 등위를 잘못 기입하였다면 "X" 표시를하고, 오른쪽에 정확한
-                등위를 다시 기입한 후 본인의 서명을 하십시오.
-              </span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">8. </span>
-              <span>당신의 성명과 나라(시,도)를 기입하십시오.</span>
-            </div>
-            <div className="flex justify-start">
-              <span className="mr-1">9. </span>
-              <span>당신의 서명을 하십시오.</span>
             </div>
           </div>
         </div>
@@ -261,4 +201,4 @@ const ScoreCardRankForm = ({
   );
 };
 
-export default ScoreCardRankForm;
+export default ScoreCardPointForm;

@@ -13,7 +13,7 @@ import { where } from "firebase/firestore";
 import { useFirebaseRealtimeUpdateData } from "../hooks/useFirebaseRealtime";
 import ConfirmationModal from "../messageBox/ConfirmationModal";
 
-const ContestRankingSummary = ({
+const ContestPointSummary = ({
   categoryId,
   gradeId,
   setClose,
@@ -28,7 +28,7 @@ const ContestRankingSummary = ({
   const [msgOpen, setMsgOpen] = useState(false);
   const [message, setMessage] = useState({});
 
-  const scoreRankingQuery = useFirestoreQuery();
+  const scorePointQuery = useFirestoreQuery();
   const resultQuery = useFirestoreQuery();
   const resultDelete = useFirestoreDeleteData("contest_results_list");
   const resultAdd = useFirestoreAddData("contest_results_list");
@@ -78,9 +78,8 @@ const ContestRankingSummary = ({
       const scoreData = {
         seatIndex: curr.seatIndex,
         playerScore: curr.playerScore,
+        playerPointArray: curr.playerPointArray,
         randomIndex: generateUniqueRandomNumbers(11, 300, 1)[0],
-        isMin: false,
-        isMax: false,
       };
 
       if (!group) {
@@ -108,7 +107,7 @@ const ContestRankingSummary = ({
     // Sorting
     groupedObj.sort((a, b) =>
       sortCriteria === "totalScore"
-        ? a.totalScore - b.totalScore
+        ? b.totalScore - a.totalScore
         : a.playerIndex - b.playerIndex
     );
 
@@ -148,6 +147,7 @@ const ContestRankingSummary = ({
       }
     }
 
+    console.log(groupedObj);
     return groupedObj;
   };
 
@@ -274,21 +274,24 @@ const ContestRankingSummary = ({
     }
   };
 
-  const fetchScoreRank = async () => {
+  const fetchScorePoint = async () => {
     const condidtion = [
       where("contestId", "==", currentContest.contests.id),
       where("categoryId", "==", categoryId),
       where("gradeId", "==", gradeId),
-      where("categoryJudgeType", "==", "ranking"),
+      where("categoryJudgeType", "==", "point"),
     ];
 
+    console.log(currentContest.contests.id);
+
     try {
-      await scoreRankingQuery
+      await scorePointQuery
         .getDocuments(
           currentContest.contestInfo.contestCollectionName,
           condidtion
         )
         .then((data) => {
+          console.log(data);
           if (data.length > 0) {
             setScoreData(data.sort((a, b) => a.seatIndex - b.seatIndex));
           }
@@ -300,11 +303,12 @@ const ContestRankingSummary = ({
 
   useEffect(() => {
     if (gradeId && currentContest?.contests?.id) {
-      fetchScoreRank();
+      fetchScorePoint();
     }
   }, [gradeId, categoryId, currentContest]);
 
   useEffect(() => {
+    console.log(scoreData);
     if (scoreData?.length > 0) {
       console.log(groupByGrade(scoreData, "totalScore"));
       setSummaryTable(() => [...groupByGrade(scoreData, "totalScore")]);
@@ -328,9 +332,7 @@ const ContestRankingSummary = ({
             <h1
               className="font-sans text-lg font-semibold"
               style={{ letterSpacing: "2px" }}
-            >
-              랭킹형 순위표
-            </h1>
+            ></h1>
           </div>
           <div className="flex w-1/2 justify-end">
             <button
@@ -498,4 +500,4 @@ const ContestRankingSummary = ({
   );
 };
 
-export default ContestRankingSummary;
+export default ContestPointSummary;

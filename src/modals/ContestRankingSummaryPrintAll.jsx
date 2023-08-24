@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import ScoreSheet from "../components/ScoreSheet";
 import ScoreCardRankForm from "../components/ScoreCardRankForm";
+import ScoreCardPointForm from "../components/ScoreCardPointForm";
 import { useState } from "react";
 import {
   useFirestoreGetDocument,
@@ -12,6 +13,7 @@ import { useEffect } from "react";
 import { where } from "firebase/firestore";
 import LoadingPage from "../pages/LoadingPage";
 import ReactToPrint from "react-to-print";
+import { result } from "lodash";
 
 const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
   const [resultTable, setResultTable] = useState([]);
@@ -19,6 +21,7 @@ const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
   const [judgesArray, setJudgesArray] = useState([]);
   const [judgeHeadInfo, setJudgeHeadInfo] = useState();
   const [scoreCardsArray, setScoreCardsArray] = useState([]);
+  const [scoreCardPrintArray, setScoreCardPrintArray] = useState([]);
   const printRef = useRef();
   const fetchQuery = useFirestoreQuery();
 
@@ -30,11 +33,8 @@ const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
       where("gradeId", "==", propGradeId),
     ];
 
-    const conditionJudge = [
-      where("contestId", "==", propContestId),
-      where("isHead", "==", true),
-    ];
-    console.log(propGradeId);
+    const conditionJudge = [where("contestId", "==", propContestId)];
+
     try {
       await fetchQuery
         .getDocuments("contest_results_list", condition)
@@ -74,7 +74,7 @@ const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
           if (data?.length === 0) {
             return;
           } else {
-            setJudgeHeadInfo(() => ({ ...data[0] }));
+            setJudgesArray(() => [...data]);
           }
         });
     } catch (error) {
@@ -82,6 +82,60 @@ const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGroupBySeatIndex = (scoreArray, JudgeArray) => {
+    const groupedSeatIndex = scoreArray.reduce((acc, curr) => {
+      let group = acc.find((g) => g.seatIndex === curr.seatIndex);
+
+      if (!group) {
+        group = {
+          seatIndex: curr.seatIndex,
+          contestId: curr.contestId,
+          categoryId: curr.categoryId,
+          categoryTitle: curr.categoryTitle,
+          gradeId: curr.gradeId,
+          gradeTitle: curr.gradeTitle,
+          judgeUid: curr.judgeUid,
+          players: [],
+        };
+        acc.push(group);
+      }
+
+      return acc;
+    }, []);
+
+    groupedSeatIndex
+      .sort((a, b) => a.seatIndex - b.seatIndex)
+      .map((judge, jIdx) => {
+        const findJudgeSignature = JudgeArray.find(
+          (f) => f.judgeUid === judge.judgeUid
+        );
+        if (findJudgeSignature) {
+          groupedSeatIndex[jIdx].judgeSignature =
+            findJudgeSignature.judgeSignature;
+          groupedSeatIndex[jIdx].judgeName = findJudgeSignature.judgeName;
+          groupedSeatIndex[jIdx].judgePromoter =
+            findJudgeSignature.judgePromoter;
+        }
+        const findPlayers = scoreArray.filter(
+          (f) => f.seatIndex === judge.seatIndex
+        );
+        const { playerNumber, playerScore, judgeUid } = findPlayers;
+
+        groupedSeatIndex[jIdx].players = [...findPlayers];
+      });
+
+    console.log(groupedSeatIndex);
+    return groupedSeatIndex;
+    // .map((group) => {
+    //   const playerItem = arr.filter(
+    //     (item) => item.seatIndex === group.seatIndex
+    //   );
+    //   console.log(playerItem);
+    //   group.result = groupedByPlayerNumber(gradeItems, sortType);
+    //   return group;
+    // });
   };
 
   const handleJudgeHeadInfo = (judges) => {
@@ -102,6 +156,14 @@ const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
       setJudgeHeadInfo(() => handleJudgeHeadInfo(judgesArray));
     }
   }, [judgesArray]);
+
+  useEffect(() => {
+    if (scoreCardsArray?.length > 0 && judgesArray?.length > 0) {
+      setScoreCardPrintArray(() => [
+        ...handleGroupBySeatIndex(scoreCardsArray, judgesArray),
+      ]);
+    }
+  }, [scoreCardsArray, judgesArray]);
 
   useEffect(() => {
     console.log(resultTable);
@@ -176,20 +238,47 @@ const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
                       />
                     </div>
                     <div className="flex w-full h-auto flex-col">
-                      {scoreCardsArray?.length > 0 &&
-                        scoreCardsArray
+                      {scoreCardPrintArray?.length > 0 &&
+                        scoreCardPrintArray
                           .sort((a, b) => a.seatIndex - b.seatIndex)
                           .map((card, cIdx) => {
-                            const { seatIndex, categoryTitle, gradeTitle } =
-                              card;
+                            const {
+                              seatIndex,
+                              categoryTitle,
+                              gradeTitle,
+                              judgeSignature,
+                              judgeName,
+                              judgePromoter,
+                              players,
+                            } = card;
                             return (
-                              <div className="flex w-full h-auto justify-center items-start break-after-page">
-                                <ScoreCardRankForm
-                                  seatIndex={seatIndex}
-                                  categoryTitle={categoryTitle}
-                                  gradeTitle={gradeTitle}
-                                />
-                              </div>
+                              <>
+                                {props.categoryJudgeType === "point" ? (
+                                  <div className="flex w-full h-auto justify-center items-start break-after-page">
+                                    <ScoreCardPointForm
+                                      seatIndex={seatIndex}
+                                      categoryTitle={categoryTitle}
+                                      gradeTitle={gradeTitle}
+                                      judgeSignature={judgeSignature}
+                                      judgeName={judgeName}
+                                      judgePromoter={judgePromoter}
+                                      players={players}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex w-full h-auto justify-center items-start break-after-page">
+                                    <ScoreCardRankForm
+                                      seatIndex={seatIndex}
+                                      categoryTitle={categoryTitle}
+                                      gradeTitle={gradeTitle}
+                                      judgeSignature={judgeSignature}
+                                      judgeName={judgeName}
+                                      judgePromoter={judgePromoter}
+                                      players={players}
+                                    />
+                                  </div>
+                                )}
+                              </>
                             );
                           })}
                     </div>

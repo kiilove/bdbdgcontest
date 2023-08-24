@@ -26,6 +26,7 @@ import ContestRankSummaryModal from "../modals/ContestRankSummaryModal";
 import StandingTableType1 from "./StandingTableType1";
 import ContestRankingSummary from "../modals/ContestRankingSummary";
 import ContestRankingSummaryPrintAll from "../modals/ContestRankingSummaryPrintAll";
+import PrintAward from "../printForms/PrintAward";
 
 const ContestMonitoringBasecamp = () => {
   const navigate = useNavigate();
@@ -41,6 +42,8 @@ const ContestMonitoringBasecamp = () => {
   const [message, setMessage] = useState({});
 
   const [summaryPrintPreviewOpen, setSummaryPrintPreviewOpen] = useState(false);
+  const [awardPrintPreviewOpen, setAwardPrintPreviewOpen] = useState(false);
+  const [awardProp, setAwardProp] = useState({});
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryProp, setSummaryProp] = useState({});
   const [rankResultOpen, setRankResultOpen] = useState(false);
@@ -192,6 +195,7 @@ const ContestMonitoringBasecamp = () => {
       stageId,
       stageNumber,
       categoryJudgeCount,
+      categoryJudgeType,
       categoryId,
       categoryTitle,
       grades,
@@ -212,6 +216,7 @@ const ContestMonitoringBasecamp = () => {
       stageNumber,
       categoryId,
       categoryTitle,
+      categoryJudgeType,
       gradeId,
       gradeTitle,
       stageJudgeCount: categoryJudgeCount,
@@ -369,6 +374,9 @@ const ContestMonitoringBasecamp = () => {
               setClose={setSummaryPrintPreviewOpen}
             />
           </Modal>
+          <Modal open={awardPrintPreviewOpen}>
+            <PrintAward props={awardProp} setClose={setAwardPrintPreviewOpen} />
+          </Modal>
           <Modal open={summaryOpen}>
             <ContestRankingSummary
               categoryId={summaryProp?.categoryId}
@@ -475,6 +483,18 @@ const ContestMonitoringBasecamp = () => {
                           {realtimeData?.categoryTitle}(
                           {realtimeData?.gradeTitle})
                         </span>
+                        <div className="flex w-14 justify-center items-center">
+                          {stagesArray[realtimeData?.stageNumber - 1]
+                            .categoryJudgeType === "point" ? (
+                            <span className="bg-blue-400 w-10 flex justify-center rounded-lg text-gray-100">
+                              P
+                            </span>
+                          ) : (
+                            <span className="bg-green-500 w-10 flex justify-center rounded-lg text-gray-100">
+                              R
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex w-full h-auto flex-wrap box-border flex-col px-2">
                         {/* table Header */}
@@ -559,6 +579,7 @@ const ContestMonitoringBasecamp = () => {
                             contestId,
                             categoryTitle,
                             categoryId,
+                            categoryJudgeType,
                             gradeTitle,
                             gradeId,
                           } = grade;
@@ -584,11 +605,29 @@ const ContestMonitoringBasecamp = () => {
                                         gradeId,
                                         categoryTitle,
                                         gradeTitle,
+                                        categoryJudgeType:
+                                          currentStageInfo.categoryJudgeType,
                                       }));
                                       setSummaryPrintPreviewOpen(true);
                                     }}
                                   >
                                     집계/채점 통합 출력
+                                  </button>
+                                  <button
+                                    className="w-auto h-10 bg-blue-900 rounded-lg text-gray-100 px-5"
+                                    onClick={() => {
+                                      setAwardProp(() => ({
+                                        contestId: currentContest.contests.id,
+                                        gradeId,
+                                        categoryTitle,
+                                        gradeTitle,
+                                        categoryJudgeType:
+                                          currentStageInfo.categoryJudgeType,
+                                      }));
+                                      setAwardPrintPreviewOpen(true);
+                                    }}
+                                  >
+                                    상장출력
                                   </button>
                                 </div>
                               </div>
@@ -680,6 +719,7 @@ const ContestMonitoringBasecamp = () => {
                               stageNumber,
                               stageId,
                               categoryTitle,
+                              categoryJudgeType,
                               categoryId,
                             } = stage;
                             const gradeTitle =
@@ -713,6 +753,17 @@ const ContestMonitoringBasecamp = () => {
                                     <span className="font-semibold">
                                       ({gradeTitle})
                                     </span>
+                                    <div className="flex w-14 justify-center items-center">
+                                      {categoryJudgeType === "point" ? (
+                                        <span className="bg-blue-400 w-10 flex justify-center rounded-lg text-gray-100">
+                                          P
+                                        </span>
+                                      ) : (
+                                        <span className="bg-green-500 w-10 flex justify-center rounded-lg text-gray-100">
+                                          R
+                                        </span>
+                                      )}
+                                    </div>
                                     {realtimeData.stageId === stageId && (
                                       <div className="flex w-auto px-2">
                                         <PiSpinner
