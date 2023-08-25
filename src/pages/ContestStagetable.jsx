@@ -28,7 +28,7 @@ const ContestStagetable = () => {
 
   const fetchCategoies = useFirestoreGetDocument("contest_categorys_list");
   const fetchGrades = useFirestoreGetDocument("contest_grades_list");
-  const fetchPlayersAssign = useFirestoreGetDocument("contest_players_assign");
+  const fetchPlayersFinal = useFirestoreGetDocument("contest_players_final");
   const fetchStagesAssign = useFirestoreGetDocument("contest_stages_assign");
   const updateStages = useFirestoreUpdateData("contest_stages_assign");
 
@@ -39,8 +39,8 @@ const ContestStagetable = () => {
     const returnGrades = await fetchGrades.getDocument(
       currentContest.contests.contestGradesListId
     );
-    const returnPlayersAssign = await fetchPlayersAssign.getDocument(
-      currentContest.contests.contestPlayersAssignId
+    const returnPlayersFinal = await fetchPlayersFinal.getDocument(
+      currentContest.contests.contestPlayersFinalId
     );
 
     const returnStagesAssign = await fetchStagesAssign.getDocument(
@@ -59,13 +59,13 @@ const ContestStagetable = () => {
       setGradesArray([...returnGrades.grades]);
     }
 
-    if (returnPlayersAssign) {
-      setPlayersArray([...returnPlayersAssign.players]);
+    if (returnPlayersFinal) {
+      setPlayersArray([...returnPlayersFinal.players]);
     }
 
     if (returnStagesAssign) {
       setStagesInfo({ ...returnStagesAssign });
-      if (returnPlayersAssign.stages.length > 0) {
+      if (returnStagesAssign.stages.length > 0) {
         fetchStages([...returnStagesAssign.stages]);
       }
     }
@@ -79,6 +79,8 @@ const ContestStagetable = () => {
   const initStage = (contestId) => {
     const stages = [];
     let stageNumber = 0;
+
+    console.log(playersArray);
 
     categoriesArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
@@ -281,8 +283,11 @@ const ContestStagetable = () => {
   };
 
   const handleUpdateStages = async (id, propData) => {
+    console.log(id);
     try {
-      await updateStages.updateData(id, { ...propData }).then(() => {
+      await updateStages.updateData(id, { ...propData }).then((data) => {
+        console.log(propData);
+        console.log(data);
         setMessage({
           body: "저장되었습니다.",
           isButton: true,

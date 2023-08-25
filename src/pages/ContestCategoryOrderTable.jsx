@@ -11,6 +11,7 @@ import GradeInfoModal from "../modals/GradeInfoModal";
 import { MdOutlineSearch } from "react-icons/md";
 import { TbEdit } from "react-icons/tb";
 import { HiOutlineTrash } from "react-icons/hi";
+import GrandPrixInfoModal from "../modals/GrandPrixInfoModal";
 
 const ContestCategoryOrderTable = () => {
   const [categoriesList, setCategoriesList] = useState({});
@@ -93,6 +94,17 @@ const ContestCategoryOrderTable = () => {
     }
   };
 
+  const handleGrandPrixClose = () => {
+    setIsOpen(() => ({
+      grandPrix: false,
+      title: "",
+      info: {},
+      categoryId: "",
+      categoryTitle: "",
+      gradeId: "",
+    }));
+  };
+
   const handleCategoryClose = () => {
     setIsOpen(() => ({
       category: false,
@@ -128,6 +140,21 @@ const ContestCategoryOrderTable = () => {
   }, [isRefresh]);
   return (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
+      <Modal open={isOpen.grandPrix} onClose={handleGrandPrixClose}>
+        <div
+          className="flex w-full lg:w-full h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <GrandPrixInfoModal
+            setClose={handleGrandPrixClose}
+            propState={isOpen}
+            setState={setCategoriesArray}
+            setRefresh={setIsRefresh}
+          />
+        </div>
+      </Modal>
       <Modal open={isOpen.category} onClose={handleCategoryClose}>
         <div
           className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
@@ -160,9 +187,22 @@ const ContestCategoryOrderTable = () => {
       </Modal>
       <div className="w-full blue-100 flex rounded-lg flex-col p-0 h-full gap-y-2">
         <div className="flex bg-gray-100 w-full h-auto rounded-lg p-2 flex-col gap-y-2">
-          <div className="flex w-full justify-start items-center">
+          <div className="flex w-full justify-start items-center gap-x-1">
             <button
-              className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
+              className="w-1/2 h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
+              onClick={() =>
+                setIsOpen({
+                  ...isOpen,
+                  grandPrix: true,
+                  title: "그랑프리추가",
+                  count: categoriesArray.length,
+                })
+              }
+            >
+              그랑프리추가
+            </button>
+            <button
+              className="w-1/2 h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
               onClick={() =>
                 setIsOpen({
                   ...isOpen,
@@ -262,22 +302,44 @@ const ContestCategoryOrderTable = () => {
                                         <div className="flex w-full lg:w-1/3 h-auto justify-end items-center">
                                           <div className="w-1/6 h-14 flex justify-end items-center pr-2">
                                             <div className="flex w-full justify-end items-center h-14 gap-x-2">
-                                              <button
-                                                onClick={() =>
-                                                  setIsOpen({
-                                                    ...isOpen,
-                                                    category: true,
-                                                    title: "종목수정",
-                                                    categoryId,
-                                                    info: { ...category },
-                                                    count: gradesArray.length,
-                                                  })
-                                                }
-                                              >
-                                                <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
-                                                  <TbEdit className=" text-xl text-gray-100" />
-                                                </span>
-                                              </button>
+                                              {categorySection ===
+                                              "그랑프리" ? (
+                                                <button
+                                                  onClick={() =>
+                                                    setIsOpen({
+                                                      ...isOpen,
+                                                      grandPrix: true,
+                                                      category: false,
+                                                      title: "그랑프리수정",
+                                                      categoryId,
+                                                      info: { ...category },
+                                                      count: gradesArray.length,
+                                                    })
+                                                  }
+                                                >
+                                                  <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                                    <TbEdit className=" text-xl text-gray-100" />
+                                                  </span>
+                                                </button>
+                                              ) : (
+                                                <button
+                                                  onClick={() =>
+                                                    setIsOpen({
+                                                      ...isOpen,
+                                                      category: true,
+                                                      title: "종목수정",
+                                                      categoryId,
+                                                      info: { ...category },
+                                                      count: gradesArray.length,
+                                                    })
+                                                  }
+                                                >
+                                                  <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                                    <TbEdit className=" text-xl text-gray-100" />
+                                                  </span>
+                                                </button>
+                                              )}
+
                                               <button>
                                                 <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
                                                   <HiOutlineTrash className=" text-xl text-gray-100" />

@@ -16,6 +16,7 @@ import ContestRankSummary from "./pages/ContestRankSummary";
 import ContestStagetable from "./pages/ContestStagetable";
 import PrintBase from "./printForms/PrintBase";
 import PrintPlayersFinal from "./printForms/PrintPlayersFinal";
+import ContestPlayerOrderTableGrandPrix from "./pages/ContestPlayerOrderTableGrandPrix";
 
 function App() {
   return (
@@ -62,6 +63,12 @@ function App() {
           <Route
             path="/contestjudgetable"
             element={<ManagementHome children={<ContestJudgeTable />} />}
+          />
+          <Route
+            path="/contestplayerordergrandprix"
+            element={
+              <ManagementHome children={<ContestPlayerOrderTableGrandPrix />} />
+            }
           />
           <Route
             path="/contestmonitoring"

@@ -12,6 +12,8 @@ import {
 import { AiOutlineGroup } from "react-icons/ai";
 import { PiUsersFour } from "react-icons/pi";
 import { CgUserList } from "react-icons/cg";
+import { GiPodiumWinner } from "react-icons/gi";
+
 import {
   TbCertificate,
   TbFileCertificate,
@@ -97,6 +99,13 @@ export const MenuArray = [
         title: "심판선발",
         icon: <MdBalance />,
         link: "/contestjudgetable",
+        isActive: true,
+      },
+      {
+        id: 10,
+        title: "그랑프리명단",
+        icon: <GiPodiumWinner />,
+        link: "/contestplayerordergrandprix",
         isActive: true,
       },
     ],
