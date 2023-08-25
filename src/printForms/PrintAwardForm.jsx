@@ -6,14 +6,18 @@ import ybbfStamp from "../assets/img/ybbf_stamp.png";
 const PrintAwardForm = ({
   playerName,
   awardNumber,
-  categoryTitle,
+  categoryTitle1,
+  categoryTitle2,
+  categoryFontSize,
   gradeTitle,
   playerRank,
-  playerGym,
+  playerGym1,
+  playerGym2,
+  playerGymFontSize,
 }) => {
   return (
     <div
-      className="flex w-full h-full bg-white flex-col justify-center items-start p-14"
+      className="flex w-full h-full bg-white flex-col justify-center items-start p-14 "
       style={{ fontFamily: "ChosunGs", width: "210mm" }}
     >
       <div className="flex justify-start items-end w-full h-24 gap-x-1 px-10">
@@ -33,25 +37,36 @@ const PrintAwardForm = ({
       </div>
       <div className="flex justify-center items-start w-full h-auto px-10">
         <div
-          className="flex w-1/4 flex-col items-end text-lg mr-2"
-          style={{ lineHeight: "18px" }}
+          className="flex w-1/4 flex-col items-end justify-center text-lg mr-2 h-auto "
+          style={{
+            lineHeight: "18px",
+            minHeight: "50px",
+            fontSize: `${categoryFontSize}`,
+          }}
         >
-          <span>{categoryTitle}</span>
+          <span>{categoryTitle1}</span>
+          <span>{categoryTitle2}</span>
           <span>{gradeTitle}</span>
         </div>
         <div
-          className="flex w-2/4 justify-between "
-          style={{ letterSpacing: "10px", fontSize: "24px" }}
+          className="flex w-2/4 justify-between items-center "
+          style={{ letterSpacing: "10px", fontSize: "24px", minHeight: "50px" }}
         >
           <span>급</span>
           <span>소속:</span>
         </div>
         <div
-          className="flex w-1/4 justify-start items-start"
-          style={{ fontSize: "24px" }}
+          className="flex w-1/4 justify-center items-start flex-col "
+          style={{
+            fontSize: `${playerGymFontSize}`,
+            minHeight: "50px",
+            lineHeight: "18px",
+          }}
         >
-          <span>{playerGym}</span>
-          <span></span>
+          <span className="flex justify-start items-start h-auto">
+            {playerGym1}
+          </span>
+          <span>{playerGym2}</span>
         </div>
       </div>
       <div className="flex justify-center items-start w-full h-auto px-10 mt-2">
