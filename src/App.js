@@ -18,6 +18,7 @@ import PrintBase from "./printForms/PrintBase";
 import PrintPlayersFinal from "./printForms/PrintPlayersFinal";
 import ContestPlayerOrderTableGrandPrix from "./pages/ContestPlayerOrderTableGrandPrix";
 import AwardList from "./printForms/AwardList";
+import StandingTableType1 from "./pages/StandingTableType1";
 
 function App() {
   return (
@@ -91,6 +92,7 @@ function App() {
             path="/awardlist"
             element={<ManagementHome children={<AwardList />} />}
           />
+          <Route path="/screen1" element={<StandingTableType1 />} />
         </Routes>
       </BrowserRouter>
     </CurrentContestProvider>

@@ -103,7 +103,7 @@ const ContestMonitoringStage = () => {
   };
 
   const handlePlayerIntroUpdate = async (contestId, actionType) => {
-    const collectionInfo = `currentScreen/${contestId}/screenStatus`;
+    const collectionInfo = `currentStage/${contestId}/screen`;
     let status = {
       playerIntro: false,
       playerIntroAuto: false,
@@ -112,7 +112,7 @@ const ContestMonitoringStage = () => {
     let players = { ...playersArray[0] };
     switch (actionType) {
       case "playerIntroStart":
-        status = { playerIntro: true, playerIntroAuto: introAuto };
+        status = { playerIntro: true, playerIntroAuto: introAuto, players };
 
         break;
 

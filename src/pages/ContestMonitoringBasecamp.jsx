@@ -63,6 +63,7 @@ const ContestMonitoringBasecamp = () => {
   const fetchStages = useFirestoreGetDocument("contest_stages_assign");
   const fetchFinalPlayers = useFirestoreGetDocument("contest_players_final");
   const fetchScoreCardQuery = useFirestoreQuery();
+  const fetchResultQuery = useFirestoreQuery();
 
   const { data: realtimeData, getDocument: currentStageFunction } =
     useFirebaseRealtimeGetDocument();
@@ -111,6 +112,73 @@ const ContestMonitoringBasecamp = () => {
     }
   };
 
+  const fetchResultAndRealtimeUpdate = async (gradeId, gradeTitle) => {
+    const condition = [where("gradeId", "==", gradeId)];
+    try {
+      await fetchResultQuery
+        .getDocuments("contest_results_list", condition)
+        .then((data) => {
+          if (data?.length === 0) {
+            window.alert("데이터가 없습니다.");
+          }
+          const standingData = data[0].result.sort(
+            (a, b) => a.playerRank - b.playerRank
+          );
+
+          console.log(standingData);
+          return standingData;
+        })
+        .then(async (data) => {
+          const collectionInfo = `currentStage/${currentContest.contests.id}/screen`;
+          const newState = {
+            players: [...data],
+            gradeTitle: gradeTitle,
+            status: { playStart: true },
+          };
+          await updateCurrentStage.updateData(collectionInfo, { ...newState });
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const fetchResultAndScoreBoard = async (gradeId, gradeTitle) => {
+    const condition = [where("gradeId", "==", gradeId)];
+    try {
+      await fetchResultQuery
+        .getDocuments("contest_results_list", condition)
+        .then((data) => {
+          if (data?.length === 0) {
+            window.alert("데이터가 없습니다.");
+          }
+          const standingData = data[0].result.sort(
+            (a, b) => a.playerRank - b.playerRank
+          );
+
+          console.log(standingData);
+          return standingData;
+        })
+        .then(async (data) => {
+          const collectionInfo = `currentStage/${currentContest.contests.id}/screen`;
+          const newState = {
+            players: [...data],
+            gradeTitle: gradeTitle,
+            status: { playStart: false, standingStart: true },
+          };
+          await updateCurrentStage.updateData(collectionInfo, { ...newState });
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleScreenEnd = async () => {
+    const collectionInfo = `currentStage/${currentContest.contests.id}/screen/status`;
+    const newState = {
+      playStart: false,
+    };
+    await updateCurrentStage.updateData(collectionInfo, { ...newState });
+  };
   const fetchScoreTable = async (grades) => {
     const allData = [];
 
@@ -230,6 +298,7 @@ const ContestMonitoringBasecamp = () => {
           compareIng: false,
         },
       },
+      screen: { status: { playStart: false }, players: [] },
     };
 
     const collectionInfo = `currentStage/${currentContest.contests.id}`;
@@ -600,7 +669,37 @@ const ContestMonitoringBasecamp = () => {
                                 <div className="flex w-1/2">
                                   {categoryTitle}({gradeTitle})
                                 </div>
-                                <div className="flex w-1/2 justify-end items-center gap-x-2">
+                                <div className="flex w-2/3 justify-end items-center gap-x-2">
+                                  <button
+                                    className="w-auto h-10 bg-blue-900 rounded-lg text-gray-100 px-5"
+                                    onClick={() => {
+                                      handleScreenEnd();
+                                    }}
+                                  >
+                                    화면종료
+                                  </button>
+                                  <button
+                                    className="w-auto h-10 bg-blue-900 rounded-lg text-gray-100 px-5"
+                                    onClick={() => {
+                                      fetchResultAndRealtimeUpdate(
+                                        gradeId,
+                                        gradeTitle
+                                      );
+                                    }}
+                                  >
+                                    순위표공개
+                                  </button>
+                                  <button
+                                    className="w-auto h-10 bg-blue-900 rounded-lg text-gray-100 px-5"
+                                    onClick={() => {
+                                      fetchResultAndScoreBoard(
+                                        gradeId,
+                                        gradeTitle
+                                      );
+                                    }}
+                                  >
+                                    채점표공개
+                                  </button>
                                   <button
                                     className="w-auto h-10 bg-blue-900 rounded-lg text-gray-100 px-5"
                                     onClick={() => {

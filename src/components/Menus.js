@@ -180,6 +180,13 @@ export const MenuArray = [
         icon: <TbHeartRateMonitor />,
         link: "/contestmonitoring",
       },
+      {
+        id: 2,
+        title: "스크린",
+        isActive: true,
+        icon: <TbHeartRateMonitor />,
+        link: "/screen1",
+      },
     ],
   },
 ];
