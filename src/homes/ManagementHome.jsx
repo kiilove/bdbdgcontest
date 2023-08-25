@@ -10,7 +10,7 @@ const ManagementHome = ({ children }) => {
           <TopBar />
         </div>
         <div className=" flex w-full h-full justify-start items-start">
-          <div className="hidden lg:flex w-72 h-full bg-sky-800 shadow-md">
+          <div className="hidden  w-72 h-full bg-sky-800 shadow-md">
             <Sidebar />
           </div>
           <div className="flex w-full h-full p-2">{children}</div>

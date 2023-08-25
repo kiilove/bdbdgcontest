@@ -17,6 +17,7 @@ import ContestStagetable from "./pages/ContestStagetable";
 import PrintBase from "./printForms/PrintBase";
 import PrintPlayersFinal from "./printForms/PrintPlayersFinal";
 import ContestPlayerOrderTableGrandPrix from "./pages/ContestPlayerOrderTableGrandPrix";
+import AwardList from "./printForms/AwardList";
 
 function App() {
   return (
@@ -85,6 +86,10 @@ function App() {
           <Route
             path="/printplayersfinal"
             element={<ManagementHome children={<PrintPlayersFinal />} />}
+          />
+          <Route
+            path="/awardlist"
+            element={<ManagementHome children={<AwardList />} />}
           />
         </Routes>
       </BrowserRouter>

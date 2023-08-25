@@ -9,6 +9,7 @@ import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import ContestMonitoringBasecamp from "./ContestMonitoringBasecamp";
 import ContestMonitoringJudgeHead from "./ContestMonitoringJudgeHead";
 import StandingTableType1 from "./StandingTableType1";
+import ContestMonitoringStage from "./ContestMonitoringStage";
 
 const ContestMonitoring = () => {
   const { currentContest } = useContext(CurrentContestContext);
@@ -79,6 +80,7 @@ const ContestMonitoring = () => {
                 </div>
                 {currentTab === 0 && <ContestMonitoringBasecamp />}
                 {currentTab === 1 && <ContestMonitoringJudgeHead />}
+                {currentTab === 2 && <ContestMonitoringStage />}
                 {currentTab === 3 && <StandingTableType1 />}
               </div>
             </div>

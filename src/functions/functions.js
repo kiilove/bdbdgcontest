@@ -10,3 +10,20 @@ export const generateToday = () => {
   const currentDateTime = dayjs().format("YYYY-MM-DD HH:mm");
   return currentDateTime;
 };
+
+export const handleCategoriesWithGrades = (categories, grades) => {
+  let dummy = [];
+
+  categories
+
+    .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
+    .map((category, cIdx) => {
+      const matchedGrades = grades
+        .filter((grade) => grade.refCategoryId === category.contestCategoryId)
+        .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex);
+      const newCategoryItem = { ...category, grades: [...matchedGrades] };
+      dummy.push({ ...newCategoryItem });
+    });
+
+  return dummy;
+};

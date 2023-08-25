@@ -92,7 +92,7 @@ const TopBar = () => {
 
   return (
     <div className="flex w-full h-full justify-start items-center bg-white">
-      <div className="flex w-full h-full lg:hidden ">
+      <div className="flex w-full h-full  ">
         <div className="flex w-full h-full items-center">
           <button
             onClick={() => handleDrawer()}
@@ -125,7 +125,7 @@ const TopBar = () => {
         </Drawer>
       </div>
 
-      <div className="hidden lg:flex justify-between w-full">
+      <div className="hidden  justify-between w-full">
         <div className="flex w-auto">
           <button className="w-auto h-full px-5 py-2">
             <span className="font-sans text-gray-500 font-semibold font-sm">

@@ -27,6 +27,7 @@ import StandingTableType1 from "./StandingTableType1";
 import ContestRankingSummary from "../modals/ContestRankingSummary";
 import ContestRankingSummaryPrintAll from "../modals/ContestRankingSummaryPrintAll";
 import PrintAward from "../printForms/PrintAward";
+import ContestAwardCreator from "./ContestAwardCreator";
 
 const ContestMonitoringBasecamp = () => {
   const navigate = useNavigate();
@@ -375,7 +376,10 @@ const ContestMonitoringBasecamp = () => {
             />
           </Modal>
           <Modal open={awardPrintPreviewOpen}>
-            <PrintAward props={awardProp} setClose={setAwardPrintPreviewOpen} />
+            <ContestAwardCreator
+              props={awardProp}
+              setClose={setAwardPrintPreviewOpen}
+            />
           </Modal>
           <Modal open={summaryOpen}>
             <ContestRankingSummary

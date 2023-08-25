@@ -145,7 +145,13 @@ export const MenuArray = [
         icon: <BsCardChecklist />,
         isActive: true,
       },
-      { id: 8, title: "상장 출력", icon: <TbCertificate />, isActive: true },
+      {
+        id: 8,
+        title: "상장 출력",
+        icon: <TbCertificate />,
+        isActive: true,
+        link: "/awardlist",
+      },
       {
         id: 9,
         title: "상장부여현황",

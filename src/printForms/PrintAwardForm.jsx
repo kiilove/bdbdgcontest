@@ -124,15 +124,19 @@ const PrintAwardForm = ({
           >
             용인특례시보디빌딩협회
           </div>
-          <div
-            className="flex text-3xl font-bold justify-between"
-            style={{ letterSpacing: "25px" }}
-          >
-            <span className="mr-10">회장</span>
-            <span>윤송훈</span>
+          <div className="flex text-3xl font-bold">
+            <span className="mr-10" style={{ letterSpacing: "70px" }}>
+              회장
+            </span>
+            <div className="flex" style={{ width: "30px" }}></div>
+            <div className=" flex justify-end w-1/2 gap-x-24">
+              <span>윤</span>
+              <span>송</span>
+              <span className="mr-2">훈</span>
+            </div>
           </div>
         </div>
-        <div className="flex absolute -top-3 right-12 z-0">
+        <div className="flex absolute -top-3 right-11 -z-10">
           <img src={ybbfStamp} className="z-0" />
         </div>
       </div>
