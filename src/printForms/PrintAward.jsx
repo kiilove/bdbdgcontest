@@ -256,8 +256,8 @@ const PrintAward = ({ props, setClose }) => {
   };
 
   return (
-    <div className="flex w-full h-full bg-gray-100 justify-center items-start  overflow-auto">
-      <div className="flex flex-col w-full h-full justify-start items-center gap-y-2 bg-white">
+    <div className="flex w-full h-auto bg-gray-100 justify-center items-start  overflow-auto ">
+      <div className="flex flex-col w-full h-full justify-start items-start gap-y-2 bg-white">
         <div className="flex w-full justify-center items-center h-10 p-3 ">
           <div className="flex w-full bg-blue-100 p-2 rounded-lg mt-5">
             <div className="flex w-1/2 justify-start">

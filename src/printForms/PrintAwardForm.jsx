@@ -17,7 +17,7 @@ const PrintAwardForm = ({
 }) => {
   return (
     <div
-      className="flex w-full h-full bg-white flex-col justify-center items-start p-14 "
+      className="flex w-full h-full bg-white flex-col justify-start items-start p-14 "
       style={{ fontFamily: "ChosunGs", width: "210mm" }}
     >
       <div className="flex justify-start items-end w-full h-24 gap-x-1 px-10">

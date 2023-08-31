@@ -43,7 +43,7 @@ const TopBar = () => {
   };
 
   const fetchList = async () => {
-    const condition = [where("contestStatus", "==", "접수중")];
+    const condition = [where("contestStatus", "in", ["접수중", "대회종료"])];
 
     const returnData = await fetchQuery.getDocuments(
       "contest_notice",
