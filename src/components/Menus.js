@@ -41,7 +41,7 @@ export const MenuArray = [
         title: "새로운대회개설",
         icon: <BiAddToQueue />,
         link: "/newcontest",
-        isActive: false,
+        isActive: true,
       },
       {
         id: 2,

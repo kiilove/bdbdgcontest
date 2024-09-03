@@ -406,7 +406,7 @@ const AwardList = () => {
                   </div>
                 </div>
                 <div
-                  className="flex w-full justify-center items-start h-full bg-red-200"
+                  className="flex w-full justify-center items-start h-full"
                   ref={printRef}
                 >
                   <PrintAwardForm

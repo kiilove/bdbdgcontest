@@ -105,8 +105,8 @@ const ContestInfo = () => {
     setCurrentContestInfo({ ...newValue });
   };
 
-  const handleUpdateContestInfo = async () => {
-    console.log(currentContest);
+  const handleUpdateContestInfo = async (noticeID = null) => {
+    console.log(noticeID);
     const contestPriceReformat = (field) => {
       let reFormatNumber = 0;
       if (
@@ -135,11 +135,9 @@ const ContestInfo = () => {
       contestPriceType2: contestPriceReformat("contestPriceType2"),
     };
 
-    console.log(dbContestInfo);
-
-    if (currentContest.contestNoticeId) {
+    if (noticeID !== null) {
       const updatedData = await updateContestInfo.updateData(
-        currentContest.contestNoticeId,
+        noticeID,
         dbContestInfo
       );
 
@@ -216,6 +214,10 @@ const ContestInfo = () => {
       }));
     }
   }, [urls]);
+
+  useEffect(() => {
+    console.log(currentContest);
+  }, [currentContest]);
 
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2 justify-start items-start">
@@ -625,7 +627,9 @@ const ContestInfo = () => {
               <button
                 className="w-32 h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg mt-2"
                 onClick={() =>
-                  handleUpdateContestInfo(currentContest.contests.id)
+                  handleUpdateContestInfo(
+                    currentContest.contests.contestNoticeId
+                  )
                 }
               >
                 저장

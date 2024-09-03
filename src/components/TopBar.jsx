@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-
 import Drawer from "react-modern-drawer";
 import { BsTrophyFill, BsInfoSquareFill } from "react-icons/bs";
 import { MdLogout } from "react-icons/md";
@@ -17,11 +16,13 @@ const TopBar = () => {
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
   const [contestList, setContestList] = useState([]);
   const [contestNoticeId, setContestNoticeId] = useState();
+  const [isLoading, setIsLoading] = useState(true); // 로딩 상태 추가
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
   const fetchQuery = useFirestoreQuery();
   const fetchDocument = useFirestoreGetDocument("contest_notice");
+
   const handleDrawer = () => {
     setIsOpenDrawer((prev) => !prev);
     console.log(isOpenDrawer);
@@ -43,7 +44,7 @@ const TopBar = () => {
   };
 
   const fetchList = async () => {
-    const condition = [where("contestStatus", "in", ["접수중", "대회종료"])];
+    const condition = [where("contestStatus", "in", ["접수중"])];
 
     const returnData = await fetchQuery.getDocuments(
       "contest_notice",
@@ -57,20 +58,23 @@ const TopBar = () => {
       ),
     ]);
 
-    if (returnData?.length === 1) {
+    if (returnData?.length >= 1) {
       setContestNoticeId(returnData[0].id);
     }
   };
 
   const fetchContest = async () => {
     if (contestNoticeId) {
-      const condtion = [where("contestNoticeId", "==", contestNoticeId)];
-      const returnContest = await fetchQuery.getDocuments("contests", condtion);
+      const condition = [where("contestNoticeId", "==", contestNoticeId)];
+      const returnContest = await fetchQuery.getDocuments(
+        "contests",
+        condition
+      );
+      console.log(returnContest);
       const returnNotice = await fetchDocument.getDocument(contestNoticeId);
 
       if (returnContest[0].id && returnNotice.id) {
         setCurrentContest({
-          ...currentContest,
           contestInfo: { ...returnNotice },
           contests: { ...returnContest[0] },
         });
@@ -79,16 +83,23 @@ const TopBar = () => {
   };
 
   useEffect(() => {
-    console.log(contestList);
-  }, [contestList]);
+    const loadData = async () => {
+      await fetchList();
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 2000); // 2초 대기
+    };
+
+    loadData();
+  }, []);
 
   useEffect(() => {
     fetchContest();
   }, [contestNoticeId]);
 
-  useEffect(() => {
-    fetchList();
-  }, []);
+  if (isLoading) {
+    return <div>Loading...</div>; // 로딩 중일 때 표시할 UI
+  }
 
   return (
     <div className="flex w-full h-full justify-start items-center bg-white">
@@ -110,7 +121,9 @@ const TopBar = () => {
             >
               {contestList.length > 0 &&
                 contestList.map((list, lIdx) => (
-                  <option value={list.id}>{list.contestTitle}</option>
+                  <option key={lIdx} value={list.id}>
+                    {list.contestTitle}
+                  </option>
                 ))}
             </select>
           </div>
@@ -144,7 +157,9 @@ const TopBar = () => {
             >
               {contestList.length > 0 &&
                 contestList.map((list, lIdx) => (
-                  <option value={list.id}>{list.contestTitle}</option>
+                  <option key={lIdx} value={list.id}>
+                    {list.contestTitle}
+                  </option>
                 ))}
             </select>
           </div>

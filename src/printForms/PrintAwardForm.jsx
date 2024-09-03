@@ -20,7 +20,7 @@ const PrintAwardForm = ({
       className="flex w-full h-full bg-white flex-col justify-start items-start p-14 "
       style={{ fontFamily: "ChosunGs", width: "210mm" }}
     >
-      <div className="flex justify-start items-end w-full h-24 gap-x-1 px-10">
+      <div className="flex justify-start items-end w-full h-24 gap-x-1 px-20">
         <div className="flex">제</div>
         <div className="flex">{dayjs(generateToday()).year()}</div>
         <div className="flex">-</div>
@@ -90,7 +90,7 @@ const PrintAwardForm = ({
           <span>{playerName}</span>
         </div>
       </div>
-      <div className="flex w-full flex-col items-center justify-start gap-y-2 mt-32">
+      <div className="flex w-full flex-col items-center justify-start gap-y-2 mt-24">
         <div
           className="flex w-full justify-center items-start text-3xl font-semibold"
           style={{ letterSpacing: "7px" }}

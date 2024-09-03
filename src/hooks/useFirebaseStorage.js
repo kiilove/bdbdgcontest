@@ -16,7 +16,7 @@ const useFirebaseStorage = (files, storagePath) => {
   const [errors, setErrors] = useState([]);
   const [representativeImage, setRepresentativeImage] = useState(null);
 
-  console.log(files);
+  //console.log(files);
   useEffect(() => {
     const storage = getStorage();
     const originalRef = ref(storage, `${storagePath}/original`);
