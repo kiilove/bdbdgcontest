@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import LoginBg3 from "../assets/img/loginbg3.jpg";
 import LoginBg4 from "../assets/img/loginbg4.jpg";
 import { FaUser, FaKey } from "react-icons/fa";
@@ -6,6 +6,49 @@ import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [userID, setUserID] = useState("");
+  const [userPass, setUserPass] = useState("");
+  const [error, setError] = useState("");
+
+  const userTable = [
+    {
+      id: 0,
+      userID: "ybbf",
+      userPass: "20241110",
+      userGroup: "orgManager",
+      userContext: "용인특례시보디빌딩협회",
+    },
+    {
+      id: 1,
+      userID: "sbbf",
+      userPass: "01056106006",
+      userGroup: "orgManager",
+      userContext: "시흥시보디빌딩협회",
+    },
+    {
+      id: 100,
+      userID: "jncore",
+      userPass: "1201",
+      userGroup: "admin",
+      userContext: "관리자",
+    },
+  ];
+
+  const handleLogin = () => {
+    const user = userTable.find(
+      (u) => u.userID === userID && u.userPass === userPass
+    );
+
+    if (user) {
+      // 로그인 성공
+      sessionStorage.setItem("user", JSON.stringify(user));
+      navigate("/management");
+    } else {
+      // 로그인 실패
+      setError("아이디 또는 비밀번호가 일치하지 않습니다.");
+    }
+  };
+
   return (
     <div className="w-full h-screen bg-gradient-to-br from-blue-300 to-sky-700">
       <div className="hidden md:flex justify-center items-center h-full px-3 lg:px-0">
@@ -52,8 +95,11 @@ const Login = () => {
                       <FaUser className="text-gray-600 text-lg" />
                     </div>
                     <input
+                      name="userID"
                       type="text"
-                      className=" bg-transparent outline-none"
+                      className=" bg-transparent outline-none w-full"
+                      value={userID}
+                      onChange={(e) => setUserID(e.target.value)}
                     />
                   </div>
                   <div className="flex w-full bg-gray-200 h-10 rounded-lg">
@@ -61,14 +107,25 @@ const Login = () => {
                       <FaKey className="text-gray-600 text-lg" />
                     </div>
                     <input
-                      type="text"
-                      className=" bg-transparent  outline-none"
+                      name="userPass"
+                      type="password"
+                      className=" bg-transparent outline-none w-full"
+                      value={userPass}
+                      onChange={(e) => setUserPass(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleLogin();
+                        }
+                      }}
                     />
                   </div>
+                  {error && (
+                    <div className="text-red-500 text-sm mt-2">{error}</div>
+                  )}
                   <div className="flex w-full h-20">
                     <button
-                      className="w-full  bg-gradient-to-r from-amber-400 to-pink-600 h-10 rounded-3xl mt-2"
-                      onClick={() => navigate("/management")}
+                      className="w-full bg-gradient-to-r from-amber-400 to-pink-600 h-10 rounded-3xl mt-2"
+                      onClick={handleLogin}
                     >
                       <span
                         className="font-semibold font-san text-gray-100"
@@ -118,18 +175,36 @@ const Login = () => {
                   <div className="flex w-10 h-10 justify-center items-center">
                     <FaUser className="text-gray-600 text-lg" />
                   </div>
-                  <input type="text" className=" bg-transparent" />
+                  <input
+                    type="text"
+                    className=" bg-transparent"
+                    value={userID}
+                    onChange={(e) => setUserID(e.target.value)}
+                  />
                 </div>
                 <div className="flex w-full bg-gray-200 h-10 rounded-lg">
                   <div className="flex w-10 h-10 justify-center items-center">
                     <FaKey className="text-gray-600 text-lg" />
                   </div>
-                  <input type="text" className=" bg-transparent" />
+                  <input
+                    type="password"
+                    className=" bg-transparent"
+                    value={userPass}
+                    onChange={(e) => setUserPass(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleLogin();
+                      }
+                    }}
+                  />
                 </div>
+                {error && (
+                  <div className="text-red-500 text-sm mt-2">{error}</div>
+                )}
                 <div className="flex w-full h-20">
                   <button
-                    className="w-full  bg-gradient-to-r from-amber-400 to-pink-600 h-10 rounded-3xl mt-2"
-                    onClick={() => navigate("/management")}
+                    className="w-full bg-gradient-to-r from-amber-400 to-pink-600 h-10 rounded-3xl mt-2"
+                    onClick={handleLogin}
                   >
                     <span
                       className="font-semibold font-san text-gray-100"

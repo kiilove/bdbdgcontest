@@ -29,6 +29,11 @@ import {
 } from "react-icons/md";
 import { BiAddToQueue, BiUserPlus } from "react-icons/bi";
 import { BsClipboardData } from "react-icons/bs";
+let user = { userGroup: "" };
+const userParser = JSON.parse(sessionStorage.getItem("user"));
+if (userParser?.userGroup !== null) {
+  user = { ...userParser };
+}
 export const MenuArray = [
   {
     id: 0,
@@ -41,7 +46,7 @@ export const MenuArray = [
         title: "새로운대회개설",
         icon: <BiAddToQueue />,
         link: "/newcontest",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 2,
@@ -70,28 +75,28 @@ export const MenuArray = [
         title: "기초데이터(1단계)",
         icon: <BsClipboardData />,
         link: "/contesttimetable",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 6,
         title: "계측(2단계)",
         icon: <MdOutlineScale />,
         link: "/contestplayerordertable",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 7,
         title: "최종명단(3단계)",
         icon: <CgUserList />,
         link: "/contestplayerordertableafter",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 8,
         title: "무대설정(4단계)",
         icon: <AiOutlineGroup />,
         link: "/conteststagetable",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
 
       {
@@ -99,14 +104,14 @@ export const MenuArray = [
         title: "심판선발",
         icon: <MdBalance />,
         link: "/contestjudgetable",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 10,
         title: "그랑프리명단",
         icon: <GiPodiumWinner />,
         link: "/contestplayerordergrandprix",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
     ],
   },
@@ -143,34 +148,34 @@ export const MenuArray = [
         id: 7,
         title: "집계표 출력",
         icon: <BsCardChecklist />,
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 8,
         title: "상장 출력",
         icon: <TbCertificate />,
         isActive: true,
-        link: "/awardlist",
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 9,
         title: "상장부여현황",
         icon: <TbFileCertificate />,
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
       },
     ],
   },
   {
     id: 2,
     title: "수동모드",
-    isActive: true,
+    isActive: user.userGroup === "admin" ? true : false,
     icon: <BsFillHandIndexThumbFill />,
     subMenus: [{ id: 1, title: "심사표 입력", icon: <MdOutlineTouchApp /> }],
   },
   {
     id: 3,
     title: "자동모드",
-    isActive: true,
+    isActive: user.userGroup === "admin" ? true : false,
     icon: <BsCpuFill />,
     subMenus: [
       {
@@ -188,5 +193,12 @@ export const MenuArray = [
         link: "/screen1",
       },
     ],
+  },
+  {
+    id: 4,
+    title: "접수링크",
+    isActive: true,
+    icon: <BsFillHandIndexThumbFill />,
+    subMenus: [{ id: 1, title: "QR코드확인", icon: <MdOutlineTouchApp /> }],
   },
 ];

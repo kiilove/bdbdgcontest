@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Drawer from "react-modern-drawer";
 import { BsTrophyFill, BsInfoSquareFill } from "react-icons/bs";
 import { MdLogout } from "react-icons/md";
@@ -11,8 +11,9 @@ import {
 } from "../hooks/useFirestores";
 import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
+import { useNavigate } from "react-router-dom";
 
-const TopBar = () => {
+const TopBar = ({ user }) => {
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
   const [contestList, setContestList] = useState([]);
   const [contestNoticeId, setContestNoticeId] = useState();
@@ -22,44 +23,43 @@ const TopBar = () => {
   );
   const fetchQuery = useFirestoreQuery();
   const fetchDocument = useFirestoreGetDocument("contest_notice");
+  const navigate = useNavigate(); // useNavigate 훅 추가
 
   const handleDrawer = () => {
     setIsOpenDrawer((prev) => !prev);
     console.log(isOpenDrawer);
   };
 
-  const handleCurrentContest = (e) => {};
-
-  const fetchContestNotice = async () => {
-    if (contestNoticeId) {
-      const returnData = await fetchDocument.getDocument(contestNoticeId);
-
-      if (returnData.id) {
-        setCurrentContest({
-          ...currentContest,
-          contestInfo: { ...returnData },
-        });
-      }
-    }
+  const handleLogout = () => {
+    sessionStorage.removeItem("user"); // 세션에서 사용자 정보 삭제
+    navigate("/login"); // 로그인 페이지로 리다이렉트
   };
 
   const fetchList = async () => {
-    const condition = [where("contestStatus", "in", ["접수중"])];
+    const condition = [where("contestStatus", "in", ["접수중", "수정됨"])];
 
     const returnData = await fetchQuery.getDocuments(
       "contest_notice",
       condition
     );
-    console.log(returnData);
+
+    const filteredData =
+      user.userGroup === "orgManager"
+        ? returnData.filter(
+            (contest) =>
+              contest.contestAssociate === user.userContext ||
+              contest.contestPromoter === user.userContext
+          )
+        : [...returnData];
 
     setContestList([
-      ...returnData.sort((a, b) =>
+      ...filteredData.sort((a, b) =>
         a.contestTitle.localeCompare(b.contestTitle)
       ),
     ]);
 
     if (returnData?.length >= 1) {
-      setContestNoticeId(returnData[0].id);
+      setContestNoticeId(filteredData[0].id);
     }
   };
 
@@ -83,15 +83,19 @@ const TopBar = () => {
   };
 
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+
     const loadData = async () => {
-      await fetchList();
+      await fetchList(); // userState가 설정된 후에 fetchList 실행
       setTimeout(() => {
-        setIsLoading(false);
-      }, 2000); // 2초 대기
+        setIsLoading(false); // 2초 후에 로딩 상태 해제
+      }, 3000);
     };
 
     loadData();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchContest();
@@ -103,7 +107,7 @@ const TopBar = () => {
 
   return (
     <div className="flex w-full h-full justify-start items-center bg-white">
-      <div className="flex w-full h-full  ">
+      <div className="flex w-full h-full items-center ">
         <div className="flex w-full h-full items-center">
           <button
             onClick={() => handleDrawer()}
@@ -111,12 +115,12 @@ const TopBar = () => {
           >
             <RxHamburgerMenu className="text-2xl" />
           </button>
-          <div className="flex justify-start items-center h-8 px-2 gap-x-1 overflow-hidden">
+          <div className="flex justify-start items-center h-8 px-10 gap-x-1 overflow-hidden">
             <span className="text-sm text-gray-500">
               <BsTrophyFill />
             </span>
             <select
-              className=" bg-transparent text-xs"
+              className=" bg-transparent text-base"
               onClick={(e) => setContestNoticeId(e.target.value)}
             >
               {contestList.length > 0 &&
@@ -136,6 +140,16 @@ const TopBar = () => {
         >
           <Drawbar setOpen={handleDrawer} />
         </Drawer>
+        <div
+          className="flex justify-start items-center h-8 px-5 gap-x-2 cursor-pointer"
+          onClick={handleLogout}
+          style={{ width: "150px" }}
+        >
+          <span className="text-sm text-gray-500">
+            <MdLogout />
+          </span>
+          <span>로그아웃</span>
+        </div>
       </div>
 
       <div className="hidden  justify-between w-full">
@@ -169,7 +183,10 @@ const TopBar = () => {
             </span>
             <span>수동모드</span>
           </div>
-          <div className="flex justify-start items-center h-8 px-5 gap-x-2">
+          <div
+            className="flex justify-start items-center h-8 px-5 gap-x-2 cursor-pointer"
+            onClick={handleLogout}
+          >
             <span className="text-sm text-gray-500">
               <MdLogout />
             </span>

@@ -42,7 +42,7 @@ const ContestInvoiceTable = () => {
   const fetchQuery = async (contestId) => {
     setIsLoading(true);
     const invoiceCondition = [where("contestId", "==", contestId)];
-
+    //lYp6h55jtZzQRYDvHToe
     const invoiceData = await getQuery.getDocuments(
       "invoices_pool",
       invoiceCondition
