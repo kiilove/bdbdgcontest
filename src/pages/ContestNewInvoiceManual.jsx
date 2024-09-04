@@ -121,7 +121,7 @@ const ContestNewInvoiceManual = () => {
     } = currentContest.contestInfo;
 
     const initInfo = {
-      invoicePoolId: invoicePoolId,
+      //invoicePoolId: invoicePoolId,
       contestId: contestId,
       contestTitle,
       contestDate,
