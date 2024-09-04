@@ -249,6 +249,7 @@ const ContestNewInvoiceManual = () => {
                     <input
                       type="text"
                       name="playerTel"
+                      placeholder="010-0000-0000형식으로 입력 '-'까지 입력"
                       value={invoiceInfo.playerTel}
                       onChange={(e) => handleInputValues(e)}
                       ref={(ref) => (invoiceInfoRef.current.playerTel = ref)}
@@ -271,6 +272,7 @@ const ContestNewInvoiceManual = () => {
                     <input
                       type="text"
                       name="playerBirth"
+                      placeholder="2000-01-01형식으로 입력 '-'까지 입력"
                       value={invoiceInfo.playerBirth}
                       onChange={(e) => handleInputValues(e)}
                       ref={(ref) => (invoiceInfoRef.current.playerBirth = ref)}
@@ -294,6 +296,7 @@ const ContestNewInvoiceManual = () => {
                       type="text"
                       name="playerGym"
                       value={invoiceInfo.playerGym}
+                      placeholder="소속없거나 모르면 무소속"
                       onChange={(e) => handleInputValues(e)}
                       ref={(ref) => (invoiceInfoRef.current.playerGym = ref)}
                       className="h-8 lg:h-12 outline-none text-sm lg:text-base"
@@ -352,6 +355,7 @@ const ContestNewInvoiceManual = () => {
                       type="email"
                       name="playerEmail"
                       value={invoiceInfo.playerEmail}
+                      placeholder="abc@abc.com형식으로 입력"
                       onChange={(e) => handleInputValues(e)}
                       ref={(ref) => (invoiceInfoRef.current.playerEmail = ref)}
                       className="h-8 lg:h-12 outline-none text-sm lg:text-base"
@@ -374,6 +378,7 @@ const ContestNewInvoiceManual = () => {
                       type="text"
                       name="contestPriceSum"
                       value={invoiceInfo.contestPriceSum?.toLocaleString()}
+                      placeholder="참가비 수동으로 계산입력 ','는 제외"
                       onChange={(e) => handleInputValues(e)}
                       ref={(ref) =>
                         (invoiceInfoRef.current.contestPriceSum = ref)
