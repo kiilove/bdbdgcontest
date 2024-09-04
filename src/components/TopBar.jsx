@@ -143,12 +143,12 @@ const TopBar = ({ user }) => {
         <div
           className="flex justify-start items-center h-8 px-5 gap-x-2 cursor-pointer"
           onClick={handleLogout}
-          style={{ width: "150px" }}
+          style={{ width: "250px" }}
         >
           <span className="text-sm text-gray-500">
             <MdLogout />
           </span>
-          <span>로그아웃</span>
+          <span>{user?.userContext} 로그아웃</span>
         </div>
       </div>
 
