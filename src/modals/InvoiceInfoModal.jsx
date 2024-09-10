@@ -169,6 +169,22 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
     }
   };
 
+  const handleUpdateInvoice = async () => {
+    const newInvoice = { ...invoiceInfo };
+    deleteInvocieJoins(newInvoice.contestId, newInvoice.playerUid);
+    newInvoice.contestPriceSum = parseInt(invoiceInfo.contestPriceSum);
+    newInvoice.isPriceCheck = false;
+    try {
+      await updateInvoice
+        .updateData(newInvoice.id, { ...newInvoice })
+        .then(() => {
+          deleteInvocieJoins(newInvoice.contestId, newInvoice.playerUid);
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleCancelUndo = async () => {
     const dummy = [...propState.list];
     const findInvoiceIndex = dummy.findIndex(
@@ -555,6 +571,9 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
         <button
           className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
           // onClick={() => handleUpdatePlayers()}
+          onClick={() => {
+            handleUpdateInvoice();
+          }}
         >
           저장
         </button>
