@@ -79,8 +79,10 @@ const ContestJudgeAssignTable = () => {
     seatIndex,
     grades,
     judgeInfo,
-    isAdding
+    isAdding,
+    sectionName // sectionName을 추가로 받음
   ) => {
+    // 기존 할당된 배열에서 동일한 gradeId와 seatIndex를 가진 항목을 제거
     const updatedArr = originArr.filter(
       (assign) =>
         !grades.some(
@@ -90,6 +92,7 @@ const ContestJudgeAssignTable = () => {
         )
     );
 
+    // isAdding이 true인 경우 새 심사위원을 추가
     if (isAdding) {
       grades.forEach((grade) => {
         updatedArr.push({
@@ -102,6 +105,7 @@ const ContestJudgeAssignTable = () => {
           categoryId: grade.refCategoryId,
           judgesAssignId: generateUUID(),
           contestId: currentContest.contests.id,
+          sectionName: sectionName, // sectionName을 추가
         });
       });
     }
@@ -132,16 +136,68 @@ const ContestJudgeAssignTable = () => {
         seatIndex,
         sectionGrades,
         selectedJudge,
-        true
+        true,
+        sectionName
       );
 
       console.log("업데이트된 할당 배열:", newAssignArray);
 
       // 업데이트된 할당 배열을 상태에 저장
       setJudgesAssignInfo((prev) => ({ ...prev, judges: newAssignArray }));
-      console.log("상태 업데이트 완료:", judgesAssignInfo);
+      console.log("상태 업데이트 완료 후의 judgesAssignInfo:", newAssignArray);
     }
   };
+
+  // 해당 섹션에서 이미 배정된 심판의 judgeUid를 반환하는 함수
+  const getAssignedJudgesForSection = (sectionName) => {
+    return judgesAssignInfo.judges
+      .filter((assign) => assign.sectionName === sectionName)
+      .map((assign) => assign.judgeUid);
+  };
+
+  // 1. 랜덤 배정 함수 (비어있는 seat에만 배정)
+  const handleRandomAssign = (sectionName, unassignedSeats) => {
+    const availableJudges = judgesPoolArray.filter(
+      (judge) =>
+        !getAssignedJudgesForSection(sectionName).includes(judge.judgeUid)
+    );
+    const randomSeat =
+      unassignedSeats[Math.floor(Math.random() * unassignedSeats.length)];
+    const randomJudge =
+      availableJudges[Math.floor(Math.random() * availableJudges.length)];
+
+    if (randomSeat && randomJudge) {
+      handleSelectJudge(sectionName, randomSeat, randomJudge.judgeUid);
+    }
+  };
+
+  // 2. 모두 랜덤 배정 함수 (기존 배정된 seat도 무시하고 모든 seat에 배정)
+  const handleAllRandomAssign = (sectionName, allSeats) => {
+    const availableJudges = [...judgesPoolArray];
+
+    allSeats.forEach((seatNumber) => {
+      const randomJudge = availableJudges.splice(
+        Math.floor(Math.random() * availableJudges.length),
+        1
+      )[0];
+      if (randomJudge) {
+        handleSelectJudge(sectionName, seatNumber, randomJudge.judgeUid);
+      }
+    });
+  };
+
+  // 3. 초기화 함수 (해당 섹션의 모든 배정 삭제)
+  const handleResetAssign = (sectionName) => {
+    const clearedJudges = judgesAssignInfo.judges.filter(
+      (assign) => assign.sectionName !== sectionName
+    );
+    setJudgesAssignInfo((prev) => ({ ...prev, judges: clearedJudges }));
+  };
+
+  // 상태가 제대로 반영되었는지 확인하기 위한 useEffect 추가
+  useEffect(() => {
+    console.log("judgesAssignInfo 상태가 변경됨:", judgesAssignInfo);
+  }, [judgesAssignInfo]);
 
   // 섹션별 필터링
   const filteredBySection = useMemo(() => {
@@ -213,74 +269,136 @@ const ContestJudgeAssignTable = () => {
 
               {currentSubTab === "0" && filteredBySection.length > 0 && (
                 <div className="flex w-full flex-col bg-gray-100 rounded-lg gap-y-2">
-                  {filteredBySection.map((section, sectionIdx) => (
-                    <div
-                      key={sectionIdx}
-                      className="flex w-full flex-col bg-blue-200 rounded-lg"
-                    >
-                      <div className="h-auto w-full flex items-center flex-col lg:flex-row">
-                        <div className="flex w-1/6 h-14 justify-start items-center pl-4">
-                          {section.sectionName}
-                        </div>
-                      </div>
-                      <div className="flex p-2">
-                        <div className="flex bg-gray-100 w-full gap-2 p-2 rounded-lg flex-col">
-                          <div className="flex w-full bg-white rounded-lg p-2">
-                            <div className="w-1/6">좌석</div>
-                            <div className="w-5/6">선택</div>
-                          </div>
-                          {Array.from(
-                            {
-                              length:
-                                section.sectionCategory[0]
-                                  ?.contestCategoryJudgeCount || 0,
-                            },
-                            (_, seatIdx) => seatIdx + 1
-                          ).map((seatNumber) => {
-                            const selectedJudge = judgesAssignInfo.judges.find(
-                              (assign) =>
-                                assign.sectionName === section.sectionName &&
-                                assign.seatIndex === seatNumber
-                            ) || { judgeUid: undefined };
+                  {filteredBySection.map((section, sectionIdx) => {
+                    const assignedJudges = getAssignedJudgesForSection(
+                      section.sectionName
+                    ); // 이미 배정된 심판 목록 가져오기
 
-                            return (
-                              <div
-                                key={seatNumber}
-                                className="flex bg-gray-100 w-full px-4 rounded-lg h-auto items-center"
+                    const allSeats = Array.from(
+                      {
+                        length:
+                          section.sectionCategory[0]
+                            ?.contestCategoryJudgeCount || 0,
+                      },
+                      (_, seatIdx) => seatIdx + 1
+                    );
+
+                    const unassignedSeats = allSeats.filter(
+                      (seatNumber) =>
+                        !judgesAssignInfo.judges.some(
+                          (assign) =>
+                            assign.sectionName === section.sectionName &&
+                            assign.seatIndex === seatNumber
+                        )
+                    );
+
+                    return (
+                      <div
+                        key={sectionIdx}
+                        className="flex w-full flex-col bg-blue-200 rounded-lg"
+                      >
+                        <div className="h-auto w-full flex items-center flex-col lg:flex-row">
+                          <div className="flex w-1/6 h-14 justify-start items-center pl-4">
+                            {section.sectionName}
+                          </div>
+                        </div>
+                        <div className="flex p-2">
+                          <div className="flex bg-gray-100 w-full gap-2 p-2 rounded-lg flex-col">
+                            <div className="flex w-full bg-white rounded-lg p-2">
+                              <div className="w-1/6">좌석</div>
+                              <div className="w-5/6">선택</div>
+                              {/* 버튼 추가 */}
+                              <button
+                                className="ml-2 bg-green-500 text-white rounded px-2"
+                                onClick={() =>
+                                  handleRandomAssign(
+                                    section.sectionName,
+                                    unassignedSeats
+                                  )
+                                }
                               >
-                                <div className="flex w-1/6">{seatNumber}</div>
-                                <div className="flex w-5/6">
-                                  <select
-                                    className="w-full text-sm"
-                                    value={selectedJudge.judgeUid || "unselect"}
-                                    onChange={(e) =>
-                                      handleSelectJudge(
-                                        section.sectionName,
-                                        seatNumber,
-                                        e.target.value
-                                      )
-                                    }
-                                  >
-                                    <option value="unselect">선택</option>
-                                    {judgesPoolArray.map((judge) => (
-                                      <option
-                                        key={judge.judgeUid}
-                                        value={judge.judgeUid}
-                                      >
-                                        {judge.isHead && "위원장 / "}
-                                        {judge.judgeName} ({judge.judgePromoter}{" "}
-                                        / {judge.judgeTel})
-                                      </option>
-                                    ))}
-                                  </select>
+                                랜덤배정
+                              </button>
+                              <button
+                                className="ml-2 bg-yellow-500 text-white rounded px-2"
+                                onClick={() =>
+                                  handleAllRandomAssign(
+                                    section.sectionName,
+                                    allSeats
+                                  )
+                                }
+                              >
+                                모두랜덤배정
+                              </button>
+                              <button
+                                className="ml-2 bg-red-500 text-white rounded px-2"
+                                onClick={() =>
+                                  handleResetAssign(section.sectionName)
+                                }
+                              >
+                                초기화
+                              </button>
+                            </div>
+                            {allSeats.map((seatNumber) => {
+                              const selectedJudge =
+                                judgesAssignInfo.judges.find(
+                                  (assign) =>
+                                    assign.sectionName ===
+                                      section.sectionName &&
+                                    assign.seatIndex === seatNumber
+                                ) || { judgeUid: undefined };
+
+                              return (
+                                <div
+                                  key={seatNumber}
+                                  className="flex bg-gray-100 w-full px-4 rounded-lg h-auto items-center"
+                                >
+                                  <div className="flex w-1/6">{seatNumber}</div>
+                                  <div className="flex w-5/6">
+                                    <select
+                                      className="w-full text-sm"
+                                      value={
+                                        selectedJudge.judgeUid || "unselect"
+                                      }
+                                      onChange={(e) =>
+                                        handleSelectJudge(
+                                          section.sectionName,
+                                          seatNumber,
+                                          e.target.value
+                                        )
+                                      }
+                                    >
+                                      <option value="unselect">선택</option>
+                                      {judgesPoolArray
+                                        .filter(
+                                          (judge) =>
+                                            !assignedJudges.includes(
+                                              judge.judgeUid
+                                            ) ||
+                                            judge.judgeUid ===
+                                              selectedJudge.judgeUid
+                                        )
+                                        .map((judge) => (
+                                          <option
+                                            key={judge.judgeUid}
+                                            value={judge.judgeUid}
+                                          >
+                                            {judge.isHead && "위원장 / "}
+                                            {judge.judgeName} (
+                                            {judge.judgePromoter} /{" "}
+                                            {judge.judgeTel})
+                                          </option>
+                                        ))}
+                                    </select>
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
