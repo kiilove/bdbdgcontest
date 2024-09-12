@@ -1,5 +1,5 @@
 import { Modal } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import {
   useFirestoreGetDocument,
@@ -8,14 +8,15 @@ import {
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import CategoryInfoModal from "../modals/CategoryInfoModal";
 import GradeInfoModal from "../modals/GradeInfoModal";
+import { MdOutlineSearch } from "react-icons/md";
 import { TbEdit } from "react-icons/tb";
 import { HiOutlineTrash } from "react-icons/hi";
 import GrandPrixInfoModal from "../modals/GrandPrixInfoModal";
-import ConfirmationModal from "../messageBox/ConfirmationModal"; // Imported confirmation modal
 
 const ContestCategoryOrderTable = () => {
   const [categoriesList, setCategoriesList] = useState({});
   const [categoriesArray, setCategoriesArray] = useState([]);
+
   const [gradesArray, setGradesArray] = useState([]);
   const [isOpen, setIsOpen] = useState({
     category: false,
@@ -24,10 +25,6 @@ const ContestCategoryOrderTable = () => {
     categoryId: "",
     gradeId: "",
   });
-
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [confirmationMessage, setConfirmationMessage] = useState({});
-  const [deleteAction, setDeleteAction] = useState(null); // Holds the delete action to perform
 
   const [isRefresh, setIsRefresh] = useState(false);
   const { currentContest } = useContext(CurrentContestContext);
@@ -38,12 +35,12 @@ const ContestCategoryOrderTable = () => {
   const contestCategoryUpdate = useFirestoreUpdateData(
     "contest_categorys_list"
   );
-  const contestGradesUpdate = useFirestoreUpdateData("contest_grades_list");
 
   const fetchPool = async () => {
     const returnCategories = await fetchCategroyDocument.getDocument(
       currentContest.contests.contestCategorysListId
     );
+
     const returnGrades = await fetchGradeDocument.getDocument(
       currentContest.contests.contestGradesListId
     );
@@ -62,61 +59,12 @@ const ContestCategoryOrderTable = () => {
     }
   };
 
-  // Delete category function
-  const handleDeleteCategory = async (categoryId) => {
-    try {
-      const updatedCategories = categoriesArray.filter(
-        (category) => category.contestCategoryId !== categoryId
-      );
-      const updatedGrades = gradesArray.filter(
-        (grade) => grade.refCategoryId !== categoryId
-      );
-
-      await contestCategoryUpdate.updateData(
-        currentContest.contests.contestCategorysListId,
-        { ...categoriesList, categorys: updatedCategories }
-      );
-      await contestGradesUpdate.updateData(
-        currentContest.contests.contestGradesListId,
-        { grades: updatedGrades }
-      );
-
-      setCategoriesArray(updatedCategories);
-      setGradesArray(updatedGrades);
-      setConfirmationOpen(false); // Close modal after deletion
-    } catch (error) {
-      console.error("Category deletion failed:", error);
-    }
-  };
-
-  // Delete grade function
-  const handleDeleteGrade = async (gradeId) => {
-    try {
-      const updatedGrades = gradesArray.filter(
-        (grade) => grade.contestGradeId !== gradeId
-      );
-      await contestGradesUpdate.updateData(
-        currentContest.contests.contestGradesListId,
-        { grades: updatedGrades }
-      );
-
-      setGradesArray(updatedGrades);
-      setConfirmationOpen(false); // Close modal after deletion
-    } catch (error) {
-      console.error("Grade deletion failed:", error);
-    }
-  };
-
-  // Trigger the delete confirmation
-  const confirmDeletion = (message, action) => {
-    setConfirmationMessage(message);
-    setDeleteAction(() => () => action()); // Set the action to execute after confirmation
-    setConfirmationOpen(true);
-  };
-
   const onDragCategoryEnd = (result) => {
-    const { source, destination } = result;
-    if (!destination) return;
+    const { source, destination, draggableId } = result;
+
+    if (!destination) {
+      return;
+    }
 
     const dummy = [...categoriesArray];
     const [reorderCategory] = dummy.splice(source.index, 1);
@@ -127,10 +75,12 @@ const ContestCategoryOrderTable = () => {
 
   const handleReOrderCategory = (data) => {
     const prevOrder = [...data];
-    return prevOrder.map((item, idx) => ({
-      ...item,
-      contestCategoryIndex: idx + 1,
-    }));
+    let newOrder = [];
+    prevOrder.map((item, idx) =>
+      newOrder.push({ ...item, contestCategoryIndex: idx + 1 })
+    );
+
+    return newOrder;
   };
 
   const handleSaveCategorys = async (data) => {
@@ -145,31 +95,57 @@ const ContestCategoryOrderTable = () => {
   };
 
   const handleGrandPrixClose = () => {
-    setIsOpen((prevState) => ({ ...prevState, grandPrix: false }));
+    setIsOpen(() => ({
+      grandPrix: false,
+      title: "",
+      info: {},
+      categoryId: "",
+      categoryTitle: "",
+      gradeId: "",
+    }));
   };
 
   const handleCategoryClose = () => {
-    setIsOpen((prevState) => ({ ...prevState, category: false }));
+    setIsOpen(() => ({
+      category: false,
+      title: "",
+      info: {},
+      categoryId: "",
+      categoryTitle: "",
+      gradeId: "",
+    }));
   };
 
   const handleGradeClose = () => {
-    setIsOpen((prevState) => ({ ...prevState, grade: false }));
+    setIsOpen((prevState) => ({
+      ...prevState,
+      grade: false,
+      title: "",
+      info: {},
+      categoryId: "",
+      categoryTitle: "",
+      gradeId: "",
+    }));
   };
 
   useEffect(() => {
-    if (currentContest?.contests.id) fetchPool();
+    if (currentContest?.contests.id) {
+      fetchPool();
+    }
   }, [currentContest]);
-
   useEffect(() => {
-    if (isRefresh) fetchPool();
+    if (isRefresh) {
+      fetchPool();
+    }
   }, [isRefresh]);
-
   return (
     <div className="flex flex-col lg:flex-row gap-y-2 w-full h-auto bg-white mb-3 rounded-tr-lg rounded-b-lg p-2 gap-x-4">
       <Modal open={isOpen.grandPrix} onClose={handleGrandPrixClose}>
         <div
           className="flex w-full lg:w-full h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
-          style={{ transform: "translate(-50%, -50%)" }}
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
         >
           <GrandPrixInfoModal
             setClose={handleGrandPrixClose}
@@ -182,7 +158,9 @@ const ContestCategoryOrderTable = () => {
       <Modal open={isOpen.category} onClose={handleCategoryClose}>
         <div
           className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
-          style={{ transform: "translate(-50%, -50%)" }}
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
         >
           <CategoryInfoModal
             setClose={handleCategoryClose}
@@ -195,7 +173,9 @@ const ContestCategoryOrderTable = () => {
       <Modal open={isOpen.grade} onClose={handleGradeClose}>
         <div
           className="flex w-full lg:w-1/3 h-screen lg:h-auto absolute top-1/2 left-1/2 lg:shadow-md lg:rounded-lg bg-white p-3"
-          style={{ transform: "translate(-50%, -50%)" }}
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
         >
           <GradeInfoModal
             setClose={handleGradeClose}
@@ -205,7 +185,6 @@ const ContestCategoryOrderTable = () => {
           />
         </div>
       </Modal>
-
       <div className="w-full blue-100 flex rounded-lg flex-col p-0 h-full gap-y-2">
         <div className="flex bg-gray-100 w-full h-auto rounded-lg p-2 flex-col gap-y-2">
           <div className="flex w-full justify-start items-center gap-x-1">
@@ -236,7 +215,6 @@ const ContestCategoryOrderTable = () => {
               종목추가
             </button>
           </div>
-
           <div className="w-full rounded-lg flex flex-col gap-y-2">
             <div className="flex flex-col gap-y-2 w-full">
               {categoriesArray?.length <= 0 ? (
@@ -265,7 +243,10 @@ const ContestCategoryOrderTable = () => {
                                 contestCategoryId: categoryId,
                                 contestCategoryIndex: categoryIndex,
                                 contestCategoryTitle: categoryTitle,
+                                contestCategoryJudgeCount: judgeCount,
                                 contestCategorySection: categorySection,
+                                contestCategoryJudgeType: categoryJudgeType,
+                                contestCategoryIsOverall: categoryIsOverall,
                               } = category;
 
                               const matchedGrades = gradesArray
@@ -276,7 +257,6 @@ const ContestCategoryOrderTable = () => {
                                   (a, b) =>
                                     a.contestGradeIndex - b.contestGradeIndex
                                 );
-
                               return (
                                 <Draggable
                                   key={categoryId}
@@ -307,24 +287,60 @@ const ContestCategoryOrderTable = () => {
                                             <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 flex justify-center items-center text-sm">
                                               {categorySection}
                                             </span>
+                                            <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 hidden lg:flex justify-center items-center text-sm">
+                                              {categoryJudgeType === "ranking"
+                                                ? "랭킹"
+                                                : "점수"}
+                                            </span>
+                                            {categoryIsOverall && (
+                                              <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 hidden lg:flex justify-center items-center text-sm">
+                                                그랑프리
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
                                         <div className="flex w-full lg:w-1/3 h-auto justify-end items-center">
                                           <div className="w-1/6 h-14 flex justify-end items-center pr-2">
                                             <div className="flex w-full justify-end items-center h-14 gap-x-2">
-                                              <button
-                                                onClick={() =>
-                                                  confirmDeletion(
-                                                    {
-                                                      body: "종목을 삭제하시겠습니까?",
-                                                    },
-                                                    () =>
-                                                      handleDeleteCategory(
-                                                        categoryId
-                                                      )
-                                                  )
-                                                }
-                                              >
+                                              {categorySection ===
+                                              "그랑프리" ? (
+                                                <button
+                                                  onClick={() =>
+                                                    setIsOpen({
+                                                      ...isOpen,
+                                                      grandPrix: true,
+                                                      category: false,
+                                                      title: "그랑프리수정",
+                                                      categoryId,
+                                                      info: { ...category },
+                                                      count: gradesArray.length,
+                                                    })
+                                                  }
+                                                >
+                                                  <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                                    <TbEdit className=" text-xl text-gray-100" />
+                                                  </span>
+                                                </button>
+                                              ) : (
+                                                <button
+                                                  onClick={() =>
+                                                    setIsOpen({
+                                                      ...isOpen,
+                                                      category: true,
+                                                      title: "종목수정",
+                                                      categoryId,
+                                                      info: { ...category },
+                                                      count: gradesArray.length,
+                                                    })
+                                                  }
+                                                >
+                                                  <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                                    <TbEdit className=" text-xl text-gray-100" />
+                                                  </span>
+                                                </button>
+                                              )}
+
+                                              <button>
                                                 <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
                                                   <HiOutlineTrash className=" text-xl text-gray-100" />
                                                 </span>
@@ -365,6 +381,8 @@ const ContestCategoryOrderTable = () => {
                                                         contestGradeId: gradeId,
                                                         contestGradeTitle:
                                                           gradeTitle,
+                                                        contestGradeIndex:
+                                                          gradeIndex,
                                                       } = match;
                                                       return (
                                                         <div
@@ -392,25 +410,14 @@ const ContestCategoryOrderTable = () => {
                                                                     ...match,
                                                                   },
                                                                   categoryTitle,
+                                                                  count:
+                                                                    gradesArray.length,
                                                                 })
                                                               }
                                                             >
                                                               <TbEdit className=" text-xl text-gray-500" />
                                                             </button>
-                                                            <button
-                                                              className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-pointer"
-                                                              onClick={() =>
-                                                                confirmDeletion(
-                                                                  {
-                                                                    body: "체급을 삭제하시겠습니까?",
-                                                                  },
-                                                                  () =>
-                                                                    handleDeleteGrade(
-                                                                      gradeId
-                                                                    )
-                                                                )
-                                                              }
-                                                            >
+                                                            <button className="bg-blue-100 w-10 h-10 rounded-lg flex justify-center items-center hover:cursor-pointer">
                                                               <HiOutlineTrash className=" text-xl text-gray-500" />
                                                             </button>
                                                           </div>
@@ -440,16 +447,6 @@ const ContestCategoryOrderTable = () => {
           </div>
         </div>
       </div>
-
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={confirmationOpen}
-        onConfirm={() => {
-          if (deleteAction) deleteAction();
-        }}
-        onCancel={() => setConfirmationOpen(false)}
-        message={confirmationMessage}
-      />
     </div>
   );
 };

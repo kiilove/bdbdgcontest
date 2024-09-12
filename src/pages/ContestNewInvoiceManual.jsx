@@ -183,6 +183,10 @@ const ContestNewInvoiceManual = () => {
     //console.log(invoiceInfo);
   }, [invoiceInfo]);
 
+  useEffect(() => {
+    console.log({ categorysArray, gradesArray });
+  }, [categorysArray, gradesArray]);
+
   return (
     <>
       {currentContest?.contests?.id ? (
