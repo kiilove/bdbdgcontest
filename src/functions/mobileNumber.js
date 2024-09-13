@@ -1,4 +1,4 @@
-export const PHONE_NUMBERS = [
+const PHONE_NUMBERS = [
   "010-9725-2804",
   "010-7383-3195",
   "010-3495-7307",
@@ -202,3 +202,5 @@ export const PHONE_NUMBERS = [
   "010-3479-1528",
   "010-5237-1946",
 ];
+
+export { PHONE_NUMBERS };

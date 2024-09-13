@@ -132,7 +132,6 @@ const ContestNewInvoiceManual = () => {
       contestPriceExtraType,
       contestPriceType1,
       contestPriceType2,
-      contestPriceSum: 0,
       playerUid: "",
       playerName: "",
       playerTel: "",
@@ -161,7 +160,6 @@ const ContestNewInvoiceManual = () => {
       contestPriceSum: parseInt(propData.contestPriceSum),
     });
     if (added) {
-      console.log(added.data);
       setMessage({
         body: "저장되었습니다.",
         isButton: true,

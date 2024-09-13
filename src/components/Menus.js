@@ -72,6 +72,13 @@ export const MenuArray = [
         isActive: true,
       },
       {
+        id: 4,
+        title: "참가신청서 랜덤",
+        icon: <BiUserPlus />,
+        link: "/randomgenerator",
+        isActive: true,
+      },
+      {
         id: 5,
         title: "기초데이터(1단계)",
         icon: <BsClipboardData />,

@@ -19,6 +19,7 @@ import PrintPlayersFinal from "./printForms/PrintPlayersFinal";
 import ContestPlayerOrderTableGrandPrix from "./pages/ContestPlayerOrderTableGrandPrix";
 import AwardList from "./printForms/AwardList";
 import StandingTableType1 from "./pages/StandingTableType1";
+import RandomPlayerGenerator from "./pages/RandomPlayerGenerator";
 
 function App() {
   return (
@@ -61,6 +62,10 @@ function App() {
           <Route
             path="/contestnewinvoicemanual"
             element={<ManagementHome children={<ContestNewInvoiceManual />} />}
+          />{" "}
+          <Route
+            path="/randomgenerator"
+            element={<ManagementHome children={<RandomPlayerGenerator />} />}
           />
           <Route
             path="/contestjudgetable"
