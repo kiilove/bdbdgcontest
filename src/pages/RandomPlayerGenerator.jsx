@@ -13,21 +13,19 @@ import {
   SURNAMES,
 } from "../functions/human";
 import { PHONE_NUMBERS } from "../functions/mobileNumber";
-
-// Constants
-const SURNAMES_ARRAY = [...SURNAMES];
-const MALE_NAMES_ARRAY = [...MALE_NAMES];
-const FEMALE_NAMES_ARRAY = [...FEMALE_NAMES];
-const PHONE_NUMBERS_ARRAY = [...PHONE_NUMBERS];
-const FITNESS_NAMES_ARRAY = [...FITNESS_CLUBS];
-const HIGH_SCHOOLS_ARRAY = [...HIGH_SCHOOLS];
+import dayjs from "dayjs"; // Import dayjs for date formatting
 
 const RandomPlayerGenerator = () => {
   const { currentContest } = useContext(CurrentContestContext);
   const [players, setPlayers] = useState([]);
+  const [categoryDistribution, setCategoryDistribution] = useState({});
+  const [gradeDistribution, setGradeDistribution] = useState({});
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [categorysArray, setCategorysArray] = useState([]);
   const [gradesArray, setGradesArray] = useState([]);
-  const [isButtonEnabled, setIsButtonEnabled] = useState(false); // Button enable state
+  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
+  const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [playerCount, setPlayerCount] = useState(0);
 
   const fetchCategoryDocument = useFirestoreGetDocument(
     "contest_categorys_list"
@@ -36,7 +34,6 @@ const RandomPlayerGenerator = () => {
 
   const addInvoice = useFirestoreAddData("invoices_pool");
 
-  // Function to fetch categories and grades
   const fetchPool = async () => {
     try {
       if (currentContest.contests.contestCategorysListId) {
@@ -50,9 +47,8 @@ const RandomPlayerGenerator = () => {
         );
         setGradesArray([...returnGrades?.grades]);
 
-        // Set button to be enabled after data is loaded
         setTimeout(() => {
-          setIsButtonEnabled(true); // Enable the button after 2 seconds
+          setIsButtonEnabled(true);
         }, 2000);
       }
     } catch (error) {
@@ -60,19 +56,16 @@ const RandomPlayerGenerator = () => {
     }
   };
 
-  // Function to filter categories based on player's attributes
   const filterCategories = (age, isFemale) => {
     let availableCategories = [];
 
     if (age <= 19) {
-      // Players 19 years old or younger: only "학생부", no duplicate entry
       availableCategories = categorysArray.filter(
         (category) =>
           category.contestCategoryTitle.includes("학생부") &&
-          category.contestCategoryGender === "남"
+          category.contestCategoryGender === (isFemale ? "여" : "남")
       );
     } else if (age >= 20 && age <= 44) {
-      // Players 20-44 years old: exclude "학생부" and "장년부", allow 1-3 categories
       availableCategories = categorysArray.filter(
         (category) =>
           !category.contestCategoryTitle.includes("학생부") &&
@@ -81,11 +74,10 @@ const RandomPlayerGenerator = () => {
             category.contestCategoryGender === "무관")
       );
     } else if (age >= 45) {
-      // Players 45 years old or older: allow "장년부" and others, exclude "학생부"
       availableCategories = categorysArray.filter(
         (category) =>
           !category.contestCategoryTitle.includes("학생부") &&
-          (category.contestCategoryTitle.includes("장년부") ||
+          ((category.contestCategoryTitle.includes("장년부") && !isFemale) ||
             category.contestCategoryGender === (isFemale ? "여" : "남") ||
             category.contestCategoryGender === "무관")
       );
@@ -94,41 +86,84 @@ const RandomPlayerGenerator = () => {
     return availableCategories;
   };
 
-  // Function to generate random player
-  const generatePlayer = () => {
-    const birthYear = Math.floor(Math.random() * 50) + 1970; // Between 1970-2020
-    const birthDate = `${birthYear}-${Math.floor(Math.random() * 12) + 1}-${
-      Math.floor(Math.random() * 28) + 1
-    }`;
-    const age = new Date().getFullYear() - birthYear;
+  const calculateAge = (birthDate) => {
+    const today = dayjs();
+    const birthDay = dayjs(birthDate);
+    let age = today.year() - birthDay.year();
 
-    const isFemale = Math.random() < 0.3; // 30% chance for female
-    const surname =
-      SURNAMES_ARRAY[Math.floor(Math.random() * SURNAMES_ARRAY.length)];
+    // 만 나이 계산
+    if (
+      today.month() < birthDay.month() ||
+      (today.month() === birthDay.month() && today.date() < birthDay.date())
+    ) {
+      age--;
+    }
+    return age;
+  };
+
+  const generateAgeBasedOnDistribution = () => {
+    const random = Math.random();
+
+    if (random < 0.1) {
+      // 17세 ~ 19세 (10%)
+      const age = Math.floor(Math.random() * 3) + 17;
+      return age;
+    } else if (random < 0.7) {
+      // 20세 ~ 30세 (60%)
+      const age = Math.floor(Math.random() * 11) + 20;
+      return age;
+    } else if (random < 0.8) {
+      // 31세 ~ 44세 (10%)
+      const age = Math.floor(Math.random() * 14) + 31;
+      return age;
+    } else {
+      // 45세 이상 (20%)
+      const age = Math.floor(Math.random() * 36) + 45;
+      return age;
+    }
+  };
+
+  const generatePlayer = () => {
+    const age = generateAgeBasedOnDistribution();
+    const currentYear = dayjs().year();
+    const birthYear = currentYear - age;
+    const birthMonth = Math.floor(Math.random() * 12) + 1;
+    const birthDay = Math.floor(Math.random() * 28) + 1;
+    const birthDate = dayjs(`${birthYear}-${birthMonth}-${birthDay}`).format(
+      "YYYY-MM-DD"
+    );
+
+    const isFemale = Math.random() < 0.3;
+    const surname = SURNAMES[Math.floor(Math.random() * SURNAMES.length)];
     const givenName = isFemale
       ? FEMALE_NAMES[Math.floor(Math.random() * FEMALE_NAMES.length)]
       : MALE_NAMES[Math.floor(Math.random() * MALE_NAMES.length)];
-    const name = `${surname}${givenName}`; // Combine surname and given name without space
+    const name = `${surname}${givenName}`;
 
     const phoneNumber =
       PHONE_NUMBERS[Math.floor(Math.random() * PHONE_NUMBERS.length)];
     const email = `${name.toLowerCase()}@example.com`;
+
     const gym =
-      Math.random() < 0.5
-        ? FITNESS_NAMES_ARRAY[
-            Math.floor(Math.random() * FITNESS_NAMES_ARRAY.length)
-          ]
-        : "무소속";
+      Math.random() < 0.1
+        ? "무소속"
+        : FITNESS_CLUBS[Math.floor(Math.random() * FITNESS_CLUBS.length)];
 
     let school = null;
     if (age <= 19) {
-      school =
-        HIGH_SCHOOLS_ARRAY[
-          Math.floor(Math.random() * HIGH_SCHOOLS_ARRAY.length)
-        ];
+      school = HIGH_SCHOOLS[Math.floor(Math.random() * HIGH_SCHOOLS.length)];
     }
 
-    // Generate player object before filtering categories
+    const playerTexts = [
+      "우승하자",
+      "최고를 향해!",
+      "한계를 넘어서!",
+      "최고의 순간을 위해",
+      "끝까지 포기하지 않는다!",
+    ];
+    const playerText =
+      playerTexts[Math.floor(Math.random() * playerTexts.length)];
+
     const newPlayer = {
       playerUid: uuidv4(),
       playerName: name,
@@ -137,18 +172,15 @@ const RandomPlayerGenerator = () => {
       playerBirth: birthDate,
       playerGym: school || gym,
       playerGender: isFemale ? "f" : "m",
-      playerText: "우승하자",
+      playerText: playerText,
       isPriceCheck: false,
       isCanceled: false,
-      joins: [], // This will be filled with categories and grades later
+      joins: [],
       createBy: "manual",
-      invoiceCreateAt: new Date().toISOString(),
+      invoiceCreateAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      ...currentContest?.contestInfo,
     };
 
-    // Log player info before category filtering
-    console.log("Generated player before category filtering:", newPlayer);
-
-    // Filter contest categories based on player's age and gender
     const availableCategories = filterCategories(age, isFemale);
 
     if (availableCategories.length === 0) {
@@ -156,7 +188,6 @@ const RandomPlayerGenerator = () => {
       return;
     }
 
-    // Determine the number of categories (1 for students, 1-3 for others)
     const numberOfCategories =
       age <= 19 ? 1 : Math.floor(Math.random() * 3) + 1;
     const selectedCategories = [];
@@ -167,12 +198,15 @@ const RandomPlayerGenerator = () => {
         availableCategories[
           Math.floor(Math.random() * availableCategories.length)
         ];
+
       if (!selectedCategories.includes(randomCategory)) {
         selectedCategories.push(randomCategory);
 
+        // 여기에서 randomGrade를 정의하고 그레이드를 선택합니다.
         const relatedGrades = gradesArray.filter(
           (grade) => grade.refCategoryId === randomCategory.contestCategoryId
         );
+
         if (relatedGrades.length > 0) {
           const randomGrade =
             relatedGrades[Math.floor(Math.random() * relatedGrades.length)];
@@ -182,40 +216,158 @@ const RandomPlayerGenerator = () => {
             contestGradeId: randomGrade.contestGradeId,
             contestGradeTitle: randomGrade.contestGradeTitle,
           });
+
+          // 카테고리 및 그레이드 분포 업데이트
+          setCategoryDistribution((prev) => ({
+            ...prev,
+            [randomCategory.contestCategoryTitle]:
+              (prev[randomCategory.contestCategoryTitle] || 0) + 1,
+          }));
+
+          setGradeDistribution((prev) => ({
+            ...prev,
+            [randomCategory.contestCategoryTitle]: {
+              ...(prev[randomCategory.contestCategoryTitle] || {}),
+              [randomGrade.contestGradeTitle]:
+                (prev[randomCategory.contestCategoryTitle]?.[
+                  randomGrade.contestGradeTitle
+                ] || 0) + 1,
+            },
+          }));
         }
       }
     }
 
-    // Update player with selected categories and grades
     newPlayer.joins = selectedGrades;
 
-    // Log final player object with selected categories
-    console.log("Generated player after category selection:", newPlayer);
-
-    setPlayers([...players, newPlayer]);
+    return newPlayer;
   };
 
-  // Fetch data once when the component is mounted
+  const handleGeneratePlayers = () => {
+    const newPlayers = [];
+    for (let i = 0; i < playerCount; i++) {
+      const player = generatePlayer();
+      if (player) {
+        newPlayers.push(player);
+      }
+    }
+    setPlayers([...players, ...newPlayers]);
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedPlayers(players.map((player) => player.playerUid));
+    } else {
+      setSelectedPlayers([]);
+    }
+  };
+
+  const handleSelectPlayer = (e, playerUid) => {
+    if (e.target.checked) {
+      setSelectedPlayers([...selectedPlayers, playerUid]);
+    } else {
+      setSelectedPlayers(selectedPlayers.filter((id) => id !== playerUid));
+    }
+  };
+
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+  };
+
   useEffect(() => {
     fetchPool();
-  }, []);
+  }, [currentContest]);
 
   return (
-    <div>
+    <div style={{ backgroundColor: "white", padding: "20px" }}>
       <h1>Random Player Generator</h1>
-      <button
-        onClick={() => {
-          if (isButtonEnabled) {
-            generatePlayer(); // Generate player only if the button is enabled
-          } else {
-            console.log("Data is still loading...");
-          }
-        }}
-        disabled={!isButtonEnabled} // Disable the button until data is loaded
-      >
-        Generate Random Player
-      </button>
-      <pre>{JSON.stringify(players, null, 2)}</pre>
+      <div>
+        <label>Number of Players to Generate: </label>
+        <input
+          type="number"
+          value={playerCount}
+          onChange={(e) => setPlayerCount(Number(e.target.value))}
+        />
+        <button onClick={handleGeneratePlayers} disabled={!isButtonEnabled}>
+          Generate Players
+        </button>
+      </div>
+      <table border="1" cellPadding="5">
+        <thead>
+          <tr>
+            <th>
+              <input
+                type="checkbox"
+                onChange={handleSelectAll}
+                checked={
+                  players.length > 0 &&
+                  selectedPlayers.length === players.length
+                }
+              />
+            </th>
+            <th>Name</th>
+            <th>Gym</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Birth Date</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Categories</th>
+          </tr>
+        </thead>
+        <tbody>
+          {players.map((player) => (
+            <tr key={player.playerUid}>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={selectedPlayers.includes(player.playerUid)}
+                  onChange={(e) => handleSelectPlayer(e, player.playerUid)}
+                />
+              </td>
+              <td>{player.playerName}</td>
+              <td>{player.playerGym}</td>
+              <td>{player.playerTel}</td>
+              <td>{player.playerEmail}</td>
+              <td>{player.playerBirth}</td>
+              <td>{calculateAge(player.playerBirth)}</td>
+              <td>{player.playerGender === "f" ? "Female" : "Male"}</td>
+              <td>
+                {player.joins.map((join) => (
+                  <div key={join.contestGradeId}>
+                    {join.contestCategoryTitle} - {join.contestGradeTitle}
+                  </div>
+                ))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2>Category Distribution</h2>
+      <ul>
+        {Object.keys(categoryDistribution).map((category) => (
+          <li key={category}>
+            <button onClick={() => handleCategoryClick(category)}>
+              {category}: {categoryDistribution[category]} players
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {selectedCategory && (
+        <div>
+          <h3>{selectedCategory} - Grade Distribution</h3>
+          <ul>
+            {gradeDistribution[selectedCategory] &&
+              Object.keys(gradeDistribution[selectedCategory]).map((grade) => (
+                <li key={grade}>
+                  {grade}: {gradeDistribution[selectedCategory][grade]} players
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
