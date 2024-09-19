@@ -20,6 +20,7 @@ import ContestPlayerOrderTableGrandPrix from "./pages/ContestPlayerOrderTableGra
 import AwardList from "./printForms/AwardList";
 import StandingTableType1 from "./pages/StandingTableType1";
 import RandomPlayerGenerator from "./pages/RandomPlayerGenerator";
+import ContestSearchAndDelete from "./pages/ContestSearchAndDelete";
 
 function App() {
   return (
@@ -96,6 +97,10 @@ function App() {
           <Route
             path="/awardlist"
             element={<ManagementHome children={<AwardList />} />}
+          />
+          <Route
+            path="/clear"
+            element={<ManagementHome children={<ContestSearchAndDelete />} />}
           />
           <Route path="/screen1" element={<StandingTableType1 />} />
         </Routes>

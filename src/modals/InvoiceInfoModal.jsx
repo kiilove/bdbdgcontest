@@ -354,7 +354,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
               <div className="flex w-full justify-start items-center">
                 <input
                   type="text"
-                  name="playerGym"
+                  name="playerBirth"
                   value={invoiceInfo.playerBirth}
                   onChange={(e) => handleInputValues(e)}
                   ref={(ref) => (invoiceInfoRef.current.playerBirth = ref)}

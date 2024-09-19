@@ -47,11 +47,13 @@ const ContestInvoiceTable = () => {
       "invoices_pool",
       invoiceCondition
     );
+    console.log(invoiceData);
 
     const entryData = await getQuery.getDocuments(
       "contest_entrys_list",
       invoiceCondition
     );
+
     if (invoiceData?.length > 0) {
       setInvoiceList([...invoiceData]);
     } else {

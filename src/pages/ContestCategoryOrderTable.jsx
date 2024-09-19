@@ -314,6 +314,22 @@ const ContestCategoryOrderTable = () => {
                                             <div className="flex w-full justify-end items-center h-14 gap-x-2">
                                               <button
                                                 onClick={() =>
+                                                  setIsOpen({
+                                                    ...isOpen,
+                                                    category: true,
+                                                    title: "종목수정",
+                                                    categoryId,
+                                                    info: { ...category },
+                                                    count: gradesArray.length,
+                                                  })
+                                                }
+                                              >
+                                                <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                                  <TbEdit className=" text-xl text-gray-100" />
+                                                </span>
+                                              </button>
+                                              <button
+                                                onClick={() =>
                                                   confirmDeletion(
                                                     {
                                                       body: "종목을 삭제하시겠습니까?",

@@ -76,7 +76,14 @@ export const MenuArray = [
         title: "참가신청서 랜덤",
         icon: <BiUserPlus />,
         link: "/randomgenerator",
-        isActive: true,
+        isActive: user.userGroup === "admin" ? true : false,
+      },
+      {
+        id: 4,
+        title: "참가신청서 클리어",
+        icon: <BiUserPlus />,
+        link: "/clear",
+        isActive: user.userGroup === "admin" ? true : false,
       },
       {
         id: 5,

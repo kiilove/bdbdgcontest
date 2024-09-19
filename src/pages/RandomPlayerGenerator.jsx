@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid"; // For generating unique IDs
+import { v4 as uuidv4 } from "uuid";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import {
   useFirestoreAddData,
   useFirestoreGetDocument,
-} from "../hooks/useFirestores";
+} from "../hooks/useFirestores"; // Custom hook for Firestore
 import {
   FEMALE_NAMES,
   FITNESS_CLUBS,
@@ -13,7 +13,15 @@ import {
   SURNAMES,
 } from "../functions/human";
 import { PHONE_NUMBERS } from "../functions/mobileNumber";
-import dayjs from "dayjs"; // Import dayjs for date formatting
+import dayjs from "dayjs";
+
+// Import the distribution functions
+import {
+  initializeDistributions,
+  updateDistributions,
+} from "../functions/distributionUtils";
+import CategoryChart from "../components/CategoryChart";
+import GradeStackBarChart from "../components/GradeStackBarChart";
 
 const RandomPlayerGenerator = () => {
   const { currentContest } = useContext(CurrentContestContext);
@@ -24,15 +32,16 @@ const RandomPlayerGenerator = () => {
   const [categorysArray, setCategorysArray] = useState([]);
   const [gradesArray, setGradesArray] = useState([]);
   const [isButtonEnabled, setIsButtonEnabled] = useState(false);
-  const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [selectedPlayers, setSelectedPlayers] = useState([]); // Track selected players
   const [playerCount, setPlayerCount] = useState(0);
+
+  // Firestore hook to add data
+  const addInvoice = useFirestoreAddData("invoices_pool"); // Collection name is 'invoices_pool'
 
   const fetchCategoryDocument = useFirestoreGetDocument(
     "contest_categorys_list"
   );
   const fetchGradeDocument = useFirestoreGetDocument("contest_grades_list");
-
-  const addInvoice = useFirestoreAddData("invoices_pool");
 
   const fetchPool = async () => {
     try {
@@ -46,6 +55,16 @@ const RandomPlayerGenerator = () => {
           currentContest.contests.contestGradesListId
         );
         setGradesArray([...returnGrades?.grades]);
+
+        // Initialize category and grade distributions
+        const { initialCategoryDistribution, initialGradeDistribution } =
+          initializeDistributions(
+            returnCategorys?.categorys,
+            returnGrades?.grades
+          );
+
+        setCategoryDistribution(initialCategoryDistribution);
+        setGradeDistribution(initialGradeDistribution);
 
         setTimeout(() => {
           setIsButtonEnabled(true);
@@ -91,7 +110,6 @@ const RandomPlayerGenerator = () => {
     const birthDay = dayjs(birthDate);
     let age = today.year() - birthDay.year();
 
-    // 만 나이 계산
     if (
       today.month() < birthDay.month() ||
       (today.month() === birthDay.month() && today.date() < birthDay.date())
@@ -101,25 +119,47 @@ const RandomPlayerGenerator = () => {
     return age;
   };
 
+  const calculateContestPriceSum = (player) => {
+    let priceSum = 0;
+
+    // 첫 번째 종목에 대해 contestCategoryPriceType에 따라 기본 참가비 결정
+    const firstJoin = player.joins[0]; // 첫 번째 종목
+    if (firstJoin.contestCategoryPriceType === "기본참가비") {
+      priceSum += player.contestPriceBasic || 0;
+    } else if (firstJoin.contestCategoryPriceType === "타입1") {
+      priceSum += player.contestPriceType1 || 0;
+    } else if (firstJoin.contestCategoryPriceType === "타입2") {
+      priceSum += player.contestPriceType2 || 0;
+    }
+
+    // 종목이 2개 이상일 경우 추가 참가비 계산
+    if (player.joins.length > 1) {
+      const extraJoinCount = player.joins.length - 1; // 추가 종목 수
+      const isAccumulated = player.contestPriceExtraType === "누적";
+
+      if (isAccumulated) {
+        // "누적"일 경우, 추가 참가비를 종목 수에 맞게 계산
+        priceSum += (player.contestPriceExtra || 0) * extraJoinCount;
+      } else {
+        // "정액"일 경우, 추가 참가비를 한 번만 더함
+        priceSum += player.contestPriceExtra || 0;
+      }
+    }
+
+    return priceSum;
+  };
+
   const generateAgeBasedOnDistribution = () => {
     const random = Math.random();
 
     if (random < 0.1) {
-      // 17세 ~ 19세 (10%)
-      const age = Math.floor(Math.random() * 3) + 17;
-      return age;
+      return Math.floor(Math.random() * 3) + 17;
     } else if (random < 0.7) {
-      // 20세 ~ 30세 (60%)
-      const age = Math.floor(Math.random() * 11) + 20;
-      return age;
+      return Math.floor(Math.random() * 11) + 20;
     } else if (random < 0.8) {
-      // 31세 ~ 44세 (10%)
-      const age = Math.floor(Math.random() * 14) + 31;
-      return age;
+      return Math.floor(Math.random() * 14) + 31;
     } else {
-      // 45세 이상 (20%)
-      const age = Math.floor(Math.random() * 36) + 45;
-      return age;
+      return Math.floor(Math.random() * 36) + 45;
     }
   };
 
@@ -179,13 +219,17 @@ const RandomPlayerGenerator = () => {
       createBy: "manual",
       invoiceCreateAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
       ...currentContest?.contestInfo,
+      contestId: currentContest?.contestInfo.refContestId,
     };
+
+    delete newPlayer.id;
+    delete newPlayer.refContestId;
 
     const availableCategories = filterCategories(age, isFemale);
 
     if (availableCategories.length === 0) {
       console.log("No valid categories found for this player");
-      return;
+      return null;
     }
 
     const numberOfCategories =
@@ -202,7 +246,6 @@ const RandomPlayerGenerator = () => {
       if (!selectedCategories.includes(randomCategory)) {
         selectedCategories.push(randomCategory);
 
-        // 여기에서 randomGrade를 정의하고 그레이드를 선택합니다.
         const relatedGrades = gradesArray.filter(
           (grade) => grade.refCategoryId === randomCategory.contestCategoryId
         );
@@ -213,45 +256,37 @@ const RandomPlayerGenerator = () => {
           selectedGrades.push({
             contestCategoryId: randomCategory.contestCategoryId,
             contestCategoryTitle: randomCategory.contestCategoryTitle,
+            contestCategoryPriceType: randomCategory.contestCategoryPriceType,
             contestGradeId: randomGrade.contestGradeId,
             contestGradeTitle: randomGrade.contestGradeTitle,
           });
-
-          // 카테고리 및 그레이드 분포 업데이트
-          setCategoryDistribution((prev) => ({
-            ...prev,
-            [randomCategory.contestCategoryTitle]:
-              (prev[randomCategory.contestCategoryTitle] || 0) + 1,
-          }));
-
-          setGradeDistribution((prev) => ({
-            ...prev,
-            [randomCategory.contestCategoryTitle]: {
-              ...(prev[randomCategory.contestCategoryTitle] || {}),
-              [randomGrade.contestGradeTitle]:
-                (prev[randomCategory.contestCategoryTitle]?.[
-                  randomGrade.contestGradeTitle
-                ] || 0) + 1,
-            },
-          }));
         }
       }
     }
 
     newPlayer.joins = selectedGrades;
-
     return newPlayer;
   };
 
   const handleGeneratePlayers = () => {
     const newPlayers = [];
+
     for (let i = 0; i < playerCount; i++) {
       const player = generatePlayer();
       if (player) {
         newPlayers.push(player);
       }
     }
-    setPlayers([...players, ...newPlayers]);
+
+    setPlayers([...newPlayers]); // 기존 배열을 비우고 새롭게 생성된 플레이어로만 덮어씀
+
+    const {
+      categoryDistribution: updatedCategoryDistribution,
+      gradeDistribution: updatedGradeDistribution,
+    } = updateDistributions(newPlayers, categorysArray, gradesArray);
+
+    setCategoryDistribution(updatedCategoryDistribution);
+    setGradeDistribution(updatedGradeDistribution);
   };
 
   const handleSelectAll = (e) => {
@@ -270,8 +305,65 @@ const RandomPlayerGenerator = () => {
     }
   };
 
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
+  const handleCategoryClick = (e) => {
+    if (e && e.activeLabel) {
+      setSelectedCategory(e.activeLabel);
+    }
+  };
+
+  const handleSubmitSelectedPlayers = async () => {
+    // Send selected players to Firestore
+    const selectedPlayersData = players.filter((player) =>
+      selectedPlayers.includes(player.playerUid)
+    );
+
+    // console.log(selectedPlayersData);
+
+    try {
+      for (const player of selectedPlayersData) {
+        const contestPriceSum = calculateContestPriceSum(player);
+        const newValue = { ...player, contestPriceSum };
+        await addInvoice.addData(newValue); // Add each selected player to the Firestore collection
+      }
+      alert(
+        "Selected players have been successfully submitted to the invoice pool."
+      );
+    } catch (error) {
+      console.error("Error submitting selected players:", error);
+    }
+  };
+
+  const sortedCategoryKeys = Object.keys(categoryDistribution).sort((a, b) => {
+    const categoryA = categorysArray.find(
+      (category) => category.contestCategoryTitle === a
+    );
+    const categoryB = categorysArray.find(
+      (category) => category.contestCategoryTitle === b
+    );
+    return categoryA.contestCategoryIndex - categoryB.contestCategoryIndex;
+  });
+
+  const formatCategoryDataForChart = () => {
+    return Object.keys(categoryDistribution).map((category) => ({
+      name: category,
+      players: categoryDistribution[category],
+    }));
+  };
+
+  const formatGradeDataForStackedChart = () => {
+    if (!selectedCategory) return [];
+
+    const formattedData = [
+      {
+        category: selectedCategory,
+      },
+    ];
+
+    Object.keys(gradeDistribution[selectedCategory]).forEach((grade) => {
+      formattedData[0][grade] = gradeDistribution[selectedCategory][grade];
+    });
+
+    return formattedData;
   };
 
   useEffect(() => {
@@ -279,7 +371,10 @@ const RandomPlayerGenerator = () => {
   }, [currentContest]);
 
   return (
-    <div style={{ backgroundColor: "white", padding: "20px" }}>
+    <div
+      className="w-full"
+      style={{ backgroundColor: "white", padding: "20px" }}
+    >
       <h1>Random Player Generator</h1>
       <div>
         <label>Number of Players to Generate: </label>
@@ -290,6 +385,9 @@ const RandomPlayerGenerator = () => {
         />
         <button onClick={handleGeneratePlayers} disabled={!isButtonEnabled}>
           Generate Players
+        </button>
+        <button onClick={handleGeneratePlayers} disabled={!isButtonEnabled}>
+          Clear Players
         </button>
       </div>
       <table border="1" cellPadding="5">
@@ -344,29 +442,24 @@ const RandomPlayerGenerator = () => {
         </tbody>
       </table>
 
-      <h2>Category Distribution</h2>
-      <ul>
-        {Object.keys(categoryDistribution).map((category) => (
-          <li key={category}>
-            <button onClick={() => handleCategoryClick(category)}>
-              {category}: {categoryDistribution[category]} players
-            </button>
-          </li>
-        ))}
-      </ul>
+      <button
+        onClick={handleSubmitSelectedPlayers}
+        disabled={selectedPlayers.length === 0}
+      >
+        Submit Selected Players to Invoice Pool
+      </button>
+
+      <CategoryChart
+        data={formatCategoryDataForChart()}
+        title="Category Distribution"
+        onBarClick={handleCategoryClick}
+      />
 
       {selectedCategory && (
-        <div>
-          <h3>{selectedCategory} - Grade Distribution</h3>
-          <ul>
-            {gradeDistribution[selectedCategory] &&
-              Object.keys(gradeDistribution[selectedCategory]).map((grade) => (
-                <li key={grade}>
-                  {grade}: {gradeDistribution[selectedCategory][grade]} players
-                </li>
-              ))}
-          </ul>
-        </div>
+        <GradeStackBarChart
+          data={formatGradeDataForStackedChart()}
+          title={`Grade Distribution for ${selectedCategory}`}
+        />
       )}
     </div>
   );
