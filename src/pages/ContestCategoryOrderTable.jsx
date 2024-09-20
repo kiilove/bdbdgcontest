@@ -371,6 +371,10 @@ const ContestCategoryOrderTable = () => {
                                                   confirmDeletion(
                                                     {
                                                       body: "종목을 삭제하시겠습니까?",
+                                                      isButton: true,
+                                                      confirmButtonText: "네",
+                                                      cancelButtonText:
+                                                        "아니오",
                                                     },
                                                     () =>
                                                       handleDeleteCategory(
