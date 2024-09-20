@@ -28,7 +28,8 @@ const ContestCategoryOrderTable = () => {
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState({});
   const [deleteAction, setDeleteAction] = useState(null); // Holds the delete action to perform
-
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
+  const [saveMsgOpen, setSaveMsgOpen] = useState(false); // 저장 완료 메시지 상태 추가
   const [isRefresh, setIsRefresh] = useState(false);
   const { currentContest } = useContext(CurrentContestContext);
   const fetchCategroyDocument = useFirestoreGetDocument(
@@ -265,7 +266,10 @@ const ContestCategoryOrderTable = () => {
                                 contestCategoryId: categoryId,
                                 contestCategoryIndex: categoryIndex,
                                 contestCategoryTitle: categoryTitle,
+                                contestCategoryJudgeCount: judgeCount,
                                 contestCategorySection: categorySection,
+                                contestCategoryJudgeType: categoryJudgeType,
+                                contestCategoryIsOverall: categoryIsOverall,
                               } = category;
 
                               const matchedGrades = gradesArray
@@ -304,30 +308,64 @@ const ContestCategoryOrderTable = () => {
                                           </div>
                                           <div className="w-4/6 h-14 flex justify-start items-center gap-x-2">
                                             {categoryTitle}
+                                            {judgeCount &&
+                                              `(${judgeCount}심제)`}
                                             <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 flex justify-center items-center text-sm">
                                               {categorySection}
                                             </span>
+                                            <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 hidden lg:flex justify-center items-center text-sm">
+                                              {categoryJudgeType === "ranking"
+                                                ? "랭킹"
+                                                : "점수"}
+                                            </span>
+                                            {categoryIsOverall && (
+                                              <span className="w-auto h-auto p-1 bg-blue-400 rounded-lg text-gray-100 hidden lg:flex justify-center items-center text-sm">
+                                                그랑프리
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
                                         <div className="flex w-full lg:w-1/3 h-auto justify-end items-center">
                                           <div className="w-1/6 h-14 flex justify-end items-center pr-2">
                                             <div className="flex w-full justify-end items-center h-14 gap-x-2">
-                                              <button
-                                                onClick={() =>
-                                                  setIsOpen({
-                                                    ...isOpen,
-                                                    category: true,
-                                                    title: "종목수정",
-                                                    categoryId,
-                                                    info: { ...category },
-                                                    count: gradesArray.length,
-                                                  })
-                                                }
-                                              >
-                                                <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
-                                                  <TbEdit className=" text-xl text-gray-100" />
-                                                </span>
-                                              </button>
+                                              {categorySection ===
+                                              "그랑프리" ? (
+                                                <button
+                                                  onClick={() =>
+                                                    setIsOpen({
+                                                      ...isOpen,
+                                                      grandPrix: true,
+                                                      category: false,
+                                                      title: "그랑프리수정",
+                                                      categoryId,
+                                                      info: { ...category },
+                                                      count: gradesArray.length,
+                                                    })
+                                                  }
+                                                >
+                                                  <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                                    <TbEdit className=" text-xl text-gray-100" />
+                                                  </span>
+                                                </button>
+                                              ) : (
+                                                <button
+                                                  onClick={() =>
+                                                    setIsOpen({
+                                                      ...isOpen,
+                                                      category: true,
+                                                      title: "종목수정",
+                                                      categoryId,
+                                                      info: { ...category },
+                                                      count: gradesArray.length,
+                                                    })
+                                                  }
+                                                >
+                                                  <span className="flex px-2 py-1 justify-center items-center bg-sky-500 rounded-lg text-gray-100 h-10">
+                                                    <TbEdit className=" text-xl text-gray-100" />
+                                                  </span>
+                                                </button>
+                                              )}
+
                                               <button
                                                 onClick={() =>
                                                   confirmDeletion(

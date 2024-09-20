@@ -320,7 +320,7 @@ const ContestStagetable = () => {
   }, [stagesInfo]);
 
   useEffect(() => {
-    if (currentContest?.contests) {
+    if (currentContest?.contests !== null) {
       fetchPool();
     }
   }, [currentContest]);

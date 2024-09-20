@@ -42,6 +42,8 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
 
   const [delMsgOpen, setDelMsgOpen] = useState(false);
   const [unDelMsgOpen, setUnDelMsgOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
+  const [saveMsgOpen, setSaveMsgOpen] = useState(false); // 저장 완료 메시지 상태 추가
   const [message, setMessage] = useState("");
   const invoiceInfoRef = useRef({});
 
@@ -169,16 +171,39 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
     }
   };
 
+  // 새롭게 추가된 함수: id로 리스트 업데이트
+  const updateInvoiceInList = (newInvoiceInfo) => {
+    const dummy = [...propState.list];
+    const findInvoiceIndex = dummy.findIndex(
+      (invoice) => invoice.id === newInvoiceInfo.id
+    );
+    if (findInvoiceIndex !== -1) {
+      dummy.splice(findInvoiceIndex, 1, newInvoiceInfo);
+      setState([...dummy]);
+    }
+  };
   const handleUpdateInvoice = async () => {
+    setIsLoading(true);
     const newInvoice = { ...invoiceInfo };
     deleteInvocieJoins(newInvoice.contestId, newInvoice.playerUid);
     newInvoice.contestPriceSum = parseInt(invoiceInfo.contestPriceSum);
     newInvoice.isPriceCheck = false;
+    newInvoice.invoiceEdited = true;
     try {
       await updateInvoice
         .updateData(newInvoice.id, { ...newInvoice })
         .then(() => {
           deleteInvocieJoins(newInvoice.contestId, newInvoice.playerUid);
+          setIsLoading(false);
+          setMessage(() => ({
+            body: "수정이 완료되었습니다.",
+            body2: "확정자도 미확정자로 이동되었습니다.",
+            body3: "미확정자 목록에서 다시 한번 확인하세요.",
+            isButton: true,
+            confirmButtonText: "확인",
+          }));
+          updateInvoiceInList(newInvoice); // 리스트 업데이트 호출
+          setSaveMsgOpen(true);
         });
     } catch (error) {
       console.log(error);
@@ -245,7 +270,7 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
   }, []);
 
   useEffect(() => {
-    console.log(propState);
+    console.log("propState:", propState);
     setInvoiceInfo({ ...propState.info });
   }, [propState]);
 
@@ -261,6 +286,12 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
         isOpen={unDelMsgOpen}
         onCancel={() => setUnDelMsgOpen(false)}
         onConfirm={handleCancelUndo}
+        message={message}
+      />
+      <ConfirmationModal
+        isOpen={saveMsgOpen}
+        onCancel={() => setSaveMsgOpen(false)}
+        onConfirm={() => setSaveMsgOpen(false)}
         message={message}
       />
       <div className="flex w-full h-14">
@@ -570,12 +601,12 @@ const InvoiceInfoModal = ({ setClose, propState, setState }) => {
       <div className="flex w-full gap-x-2 h-auto">
         <button
           className="w-full h-12 bg-gradient-to-r from-blue-200 to-cyan-200 rounded-lg"
-          // onClick={() => handleUpdatePlayers()}
+          disabled={isLoading}
           onClick={() => {
             handleUpdateInvoice();
           }}
         >
-          저장
+          {isLoading ? "수정중.." : "수정"}
         </button>
         <button
           className="w-full h-12 bg-gradient-to-r from-blue-300 to-cyan-300 rounded-lg"

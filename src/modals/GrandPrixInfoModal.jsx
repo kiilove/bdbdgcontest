@@ -106,12 +106,13 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
       if (newGrades?.length > 0) {
         objGrade.grades = [...objGrade.grades, ...newGrades];
         try {
+          console.log(objGrade);
           await contestGradeUpdate
             .updateData(currentContest.contests.contestGradesListId, {
               ...objGrade,
             })
             .then((data) => setGradesList(() => ({ ...data })))
-            .then(() => console.log("완료"));
+            .then((data) => console.log("완료", data));
         } catch (error) {
           console.log(error);
         }

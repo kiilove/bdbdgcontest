@@ -79,10 +79,11 @@ const ContestPlayerOrderTableGrandPrix = () => {
     const filteredCategories = categories.filter(
       (f) => f.contestCategorySection === "그랑프리"
     );
+    console.log(filteredCategories);
 
     console.log(filteredCategories);
     const filteredGrades = grades.filter(
-      (f) => f.refCategoryId === filteredCategories[0].contestCategoryId
+      (f) => f.refCategoryId === filteredCategories[0]?.contestCategoryId
     );
     const flattenedWinner = resultInfo.map((infoItem, rIdx) => {
       const {
