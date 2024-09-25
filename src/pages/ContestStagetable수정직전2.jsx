@@ -76,13 +76,15 @@ const ContestStagetable = () => {
     setStagesArray([...propData]);
   };
 
-  const handleInitStages = (contestId) => {
+  const initStage = (contestId) => {
     const stages = [];
     let stageNumber = 0;
 
+    console.log(playersArray);
+
     categoriesArray
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
-      .forEach((category) => {
+      .map((category, cIdx) => {
         const {
           contestCategoryId: categoryId,
           contestCategoryTitle: categoryTitle,
@@ -100,7 +102,7 @@ const ContestStagetable = () => {
         }
         matchedGrades
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
-          .forEach((grade) => {
+          .map((grade, gIdx) => {
             const {
               contestGradeId: gradeId,
               contestGradeTitle: gradeTitle,
@@ -146,22 +148,108 @@ const ContestStagetable = () => {
     setStagesArray([...stages]);
   };
 
-  const handleUpdateStages = async (id, propData) => {
-    console.log(id);
-    try {
-      await updateStages.updateData(id, { ...propData }).then((data) => {
-        console.log(propData);
-        console.log(data);
-        setMessage({
-          body: "저장되었습니다.",
-          isButton: true,
-          confirmButtonText: "확인",
-        });
-        setMsgOpen(true);
-      });
-    } catch (error) {
-      console.log(error);
+  const onDragEnd = (result) => {
+    const { destination, source, draggableId, type } = result;
+
+    if (!destination) {
+      return;
     }
+
+    // if the item didn't move to a new spot
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    // handling stage reordering
+    if (type === "STAGE") {
+      const newStagesArray = Array.from(stagesArray);
+      const [removed] = newStagesArray.splice(source.index, 1);
+      newStagesArray.splice(destination.index, 0, removed);
+
+      // to reorder stage number
+      newStagesArray.forEach((stage, idx) => {
+        stage.stageNumber = idx + 1;
+      });
+
+      setStagesArray(newStagesArray);
+      return;
+    }
+
+    const start = stagesArray.find(
+      (stage) => stage.stageId === source.droppableId
+    );
+    const finish = stagesArray.find(
+      (stage) => stage.stageId === destination.droppableId
+    );
+
+    // if dropped within the same list
+    if (start === finish) {
+      const newGradeIds = Array.from(start.grades);
+      const [removed] = newGradeIds.splice(source.index, 1);
+      newGradeIds.splice(destination.index, 0, removed);
+
+      const newStage = {
+        ...start,
+        grades: newGradeIds,
+      };
+
+      let newStagesArray = stagesArray.map((stage) =>
+        stage.stageId === start.stageId ? newStage : stage
+      );
+
+      // if grades array is empty after dropping, remove the stage
+      newStagesArray = newStagesArray.filter(
+        (stage) => stage.grades.length !== 0
+      );
+
+      // reorder stage number
+      newStagesArray.forEach((stage, idx) => {
+        stage.stageNumber = idx + 1;
+      });
+
+      setStagesArray(newStagesArray);
+      return;
+    }
+
+    // if dropped in a different list
+    const startGradeIds = Array.from(start.grades);
+    const [removed] = startGradeIds.splice(source.index, 1);
+    const newStart = {
+      ...start,
+      grades: startGradeIds,
+    };
+
+    const finishGradeIds = Array.from(finish.grades);
+    finishGradeIds.splice(destination.index, 0, removed);
+    const newFinish = {
+      ...finish,
+      grades: finishGradeIds,
+    };
+
+    let newStagesArray = stagesArray.map((stage) => {
+      if (stage.stageId === start.stageId) {
+        return newStart;
+      }
+      if (stage.stageId === finish.stageId) {
+        return newFinish;
+      }
+      return stage;
+    });
+
+    // if grades array is empty after dropping, remove the stage
+    newStagesArray = newStagesArray.filter(
+      (stage) => stage.grades.length !== 0
+    );
+
+    // reorder stage number
+    newStagesArray.forEach((stage, idx) => {
+      stage.stageNumber = idx + 1;
+    });
+
+    setStagesArray(newStagesArray);
   };
 
   const splitStage = (stageId, gradeIndex) => {
@@ -194,186 +282,52 @@ const ContestStagetable = () => {
     setStagesArray(updatedStagesArray);
   };
 
-  const handleRefreshCategories = () => {
-    let updatedStages = [...stagesArray];
-
-    categoriesArray
-      .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
-      .forEach((category) => {
-        const matchedGrades = gradesArray.filter(
-          (grade) => grade.refCategoryId === category.contestCategoryId
-        );
-
-        if (matchedGrades?.length === 0) return;
-
-        matchedGrades.forEach((grade) => {
-          // If the category is "그랑프리", skip the player count validation
-          const matchedPlayers =
-            category.contestCategorySection === "그랑프리"
-              ? [] // Allow empty players for Grand Prix
-              : playersArray.filter(
-                  (player) =>
-                    player.contestGradeId === grade.contestGradeId &&
-                    player.playerNoShow === false
-                );
-
-          // If not "그랑프리" and there are no players, skip
-          if (
-            category.contestCategorySection !== "그랑프리" &&
-            matchedPlayers.length === 0
-          )
-            return;
-
-          const isAlreadyInStage = updatedStages.some((stage) =>
-            stage.grades.some((g) => g.gradeId === grade.contestGradeId)
-          );
-
-          // Only add the stage if it's not already present
-          if (!isAlreadyInStage) {
-            const newStageInfo = {
-              stageId: uuidv4(),
-              stageNumber: updatedStages.length + 1,
-              categoryJudgeCount: category.contestCategoryJudgeCount,
-              categoryId: category.contestCategoryId,
-              categoryTitle: category.contestCategoryTitle,
-              categoryIsOverall: category.contestCategoryIsOverall,
-              categoryJudgeType: category.contestCategoryJudgeType,
-              grades: [
-                {
-                  categoryId: category.contestCategoryId,
-                  categoryTitle: category.contestCategoryTitle,
-                  categoryIndex: category.contestCategoryIndex,
-                  categoryJudgeCount: category.contestCategoryJudgeCount,
-                  gradeId: grade.contestGradeId,
-                  gradeTitle: grade.contestGradeTitle,
-                  gradeIndex: grade.contestGradeIndex,
-                  playerCount:
-                    category.contestCategorySection === "그랑프리"
-                      ? 0 // No player count for Grand Prix
-                      : matchedPlayers?.length,
-                },
-              ],
-            };
-
-            console.log(newStageInfo);
-
-            updatedStages.push(newStageInfo);
-          }
+  const handleUpdateStages = async (id, propData) => {
+    console.log(id);
+    try {
+      await updateStages.updateData(id, { ...propData }).then((data) => {
+        console.log(propData);
+        console.log(data);
+        setMessage({
+          body: "저장되었습니다.",
+          isButton: true,
+          confirmButtonText: "확인",
         });
+        setMsgOpen(true);
       });
-
-    // Set the updated stages with the new categories appended
-    setStagesArray([...updatedStages]);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const onDragEnd = (result) => {
-    const { destination, source, draggableId, type } = result;
-
-    if (!destination) {
-      return;
-    }
-
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return;
-    }
-
-    if (type === "STAGE") {
-      const newStagesArray = Array.from(stagesArray);
-      const [removed] = newStagesArray.splice(source.index, 1);
-      newStagesArray.splice(destination.index, 0, removed);
-
-      newStagesArray.forEach((stage, idx) => {
-        stage.stageNumber = idx + 1;
-      });
-
-      setStagesArray(newStagesArray);
-      return;
-    }
-
-    const start = stagesArray.find(
-      (stage) => stage.stageId === source.droppableId
-    );
-    const finish = stagesArray.find(
-      (stage) => stage.stageId === destination.droppableId
-    );
-
-    if (start === finish) {
-      const newGradeIds = Array.from(start.grades);
-      const [removed] = newGradeIds.splice(source.index, 1);
-      newGradeIds.splice(destination.index, 0, removed);
-
-      const newStage = {
-        ...start,
-        grades: newGradeIds,
-      };
-
-      let newStagesArray = stagesArray.map((stage) =>
-        stage.stageId === start.stageId ? newStage : stage
-      );
-
-      newStagesArray = newStagesArray.filter(
-        (stage) => stage.grades.length !== 0
-      );
-
-      newStagesArray.forEach((stage, idx) => {
-        stage.stageNumber = idx + 1;
-      });
-
-      setStagesArray(newStagesArray);
-      return;
-    }
-
-    const startGradeIds = Array.from(start.grades);
-    const [removed] = startGradeIds.splice(source.index, 1);
-    const newStart = {
-      ...start,
-      grades: startGradeIds,
-    };
-
-    const finishGradeIds = Array.from(finish.grades);
-    finishGradeIds.splice(destination.index, 0, removed);
-    const newFinish = {
-      ...finish,
-      grades: finishGradeIds,
-    };
-
-    let newStagesArray = stagesArray.map((stage) => {
-      if (stage.stageId === start.stageId) {
-        return newStart;
-      }
-      if (stage.stageId === finish.stageId) {
-        return newFinish;
-      }
-      return stage;
+  const handleInitStages = async (contestId) => {
+    initStage(contestId);
+    setMessage({
+      body: "초기화되었습니다..",
+      isButton: true,
+      confirmButtonText: "확인",
     });
-
-    newStagesArray = newStagesArray.filter(
-      (stage) => stage.grades.length !== 0
-    );
-
-    newStagesArray.forEach((stage, idx) => {
-      stage.stageNumber = idx + 1;
-    });
-
-    setStagesArray(newStagesArray);
+    setMsgOpen(true);
   };
 
   useEffect(() => {
     if (stagesInfo.stages?.length > 0) {
+      console.log("first");
       fetchStages([...stagesInfo.stages]);
     } else {
-      handleInitStages(currentContest.contests.id);
+      initStage(currentContest.contests.id);
     }
   }, [stagesInfo]);
 
   useEffect(() => {
-    if (currentContest?.contests?.contestCategorysListId) {
+    if (currentContest?.contests !== null) {
       fetchPool();
     }
   }, [currentContest]);
+
+  useEffect(() => {
+    console.log(stagesArray);
+  }, [stagesArray]);
 
   return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg p-2 gap-y-2">
@@ -391,7 +345,7 @@ const ContestStagetable = () => {
               onConfirm={() => setMsgOpen(false)}
             />
             <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg px-3">
-              <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr={3}">
+              <span className="font-sans text-lg font-semibold w-6 h-6 flex justify-center items-center rounded-2xl bg-blue-400 text-white mr-3">
                 <AiOutlineGroup />
               </span>
               <h1
@@ -425,12 +379,6 @@ const ContestStagetable = () => {
                     }}
                   >
                     저장(대회진행을 위한 최종명단)
-                  </button>
-                  <button
-                    className="w-full h-12 bg-gradient-to-r from-yellow-300 to-orange-200 rounded-lg"
-                    onClick={() => handleRefreshCategories()}
-                  >
-                    종목 새로고침
                   </button>
                 </div>
                 <div className="flex w-full h-auto bg-blue-300 flex-col rounded-lg gap-y-2">

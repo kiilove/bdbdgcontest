@@ -13,11 +13,11 @@ import { where } from "firebase/firestore";
 import { CurrentContestContext } from "../contexts/CurrentContestContext";
 import { useNavigate } from "react-router-dom";
 
-const TopBar = ({ user }) => {
+const TopBar = ({ user, isLoadingMain, setIsLoadingMain }) => {
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
   const [contestList, setContestList] = useState([]);
   const [contestNoticeId, setContestNoticeId] = useState();
-  const [isLoading, setIsLoading] = useState(true); // 로딩 상태 추가
+
   const { currentContest, setCurrentContest } = useContext(
     CurrentContestContext
   );
@@ -92,7 +92,7 @@ const TopBar = ({ user }) => {
     const loadData = async () => {
       await fetchList(); // userState가 설정된 후에 fetchList 실행
       setTimeout(() => {
-        setIsLoading(false); // 2초 후에 로딩 상태 해제
+        setIsLoadingMain(false); // 2초 후에 로딩 상태 해제
       }, 3000);
     };
 
@@ -103,14 +103,10 @@ const TopBar = ({ user }) => {
     fetchContest();
   }, [contestNoticeId]);
 
-  if (isLoading) {
-    return <div>Loading...</div>; // 로딩 중일 때 표시할 UI
-  }
-
   return (
     <div className="flex w-full h-full justify-start items-center bg-white">
       <div className="flex w-full h-full items-center ">
-        <div className="flex w-full h-full items-center">
+        <div className="flex w-full h-full items-center  px-5">
           <button
             onClick={() => handleDrawer()}
             className="flex w-10 h-10 justify-center items-center"

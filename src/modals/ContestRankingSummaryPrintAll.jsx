@@ -33,8 +33,10 @@ const ContestRankingSummaryPrintAll = ({ props, setClose }) => {
       where("gradeId", "==", propGradeId),
     ];
 
-    const conditionJudge = [where("contestId", "==", propContestId)];
+    console.log(propGradeId);
 
+    const conditionJudge = [where("contestId", "==", propContestId)];
+    console.log(propContestId);
     try {
       await fetchQuery
         .getDocuments("contest_results_list", condition)

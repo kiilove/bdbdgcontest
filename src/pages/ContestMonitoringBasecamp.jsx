@@ -29,11 +29,11 @@ import ContestRankingSummaryPrintAll from "../modals/ContestRankingSummaryPrintA
 import PrintAward from "../printForms/PrintAward";
 import ContestAwardCreator from "./ContestAwardCreator";
 
-const ContestMonitoringBasecamp = () => {
+const ContestMonitoringBasecamp = ({ isHolding, setIsHolding }) => {
   const navigate = useNavigate();
   const { currentContest } = useContext(CurrentContestContext);
   const [isLoading, setIsLoading] = useState(true);
-  const [isHolding, setIsHolding] = useState(false);
+
   const [contestInfo, setContestInfo] = useState({});
   const [judgesIsEndValidated, setJudgesIsEndValidated] = useState(true);
   const [currentSubTab, setCurrentSubTab] = useState("0");
@@ -397,12 +397,10 @@ const ContestMonitoringBasecamp = () => {
             `currentStage/${currentContest.contests.id}`,
             currentContest.contests.id
           ),
-        2000
+        5000
       );
       debouncedGetDocument();
     }
-
-    return () => {};
   }, [currentStageFunction]);
 
   useEffect(() => {
@@ -471,7 +469,7 @@ const ContestMonitoringBasecamp = () => {
                 <h1 className="font-sans text-base font-semibold">
                   모니터링상태 :{" "}
                   {realtimeData?.stageId && !isHolding && "실시간모니터링중"}
-                  {realtimeData?.stageId && isHolding && "모니터링 일시정지"}
+                  {isHolding && "모니터링 일시정지"}
                   {!realtimeData?.stageId && !isHolding && "대회시작전"}
                 </h1>
               </div>
@@ -479,15 +477,15 @@ const ContestMonitoringBasecamp = () => {
                 {realtimeData?.stageId && !isHolding && (
                   <button
                     className="bg-gray-400 w-full h-full text-white text-lg rounded-lg"
-                    onClick={() => setIsHolding(true)}
+                    onClick={() => setIsHolding(() => true)}
                   >
                     일시정지
                   </button>
                 )}
-                {realtimeData?.stageId && isHolding && (
+                {isHolding && (
                   <button
                     className="bg-blue-600 w-full h-full text-white text-lg rounded-lg"
-                    onClick={() => setIsHolding(false)}
+                    onClick={() => setIsHolding(() => false)}
                   >
                     모니터링 시작
                   </button>

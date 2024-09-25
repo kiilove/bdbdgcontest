@@ -80,16 +80,22 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
   };
 
   const handleGradeAdd = async (objGrade, arrNewGrade) => {
+    console.log("Adding grades to Grand Prix:", objGrade, arrNewGrade);
+
     if (objGrade && arrNewGrade?.length > 0) {
+      // Mapping over the new grades to prepare them for addition
       const newGrades = arrNewGrade.map((grandPrix, gIdx) => {
         const {
           contestCategoryTitle: contestGradeTitle,
           contestCategoryId: originalRefCategoryId,
         } = grandPrix;
+
         const refCategoryId = categoryInfo.contestCategoryId;
         const contestGradeIndex = gIdx + 1;
         const isCompared = false;
         const contestGradeId = generateUUID();
+
+        // New grade structure for the Grand Prix
         const newGradeInfo = {
           contestGradeId,
           contestGradeIndex,
@@ -98,23 +104,34 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
           refCategoryId,
           originalRefCategoryId,
         };
+
+        // Log the new grade for debugging
+        console.log("New Grade Info:", newGradeInfo);
+
         return newGradeInfo;
       });
 
+      console.log("Mapped new grades:", newGrades);
+
       if (newGrades?.length > 0) {
+        // Append the new grades to the existing grades in objGrade
         objGrade.grades = [...objGrade.grades, ...newGrades];
+
         try {
-          console.log(objGrade);
+          console.log("Updated objGrade with new grades:", objGrade);
+
+          // Update Firestore with the modified objGrade
           await contestGradeUpdate.updateData(
             currentContest.contests.contestGradesListId,
             {
               ...objGrade,
             }
           );
-          setGradesList((prev) => ({ ...prev }));
-          console.log("완료", objGrade);
+
+          setGradesList((prev) => ({ ...prev })); // Ensure UI is updated
+          console.log("Grade addition completed:", objGrade);
         } catch (error) {
-          console.log(error);
+          console.log("Error updating grades:", error);
         }
       }
     }
@@ -131,6 +148,7 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
       dummy.push({
         ...updatedCategoryInfo,
         contestCategoryId: uuidv4(),
+        contestCategoryIsOverall: true,
       });
     } else if (action === "수정") {
       const index = dummy.findIndex(
@@ -140,6 +158,7 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
         dummy.splice(index, 1, {
           ...dummy[index],
           ...updatedCategoryInfo,
+          contestCategoryIsOverall: true,
         });
       }
     }
@@ -181,6 +200,7 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
     if (action === "추가") {
       setCategoryInfo({
         ...initCategoryInfo,
+        contestCategoryIsOverall: true,
         contestCategoryIndex:
           parseInt(updatedCategoryInfo.contestCategoryIndex) + 1,
         contestCategoryJudgeCount: parseInt(
@@ -275,7 +295,25 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
                 <input
                   type="text"
                   value={categoryInfo.contestCategoryIndex}
-                  onChange={(e) => handleInputValues(e)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const parsedValue = parseInt(value, 10); // Convert to a number
+                    if (!isNaN(parsedValue)) {
+                      handleInputValues({
+                        target: {
+                          name: "contestCategoryIndex",
+                          value: parsedValue,
+                        },
+                      });
+                    } else {
+                      handleInputValues({
+                        target: {
+                          name: "contestCategoryIndex",
+                          value: "",
+                        },
+                      });
+                    }
+                  }}
                   ref={(ref) =>
                     (categoryInfoRef.current.contestCategoryIndex = ref)
                   }
@@ -360,7 +398,7 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
               </div>
             </div>
           </div>
-          <div className="flex w-full justify-start items-center ">
+          {/* <div className="flex w-full justify-start items-center hidden">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
                 className="font-sans font-semibold"
@@ -369,7 +407,7 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
                 참가가능성별
               </h3>
             </div>
-            <div className="h-12 w-3/4 rounded-lg ">
+            <div className="h-12 w-3/4 rounded-lg hidden">
               <div className="flex w-full justify-start items-center h-12">
                 <select
                   name="contestCategoryGender"
@@ -386,8 +424,8 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
                 </select>
               </div>
             </div>
-          </div>
-          <div className="flex w-full justify-start items-center ">
+          </div> */}
+          {/* <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3
                 className="font-sans font-semibold"
@@ -413,7 +451,7 @@ const GrandPrixInfoModal = ({ setClose, propState, setState, setRefresh }) => {
                 </select>
               </div>
             </div>
-          </div>
+          </div> */}
           <div className="flex w-full justify-start items-center ">
             <div className="flex w-1/4 justify-end mr-2">
               <h3

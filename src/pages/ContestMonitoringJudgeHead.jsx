@@ -27,7 +27,7 @@ import CompareSetting from "../modals/CompareSetting";
 import ContestRankingSummary from "../modals/ContestRankingSummary";
 import ContestPointSummary from "../modals/ContestPointSummary";
 
-const ContestMonitoringJudgeHead = () => {
+const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
   const navigate = useNavigate();
   const { currentContest } = useContext(CurrentContestContext);
   const [compareMode, setCompareMode] = useState({
@@ -38,7 +38,7 @@ const ContestMonitoringJudgeHead = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isHolding, setIsHolding] = useState(false);
+
   const [contestInfo, setContestInfo] = useState({});
 
   const [parentRefresh, setParentRefresh] = useState(false);
@@ -372,7 +372,7 @@ const ContestMonitoringJudgeHead = () => {
       const debouncedGetDocument = debounce(
         () =>
           currentStageFunction(`currentStage/${currentContest.contests.id}`),
-        2000
+        5000
       );
       debouncedGetDocument();
     }
@@ -478,15 +478,14 @@ const ContestMonitoringJudgeHead = () => {
             />
           </Modal>
           <div className="flex w-full h-auto">
-            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-3">
+            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-0">
               <div className="flex w-4/5 px-2 flex-col gap-y-2">
                 <h1 className="font-sans text-base font-semibold">
                   대회명 : {contestInfo.contestTitle}
                 </h1>
                 <h1 className="font-sans text-base font-semibold">
-                  모니터링상태 :{" "}
-                  {realtimeData?.stageId && !isHolding && "실시간모니터링중"}
-                  {realtimeData?.stageId && isHolding && "모니터링 일시정지"}
+                  모니터링상태 : {!isHolding && "실시간모니터링중"}
+                  {isHolding && "모니터링 일시정지"}
                   {!realtimeData?.stageId && !isHolding && "대회시작전"}
                 </h1>
               </div>
@@ -499,7 +498,7 @@ const ContestMonitoringJudgeHead = () => {
                     일시정지
                   </button>
                 )}
-                {realtimeData?.stageId && isHolding && (
+                {isHolding && (
                   <button
                     className="bg-blue-600 w-full h-full text-white text-lg rounded-lg"
                     onClick={() => setIsHolding(false)}

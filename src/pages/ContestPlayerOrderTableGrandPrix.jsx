@@ -56,6 +56,7 @@ const ContestPlayerOrderTableGrandPrix = () => {
     }
     try {
       await fetchCategoryDocument.getDocument(categoriesListId).then((data) => {
+        console.log(data);
         setCategoriesArray(() => [...data.categorys]);
       });
       await fetchGradeDocument.getDocument(gradesListId).then((data) => {
@@ -70,21 +71,32 @@ const ContestPlayerOrderTableGrandPrix = () => {
         .then((data) => {
           setResultFinalArray(() => [...data]);
         });
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const initGrandPrixPlayers = (resultInfo, categories, grades) => {
     let dummy = [];
     console.log(resultInfo);
+    console.log(categories);
+
+    // Filter categories with section "그랑프리"
     const filteredCategories = categories.filter(
       (f) => f.contestCategorySection === "그랑프리"
     );
     console.log(filteredCategories);
 
-    console.log(filteredCategories);
-    const filteredGrades = grades.filter(
-      (f) => f.refCategoryId === filteredCategories[0]?.contestCategoryId
-    );
+    // Collect all matching grades for each filtered category
+    const filteredGrades = filteredCategories.reduce((acc, category) => {
+      const matchingGrades = grades.filter(
+        (grade) => grade.refCategoryId === category.contestCategoryId
+      );
+      return [...acc, ...matchingGrades]; // Merge the arrays
+    }, []);
+
+    console.log(filteredGrades);
+
     const flattenedWinner = resultInfo.map((infoItem, rIdx) => {
       const {
         result: playerResult,
@@ -94,6 +106,7 @@ const ContestPlayerOrderTableGrandPrix = () => {
         categoryTitle,
         gradeTitle,
       } = infoItem;
+
       const findWinner = playerResult.find((f) => f.playerRank === 1);
       const newResult = {
         contestId,
@@ -119,10 +132,15 @@ const ContestPlayerOrderTableGrandPrix = () => {
       return newResult;
     });
 
+    console.log(flattenedWinner);
+
     const matchingGradeWithWinner = filteredGrades.map((grade, gIdx) => {
+      console.log(grade);
       const filteredMatching = flattenedWinner.filter(
         (f) => f.originalCategoryId === grade.originalRefCategoryId
       );
+
+      console.log(filteredMatching);
 
       const renewMatching = filteredMatching.map((match, mIdx) => {
         const { contestGradeId, contestGradeTitle, refCategoryId } = grade;
@@ -143,7 +161,6 @@ const ContestPlayerOrderTableGrandPrix = () => {
     console.log(flattenedWinner);
     console.log(matchingGradeWithWinner);
 
-    //dummy = [...playersFinalArray, ...dummy];
     console.log(dummy);
     return dummy;
   };
@@ -151,6 +168,7 @@ const ContestPlayerOrderTableGrandPrix = () => {
   const initPlayersFinalList = (categories, grades, players) => {
     setIsLoading(true);
 
+    console.log(categories);
     let dummy = [];
     console.log(
       categories.filter((f) => f.contestCategorySection === "그랑프리")
@@ -160,6 +178,8 @@ const ContestPlayerOrderTableGrandPrix = () => {
       .filter((f) => f.contestCategorySection === "그랑프리")
       .sort((a, b) => a.contestCategoryIndex - b.contestCategoryIndex)
       .map((category, cIdx) => {
+        console.log(category);
+        console.log(grades);
         const matchedGrades = grades.filter(
           (grade) => grade.refCategoryId === category.contestCategoryId
         );
@@ -168,6 +188,7 @@ const ContestPlayerOrderTableGrandPrix = () => {
         matchedGrades
           .sort((a, b) => a.contestGradeIndex - b.contestGradeIndex)
           .map((grade, gIdx) => {
+            console.log(players);
             const matchedPlayerWithPlayerNumber = [];
             const matchedPlayers = players.filter(
               (player) => player.contestGradeId === grade.contestGradeId
@@ -230,6 +251,8 @@ const ContestPlayerOrderTableGrandPrix = () => {
   }, [playersFinalArray, grandPrixArray]);
 
   useEffect(() => {
+    console.log(resultPlayersArray);
+    console.log(categoriesArray);
     if (categoriesArray?.length > 0 && gradesArray?.length > 0) {
       setGrandPrixArray([
         ...initGrandPrixPlayers(
@@ -311,6 +334,8 @@ const ContestPlayerOrderTableGrandPrix = () => {
                         matchedPlayers,
                         matchedGradesLength: gradeLength,
                       } = matched;
+
+                      console.log(matched);
 
                       if (matchedPlayers.length === 0) return null;
 

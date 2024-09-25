@@ -461,6 +461,11 @@ const ContestCategoryOrderTable = () => {
                                                                 confirmDeletion(
                                                                   {
                                                                     body: "체급을 삭제하시겠습니까?",
+                                                                    isButton: true,
+                                                                    confirmButtonText:
+                                                                      "예",
+                                                                    cancelButtonText:
+                                                                      "아니오",
                                                                   },
                                                                   () =>
                                                                     handleDeleteGrade(

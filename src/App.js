@@ -78,8 +78,12 @@ function App() {
               <ManagementHome children={<ContestPlayerOrderTableGrandPrix />} />
             }
           />
-          <Route
+          {/* <Route
             path="/contestmonitoring"
+            element={<ManagementHome children={<ContestMonitoring />} />}
+          /> */}
+          <Route
+            path="/contestmonitoring/:target"
             element={<ManagementHome children={<ContestMonitoring />} />}
           />
           <Route
