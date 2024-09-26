@@ -11,6 +11,7 @@ import ContestMonitoringJudgeHead from "./ContestMonitoringJudgeHead";
 import StandingTableType1 from "./StandingTableType1";
 import ContestMonitoringStage from "./ContestMonitoringStage";
 import { useParams } from "react-router-dom";
+import ContestMonitoringMC from "./ContestMonitoringMC";
 
 const ContestMonitoring = () => {
   const { currentContest } = useContext(CurrentContestContext);
@@ -22,7 +23,6 @@ const ContestMonitoring = () => {
   useEffect(() => {
     switch (params.target) {
       case "all":
-        setCurrentTab(0);
         break;
       case "main":
         setCurrentTab(0);
@@ -101,7 +101,13 @@ const ContestMonitoring = () => {
                     }
                   })}
                 </div>
-                {(params.target === "all" || currentTab === 0) && (
+                {params.target === "all" && currentTab === 0 && (
+                  <ContestMonitoringBasecamp
+                    isHolding={isHolding}
+                    setIsHolding={setIsHolding}
+                  />
+                )}
+                {params.target === "main" && currentTab === 0 && (
                   <ContestMonitoringBasecamp
                     isHolding={isHolding}
                     setIsHolding={setIsHolding}
@@ -113,7 +119,11 @@ const ContestMonitoring = () => {
                     setIsHolding={setIsHolding}
                   />
                 )}
-                {currentTab === 2 && <ContestMonitoringStage />}
+                {currentTab === 2 && (
+                  <ContestMonitoringMC
+                    contestId={currentContest?.contests.id}
+                  />
+                )}
                 {currentTab === 3 && <StandingTableType1 />}
               </div>
             </div>

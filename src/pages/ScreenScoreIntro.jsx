@@ -4,6 +4,7 @@ import { debounce } from "lodash";
 import { useFirebaseRealtimeGetDocument } from "../hooks/useFirebaseRealtime";
 import ReactPlayer from "react-player";
 import AwardVideo from "../assets/mov/award.mp4";
+import AwardVideo2 from "../assets/mov/award2.mp4";
 const ranks = [
   "1.김진배 / 제이앤코어",
   "3.오종일 / 고궁비빔피트니스클럽",
@@ -40,15 +41,29 @@ const ScreenScoreIntro = ({ categoryTitle, gradeTitle, rankOrder = [] }) => {
 
   console.log(rankOrder.length);
   return (
-    <div>
-      <ReactPlayer
-        url={AwardVideo}
-        width="100%"
-        height="auto"
-        playing
-        loop
-        muted
-      />
+    <div className="overflow-hidden overflow-y-hidden h-screen w-full">
+      <div className="absolute top-0 left-0 w-full h-full">
+        <ReactPlayer
+          url={AwardVideo2}
+          width="100%"
+          height="100%"
+          playing
+          loop
+          muted
+          style={{ position: "absolute", top: 0, left: 0 }}
+          config={{
+            file: {
+              attributes: {
+                style: {
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                },
+              },
+            },
+          }}
+        />
+      </div>
       <div
         id="container1"
         className={`container1-${
@@ -180,7 +195,7 @@ const ScreenScoreIntro = ({ categoryTitle, gradeTitle, rankOrder = [] }) => {
                           className="flex h-18 justify-center items-center text-white  border-b border-white text-xl"
                           style={{ width: "10%" }}
                         >
-                          {randomScore[idx].playerScore}
+                          {randomScore[idx]?.playerScore}
                         </div>
                       ))}
                     </div>

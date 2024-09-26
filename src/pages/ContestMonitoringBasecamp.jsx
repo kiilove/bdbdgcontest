@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useState } from "react";
 import _ from "lodash";
 import LoadingPage from "./LoadingPage";
@@ -28,11 +28,13 @@ import ContestRankingSummary from "../modals/ContestRankingSummary";
 import ContestRankingSummaryPrintAll from "../modals/ContestRankingSummaryPrintAll";
 import PrintAward from "../printForms/PrintAward";
 import ContestAwardCreator from "./ContestAwardCreator";
+import dayjs from "dayjs"; // dayjs 임포트
 
 const ContestMonitoringBasecamp = ({ isHolding, setIsHolding }) => {
   const navigate = useNavigate();
   const { currentContest } = useContext(CurrentContestContext);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const [contestInfo, setContestInfo] = useState({});
   const [judgesIsEndValidated, setJudgesIsEndValidated] = useState(true);
@@ -345,6 +347,7 @@ const ContestMonitoringBasecamp = ({ isHolding, setIsHolding }) => {
     } catch (error) {
       console.log(error);
     }
+    handleForceUpdate();
   };
 
   const handleGotoSummary = (categoryId, categoryTitle, grades) => {
@@ -361,6 +364,16 @@ const ContestMonitoringBasecamp = ({ isHolding, setIsHolding }) => {
 
     const validate = judgesArray.some((s) => s.isEnd === false);
     return validate;
+  };
+
+  const handleForceUpdate = () => {
+    if (currentContest?.contests?.id) {
+      currentStageFunction(`currentStage/${currentContest.contests.id}`);
+      setLastUpdated(dayjs().format("YYYY-MM-DD HH:mm:ss"));
+    }
+    if (currentStageInfo?.grades) {
+      handleForceScoreTableRefresh(currentStageInfo.grades);
+    }
   };
 
   useEffect(() => {
@@ -389,19 +402,30 @@ const ContestMonitoringBasecamp = ({ isHolding, setIsHolding }) => {
     }
   }, [realtimeData]);
 
+  // debouncedGetDocument 함수는 매번 새로 생성되지 않도록 useCallback 사용
+  const debouncedGetDocument = useCallback(
+    debounce(() => {
+      if (currentContest?.contests?.id) {
+        currentStageFunction(`currentStage/${currentContest.contests.id}`);
+        setLastUpdated(dayjs().format("YYYY-MM-DD HH:mm:ss"));
+        if (currentStageInfo?.grades) {
+          handleForceScoreTableRefresh(currentStageInfo.grades);
+        }
+      }
+    }, 20000),
+    [currentContest, currentStageFunction]
+  );
+
   useEffect(() => {
-    if (!isHolding && currentContest?.contests?.id) {
-      const debouncedGetDocument = debounce(
-        () =>
-          currentStageFunction(
-            `currentStage/${currentContest.contests.id}`,
-            currentContest.contests.id
-          ),
-        5000
-      );
-      debouncedGetDocument();
+    if (!isHolding) {
+      debouncedGetDocument(); // 최초 20초 후에 데이터 갱신
+
+      // cleanup 함수로 debouncedGetDocument.cancel() 호출
+      return () => {
+        debouncedGetDocument.cancel(); // debounce 호출 취소
+      };
     }
-  }, [currentStageFunction]);
+  }, [debouncedGetDocument, isHolding]);
 
   useEffect(() => {
     if (realtimeData?.judges) {
@@ -459,7 +483,7 @@ const ContestMonitoringBasecamp = ({ isHolding, setIsHolding }) => {
           </Modal>
           <div className="flex w-full h-auto">
             <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-3">
-              <div className="flex w-4/5 px-2 flex-col gap-y-2">
+              <div className="flex w-3/5 px-2 flex-col gap-y-2">
                 <h1 className="font-sans text-base font-semibold">
                   대회명 : {contestInfo.contestTitle}
                 </h1>
@@ -472,8 +496,22 @@ const ContestMonitoringBasecamp = ({ isHolding, setIsHolding }) => {
                   {isHolding && "모니터링 일시정지"}
                   {!realtimeData?.stageId && !isHolding && "대회시작전"}
                 </h1>
+                {/* 마지막으로 갱신된 시간 표시 */}
+                {lastUpdated && (
+                  <h1 className="font-sans text-sm text-gray-500">
+                    마지막 업데이트: {lastUpdated}
+                  </h1>
+                )}
               </div>
-              <div className="flex w-1/5 h-full">
+
+              <div className="flex w-2/5 h-full gap-x-2">
+                <button
+                  className="bg-red-500  w-full h-full text-white text-lg rounded-lg"
+                  onClick={handleForceUpdate}
+                >
+                  지금확인
+                </button>
+
                 {realtimeData?.stageId && !isHolding && (
                   <button
                     className="bg-gray-400 w-full h-full text-white text-lg rounded-lg"

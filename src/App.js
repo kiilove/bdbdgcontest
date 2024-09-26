@@ -106,7 +106,7 @@ function App() {
             path="/clear"
             element={<ManagementHome children={<ContestSearchAndDelete />} />}
           />
-          <Route path="/screen1" element={<StandingTableType1 />} />
+          <Route path="/screen1/:contestId" element={<StandingTableType1 />} />
         </Routes>
       </BrowserRouter>
     </CurrentContestProvider>

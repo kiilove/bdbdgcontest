@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
 import { MenuArray } from "./Menus";
+import { CurrentContestContext } from "../contexts/CurrentContestContext";
+import { MdLogout } from "react-icons/md";
 
 const Drawbar = ({ setOpen }) => {
   const navigate = useNavigate();
@@ -14,28 +16,45 @@ const Drawbar = ({ setOpen }) => {
   const [menuItem, setMenuItem] = useState([...MenuArray]);
 
   const userParser = JSON.parse(sessionStorage.getItem("user"));
-
+  const { currentContest } = useContext(CurrentContestContext);
+  const contestId = currentContest?.contests?.id;
   const handleMenuClick = (idx) => {
+    // 하위 메뉴가 있는 경우
     if (MenuArray[idx].subMenus) {
       setMenuVisible((prevState) => ({
+        // 클릭된 메뉴가 이미 열려있다면 닫기, 그렇지 않으면 열기
         menuIndex: idx,
-        isHidden: !prevState.isHidden || prevState.menuIndex !== idx,
+        isHidden: prevState.menuIndex === idx ? !prevState.isHidden : false,
       }));
     } else {
-      navigate(MenuArray[idx].link);
-      // subMenus가 없을 때만 메뉴 상태를 업데이트합니다.
-      if (!MenuArray[idx].subMenus) {
-        setMenuVisible((prevState) => ({
-          menuIndex: idx,
-          isHidden: false,
-        }));
-      }
+      // 하위 메뉴가 없는 경우
+      const link = MenuArray[idx].link.includes("/screen1")
+        ? `${MenuArray[idx].link}/${contestId}`
+        : MenuArray[idx].link;
+
+      navigate(link);
+
+      setMenuVisible({
+        menuIndex: idx,
+        isHidden: true, // 메뉴를 열지 않고 닫기
+      });
     }
   };
 
   const handleSubMenuClick = (parentIdx, subIdx) => {
+    const subMenuLink = MenuArray[parentIdx].subMenus[subIdx].link;
+    const linkWithContestId = subMenuLink.includes("/screen1")
+      ? `${subMenuLink}/${contestId}`
+      : subMenuLink;
+
+    console.log("Navigating to:", linkWithContestId); // 콘솔 로그로 확인
     setOpen();
-    navigate(MenuArray[parentIdx].subMenus[subIdx + 1].link);
+    navigate(linkWithContestId);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("user"); // 세션에서 사용자 정보 삭제
+    navigate("/login"); // 로그인 페이지로 리다이렉트
   };
 
   useEffect(() => {
@@ -50,6 +69,11 @@ const Drawbar = ({ setOpen }) => {
 
   return (
     <div className="flex flex-col w-full bg-sky-800 h-screen">
+      <div className="flex w-full justify-center items-center h-16 ">
+        <h1 className="text-white" style={{ fontSize: 21 }}>
+          대회관리시스템
+        </h1>
+      </div>
       {menuItem
         .filter((menu) => menu.isActive === true)
         .map((menu, idx) => (
@@ -69,15 +93,6 @@ const Drawbar = ({ setOpen }) => {
                     </div>
                   </button>
                 </div>
-                <div className="flex">
-                  {/* {menu?.subMenus ? (
-                  menuVisible.index === idx && menuVisible.isHidden ? (
-                    <MdOutlineKeyboardArrowDown />
-                  ) : (
-                    <MdOutlineKeyboardArrowUp />
-                  )
-                ) : null} */}
-                </div>
               </div>
             </div>
             {menuVisible.menuIndex === idx &&
@@ -92,8 +107,7 @@ const Drawbar = ({ setOpen }) => {
                           <button
                             className="py-2 px-10 hover:text-gray-200 w-full flex justify-start items-center "
                             onClick={() => {
-                              navigate(subMenu?.link);
-                              setOpen();
+                              handleSubMenuClick(idx, sIdx);
                             }}
                           >
                             <div className="flex justify-start items-center">
@@ -112,6 +126,16 @@ const Drawbar = ({ setOpen }) => {
               )}
           </div>
         ))}
+      <div className="flex w-full justify-between items-end h-16 px-5">
+        <button onClick={() => setOpen(false)}>
+          <span className="text-base text-gray-200">닫기</span>
+        </button>
+        <button onClick={() => handleLogout()}>
+          <span className="text-lg text-gray-200">
+            <MdLogout />
+          </span>
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useState } from "react";
 import _ from "lodash";
 import LoadingPage from "./LoadingPage";
@@ -26,10 +26,12 @@ import { Modal } from "@mui/material";
 import CompareSetting from "../modals/CompareSetting";
 import ContestRankingSummary from "../modals/ContestRankingSummary";
 import ContestPointSummary from "../modals/ContestPointSummary";
+import dayjs from "dayjs"; // 날짜 형식을 위한 dayjs
 
 const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
   const navigate = useNavigate();
   const { currentContest } = useContext(CurrentContestContext);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [compareMode, setCompareMode] = useState({
     isCompare: false,
     compareStart: false,
@@ -150,7 +152,7 @@ const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
   };
 
   const fetchScoreTable = async (grades) => {
-    setIsLoading(true);
+    //setIsLoading(true);
     const allData = [];
 
     for (let grade of grades) {
@@ -168,7 +170,7 @@ const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
     }
 
     setNormalScoreData(allData);
-    setIsLoading(false);
+    // setIsLoading(false);
   };
 
   const handleJudgeIsLoginedValidated = (judgesArray) => {
@@ -367,18 +369,42 @@ const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
     });
   }, [fetchRealTimeCurrentStage]);
 
-  useEffect(() => {
-    if (!isHolding && currentContest?.contests?.id) {
-      const debouncedGetDocument = debounce(
-        () =>
-          currentStageFunction(`currentStage/${currentContest.contests.id}`),
-        5000
-      );
-      debouncedGetDocument();
-    }
+  // 데이터 갱신을 위한 useCallback 함수
+  const debouncedGetDocument = useCallback(
+    debounce(() => {
+      if (currentContest?.contests?.id) {
+        currentStageFunction(`currentStage/${currentContest.contests.id}`);
+        setLastUpdated(dayjs().format("YYYY-MM-DD HH:mm:ss")); // 마지막 갱신 시각 설정
+        if (currentStageInfo?.grades) {
+          handleForceScoreTableRefresh(currentStageInfo.grades);
+        }
+      }
+    }, 20000), // 20초마다 갱신
+    [currentContest, currentStageFunction]
+  );
 
-    return () => {};
-  }, [currentStageFunction]);
+  // useEffect로 20초마다 갱신하도록 설정
+  useEffect(() => {
+    if (!isHolding) {
+      debouncedGetDocument();
+
+      // Cleanup으로 debounced 함수를 취소
+      return () => {
+        debouncedGetDocument.cancel();
+      };
+    }
+  }, [debouncedGetDocument, isHolding]);
+
+  // 수동 갱신 함수
+  const handleForceUpdate = () => {
+    if (currentContest?.contests?.id) {
+      currentStageFunction(`currentStage/${currentContest.contests.id}`);
+      setLastUpdated(dayjs().format("YYYY-MM-DD HH:mm:ss")); // 마지막 갱신 시각 설정
+    }
+    if (currentStageInfo?.grades) {
+      handleForceScoreTableRefresh(currentStageInfo.grades);
+    }
+  };
 
   useEffect(() => {
     if (fetchRealTimeCurrentStage?.judgex) {
@@ -434,7 +460,7 @@ const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
         </div>
       )}
       {!isLoading && (
-        <div className="flex flex-col w-full h-full bg-white rounded-lg p-3 gap-y-2 justify-start items-start">
+        <div className="flex flex-col w-full h-full bg-white rounded-lg p-0 px-2 gap-y-2 justify-start items-start">
           <ConfirmationModal
             isOpen={msgOpen}
             message={message}
@@ -477,9 +503,9 @@ const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
               setClose={setPointSummaryOpen}
             />
           </Modal>
-          <div className="flex w-full h-auto">
-            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-0">
-              <div className="flex w-4/5 px-2 flex-col gap-y-2">
+          <div className="flex w-full h-auto ">
+            <div className="flex w-full bg-gray-100 justify-start items-center rounded-lg p-2">
+              <div className="flex w-3/5 px-2 flex-col gap-y-2">
                 <h1 className="font-sans text-base font-semibold">
                   대회명 : {contestInfo.contestTitle}
                 </h1>
@@ -488,8 +514,19 @@ const ContestMonitoringJudgeHead = ({ isHolding, setIsHolding }) => {
                   {isHolding && "모니터링 일시정지"}
                   {!realtimeData?.stageId && !isHolding && "대회시작전"}
                 </h1>
+                {lastUpdated && (
+                  <h1 className="font-sans text-sm text-gray-500">
+                    마지막 확인 시각: {lastUpdated}
+                  </h1>
+                )}
               </div>
-              <div className="flex w-1/5 h-full">
+              <div className="flex w-2/5 h-full gap-x-2">
+                <button
+                  className="bg-red-500  w-full h-full text-white text-lg rounded-lg"
+                  onClick={handleForceUpdate}
+                >
+                  지금확인
+                </button>
                 {realtimeData?.stageId && !isHolding && (
                   <button
                     className="bg-gray-400 w-full h-full text-white text-lg rounded-lg"

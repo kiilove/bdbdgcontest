@@ -146,7 +146,7 @@ const TopBar = ({ user, isLoadingMain, setIsLoadingMain }) => {
           <span className="text-sm text-gray-500">
             <MdLogout />
           </span>
-          <span>{user?.userContext} 로그아웃</span>
+          <span style={{ fontSize: 12 }}>{user?.userContext} 로그아웃</span>
         </div>
       </div>
 
