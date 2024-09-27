@@ -21,6 +21,7 @@ import AwardList from "./printForms/AwardList";
 import StandingTableType1 from "./pages/StandingTableType1";
 import RandomPlayerGenerator from "./pages/RandomPlayerGenerator";
 import ContestSearchAndDelete from "./pages/ContestSearchAndDelete";
+import PrintPlayerStanding from "./printForms/PrintPlayerStanding";
 
 function App() {
   return (
@@ -97,6 +98,10 @@ function App() {
           <Route
             path="/printplayersfinal"
             element={<ManagementHome children={<PrintPlayersFinal />} />}
+          />
+          <Route
+            path="/printplayerstanding"
+            element={<ManagementHome children={<PrintPlayerStanding />} />}
           />
           <Route
             path="/awardlist"

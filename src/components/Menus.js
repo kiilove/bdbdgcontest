@@ -144,12 +144,7 @@ export const MenuArray = [
         link: "/printbase",
         isActive: true,
       },
-      {
-        id: 2,
-        title: "계측명단 종목별",
-        icon: <MdOutlineScale />,
-        isActive: false,
-      },
+
       {
         id: 3,
         title: "선수명단 통합",
@@ -157,17 +152,23 @@ export const MenuArray = [
         isActive: true,
         link: "/printplayersfinal",
       },
-      { id: 4, title: "선수명단 종목별", icon: <HiUsers />, isActive: false },
-      { id: 5, title: "순위표 통합", icon: <BsListOl />, isActive: true },
-      { id: 6, title: "순위표 종목별", icon: <BsListOl />, isActive: true },
+
       {
-        id: 7,
+        id: 4,
+        title: "순위표 통합",
+        icon: <BsListOl />,
+        isActive: true,
+        link: "/printplayerstanding",
+      },
+
+      {
+        id: 5,
         title: "집계표 출력",
         icon: <BsCardChecklist />,
         isActive: user.userGroup === "admin" ? true : false,
       },
       {
-        id: 8,
+        id: 6,
         title: "상장 출력",
         icon: <TbCertificate />,
         isActive: true,
