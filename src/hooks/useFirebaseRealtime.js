@@ -10,109 +10,109 @@ import {
 } from "firebase/database";
 import { database } from "../firebase";
 
-// 다중 문서를 실시간으로 구독하는 훅
-export function useFirebaseRealtimeQuery(collectionInfo) {
+export function useFirebaseRealtimeQuery() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!collectionInfo) {
-      console.warn(
-        "useFirebaseRealtimeQuery: collectionInfo가 제공되지 않았습니다."
-      );
-      setLoading(false);
-      return;
-    }
+  async function getDocuments(collectionInfo) {
+    try {
+      setLoading(true);
 
-    const dataRef = ref(database, collectionInfo);
+      const dataRef = ref(database, collectionInfo);
+      const snapshot = await get(dataRef);
 
-    setLoading(true);
+      if (snapshot.exists()) {
+        const documents = Object.entries(snapshot.val()).map(([id, data]) => ({
+          id,
+          ...data,
+        }));
 
-    const unsubscribe = onValue(
-      dataRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const documents = Object.entries(snapshot.val()).map(
-            ([id, data]) => ({
-              id,
-              ...data,
-            })
-          );
-          setData(documents);
-        } else {
-          setData([]);
-        }
+        setData(documents);
         setLoading(false);
-      },
-      (error) => {
-        console.error("Firebase onValue 에러:", error);
-        setError(error);
+        return documents;
+      } else {
+        setError({ message: "No documents found" });
+        setData([]);
         setLoading(false);
+        return [];
       }
-    );
+    } catch (error) {
+      console.error(error);
+      setError(error);
+      setLoading(false);
+      return [];
+    }
+  }
+
+  useEffect(() => {
+    const dataRef = ref(database);
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const documents = Object.entries(snapshot.val()).map(([id, data]) => ({
+          id,
+          ...data,
+        }));
+
+        setData(documents);
+      } else {
+        setData([]);
+      }
+
+      setLoading(false);
+    });
 
     return () => {
       unsubscribe();
     };
-  }, [collectionInfo]);
+  }, []);
 
   return {
     data,
     loading,
     error,
+    getDocuments,
   };
 }
 
-// 단일 문서를 실시간으로 구독하는 훅
-export function useFirebaseRealtimeGetDocument(collectionInfo) {
+export function useFirebaseRealtimeGetDocument() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!collectionInfo) {
-      console.warn(
-        "useFirebaseRealtimeGetDocument: collectionInfo가 제공되지 않았습니다."
-      );
-      setLoading(false);
-      return;
-    }
+  async function getDocument(collectionInfo) {
+    try {
+      setLoading(true);
 
-    const dataRef = ref(database, collectionInfo);
+      const dataRef = ref(database, `${collectionInfo}`);
+      const snapshot = await get(dataRef);
 
-    setLoading(true);
-
-    const unsubscribe = onValue(
-      dataRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          setData({ id: snapshot.key, ...snapshot.val() });
-        } else {
-          setData(null);
-        }
+      if (snapshot.exists()) {
+        setData({ id: snapshot.key, ...snapshot.val() });
         setLoading(false);
-      },
-      (error) => {
-        console.error("Firebase onValue 에러:", error);
-        setError(error);
+        return { id: snapshot.key, ...snapshot.val() };
+      } else {
+        setError({ message: "Document does not exist" });
+        setData(null);
         setLoading(false);
+        return null;
       }
-    );
-
-    return () => {
-      unsubscribe();
-    };
-  }, [collectionInfo]);
+    } catch (error) {
+      console.error(error);
+      setError(error);
+      setLoading(false);
+      return null;
+    }
+  }
 
   return {
     data,
     loading,
     error,
+    getDocument,
   };
 }
 
-// 데이터 추가 훅
 export function useFirebaseRealtimeAddData() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -124,9 +124,11 @@ export function useFirebaseRealtimeAddData() {
 
       let dataRef;
       if (key) {
+        // If key is provided, use it
         dataRef = ref(database, `${collectionInfo}/${key}`);
         await set(dataRef, newData);
       } else {
+        // If no key is provided, let Firebase generate it
         dataRef = push(ref(database, collectionInfo));
         await set(dataRef, newData);
       }
@@ -137,7 +139,7 @@ export function useFirebaseRealtimeAddData() {
       setLoading(false);
       return { id: newId, ...newData };
     } catch (error) {
-      console.error("데이터 추가 에러:", error);
+      console.error(error);
       setError(error);
       setLoading(false);
       return null;
@@ -147,24 +149,24 @@ export function useFirebaseRealtimeAddData() {
   return { data, loading, error, addData };
 }
 
-// 데이터 업데이트 훅
 export function useFirebaseRealtimeUpdateData() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateData = async (collectionInfo, newData) => {
+  const updateData = async (collectionInfo, newData, id = "noId") => {
+    console.log(newData);
     try {
       setLoading(true);
 
       const dataRef = ref(database, collectionInfo);
-      await update(dataRef, newData);
+      await set(dataRef, newData);
 
-      setData({ ...newData });
+      setData({ id, ...newData });
       setLoading(false);
-      return { ...newData };
+      return { id, ...newData };
     } catch (error) {
-      console.error("데이터 업데이트 에러:", error);
+      console.error(error);
       setError(error);
       setLoading(false);
       return null;
@@ -174,25 +176,20 @@ export function useFirebaseRealtimeUpdateData() {
   return { data, loading, error, updateData };
 }
 
-// 데이터 삭제 훅
 export function useFirebaseRealtimeDeleteData() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [data, setData] = useState(null);
 
   const deleteData = async (collectionInfo) => {
     try {
-      setLoading(true);
-      const dataRef = ref(database, collectionInfo);
+      const dataRef = ref(database, `${collectionInfo}`);
       await remove(dataRef);
-      setLoading(false);
+
       return true;
     } catch (error) {
-      console.error("데이터 삭제 에러:", error);
-      setError(error);
-      setLoading(false);
+      console.error(error);
       return false;
     }
   };
 
-  return { loading, error, deleteData };
+  return { data, deleteData };
 }
